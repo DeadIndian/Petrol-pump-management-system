@@ -5,9 +5,10 @@ import { petrosoftDb } from "./db";
 import { baseModule, CUSTOMER_KEYS, EMPLOYEE_KEYS, money, PRODUCT_KEYS, quantity, safeFields, VENDOR_KEYS } from "./rules";
 import { PetrosoftError } from "./actions";
 import { cashAt } from "./cash";
+import { hasMasterReferences } from "./masters";
 
 export interface QueryFilters extends PetrosoftFields { from?: string; to?: string; date?: string; search?: string; page?: number; limit?: number }
-export type PublicEntry = Omit<ReturnType<typeof serializeEntry>, "fields"> & { fields: PetrosoftFields };
+export type PublicEntry = Omit<ReturnType<typeof serializeEntry>, "fields"> & { fields: PetrosoftFields; deletionProtected?: boolean };
 export type BalanceMap = Record<string, Record<string, { debit: string; credit: string; balance: string; quantity: string }>>;
 
 export function serializeEntry(entry: PetrosoftEntry) {
@@ -225,7 +226,10 @@ export async function readState(actor: PetrosoftActor, moduleId: string, filters
     total = await petrosoftDb.petrosoftAudit.count({ where });
     const audits = await petrosoftDb.petrosoftAudit.findMany({ where, orderBy: { createdAt: "desc" }, take: Math.min(Number(filters.limit) || 1000, 5000), skip: (Math.max(1, Number(filters.page) || 1) - 1) * (Number(filters.limit) || 1000) });
     records = audits.map((audit, index) => ({ id: audit.id, module: "audit", number: index + 1, externalId: audit.id, name: audit.module, date: audit.createdAt.toISOString().slice(0, 10), amount: "0", quantity: "0", rate: "0", status: "active", fields: { module: audit.module, event: audit.action, entry_id: audit.entryId, username: audit.username, event_time: audit.createdAt.toISOString().slice(11, 19), created_date: audit.createdAt.toISOString(), before: audit.before, after: audit.after }, createdBy: audit.username, createdAt: audit.createdAt.toISOString(), updatedAt: audit.createdAt.toISOString() }));
-  } else if (moduleSchema.kind === "master") records = (masters[moduleId] || []).filter(entry => matchesFilters(entry, filters));
+  } else if (moduleSchema.kind === "master") {
+    records = await Promise.all((masters[moduleId] || []).filter(entry => matchesFilters(entry, filters)).map(async entry => ({ ...entry,
+      deletionProtected: await hasMasterReferences(petrosoftDb, { ...entry, workspaceId: actor.workspaceId, fields: entry.fields as Prisma.JsonObject }) })));
+  }
   else {
     const virtual = await virtualRecords(actor.workspaceId, moduleId, filters, masters, balances);
     records = virtual || await transactionRecords(actor.workspaceId, [sources[moduleId] || moduleId], filters);

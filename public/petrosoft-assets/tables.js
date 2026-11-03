@@ -3,11 +3,11 @@
   const R = window.PetrosoftRuntime;
   if (!R) return;
   const { state, context, esc, $ } = R;
-  const icons = { edit: "edit.png", delete: "delete.png" };
-  const button = (entry, action, label, icon) => {
+  const icons = { edit: "edit.png", delete: "delete.png", risk: "risk.png", view: "view.png", hide: "hide.png", nozzles: "gas-pump.png", vehicles: "truck.png" };
+  const button = (entry, action, label, icon, extra = "") => {
     const operation = ["edit", "delete", "toggle"].includes(action) ? action : action === "permissions" || action.startsWith("provider-") ? "edit" : "view";
     if (!R.can(action.startsWith("provider-") ? context.module.id : entry.module, operation)) return "";
-    return `<button type="button" data-ps-record="${esc(entry.id)}" data-ps-record-module="${esc(entry.module)}" data-ps-action="${action}" title="${esc(label)}" aria-label="${esc(label)}">${icon && icons[icon] ? `<img src="/petrosoft-assets/assets/images/${icons[icon]}" alt="">` : esc(label)}</button>`;
+    return `<button type="button" data-ps-record="${esc(entry.id)}" data-ps-record-module="${esc(entry.module)}" data-ps-action="${action}" title="${esc(label)}" aria-label="${esc(label)}">${icon && icons[icon] ? `<img src="/petrosoft-assets/assets/images/${icons[icon]}" alt="">` : esc(label)}${extra}</button>`;
   };
   const field = (entry, names, fallback = "") => R.value(entry.fields, names, fallback);
   const normalize = label => label.toLowerCase().replace(/\([^)]*\)/g, "").replace(/[^a-z0-9]/g, "");
@@ -15,13 +15,21 @@
     const label = normalize(heading), module = entry.module, f = entry.fields || {}, amount = entry.amount, count = entry.quantity;
     if (!label || label === "all") return `<input type="checkbox" data-ps-select="${esc(entry.id)}" aria-label="Select entry ${esc(entry.number)}">`;
     if (/^(sno|slno)$/.test(label)) return String(rowIndex + 1);
-    if (label === "action" || label === "actions") return `<div class="ps-table-actions">${button(entry, "edit", "Edit", "edit")}${button(entry, "delete", "Delete", "delete")}${module === "roles" ? button(entry, "permissions", "View") : ""}</div>`;
+    if (label === "action" || label === "actions") {
+      const edit = button(entry, "edit", "Edit", "edit"), remove = button(entry, "delete", entry.deletionProtected ? "Cannot delete: record is in use" : "Delete", entry.deletionProtected ? "risk" : "delete");
+      return `<div class="ps-table-actions">${module === "tanks" ? remove + edit : edit + remove}${module === "roles" ? button(entry, "permissions", "View") : ""}</div>`;
+    }
     if (label === "edit") return `<div class="ps-table-actions">${button(entry, "edit", "Edit", "edit")}</div>`;
     if (label === "delete") return `<div class="ps-table-actions">${button(entry, "delete", "Delete", "delete")}</div>`;
-    if (label === "status") return `<div class="ps-table-actions">${["brs", "vrs"].includes(module) ? button(entry, "reconcile", f.reconciled ? "Reconciled" : "Pending") : button(entry, "toggle", entry.status === "active" ? "Activated" : "Deactivated")}</div>`;
+    if (label === "status") {
+      if (["brs", "vrs"].includes(module)) return `<div class="ps-table-actions">${button(entry, "reconcile", f.reconciled ? "Reconciled" : "Pending")}</div>`;
+      const active = entry.status === "active", state = active ? "Activated" : "InActivated", badge = `<span class="label ${active ? "bg-success" : "bg-danger"} text-white">${state}</span>`;
+      const control = button(entry, "toggle", `${state}: ${active ? "Deactivate" : "Activate"}`, active ? "view" : "hide", badge);
+      return `<div class="ps-record-status">${control || `<img src="/petrosoft-assets/assets/images/${active ? "view" : "hide"}.png" alt="">${badge}`}</div>`;
+    }
     if (["view", "itemsview", "details", "settlement"].includes(label)) return `<div class="ps-table-actions">${button(entry, "view", label === "settlement" ? "View" : heading)}</div>`;
-    if (label === "addnozzles") return `<div class="ps-table-actions">${button(entry, "nozzles", "Add Nozzles")}</div>`;
-    if (label === "vehicles") return `<div class="ps-table-actions">${button(entry, "vehicles", "Vehicles")}</div>`;
+    if (label === "addnozzles") return `<div class="ps-table-actions">${button(entry, "nozzles", "Add Nozzles", "nozzles")}</div>`;
+    if (label === "vehicles") return `<div class="ps-table-actions">${button(entry, "vehicles", "Vehicles", "vehicles")}</div>`;
     if (label === "interestinfo") return `<div class="ps-table-actions">${button(entry, "customer-interest", "Interest Info")}</div>`;
     if (label === "pfesiit") return `<div class="ps-table-actions">${button(entry, "employee-benefits", "PF / ESI / IT")}</div>`;
     if (label === "incentives") return `<div class="ps-table-actions">${button(entry, "pump-incentives", "Incentives")}</div>`;
@@ -152,13 +160,16 @@
       const tbody = table.tBodies[0] || table.createTBody();
       tbody.innerHTML = rows.map((entry, rowIndex) => `<tr data-ps-id="${esc(entry.id)}">${schema.headers.map((heading, index) => `<td>${R.cell(entry, heading, index, rowIndex)}</td>`).join("")}</tr>`).join("");
       table.querySelectorAll("thead input[type=checkbox]").forEach(checkbox => { checkbox.setAttribute("aria-label", "Select all entries"); checkbox.onchange = () => table.querySelectorAll("[data-ps-select]").forEach(input => { input.checked = checkbox.checked; }); });
-      if ($?.fn.DataTable) {
-        $(table).DataTable({ pageLength: 10, order: [], autoWidth: false, scrollX: true, deferRender: true,
-          dom: "Bflrtip", buttons: R.can(context.module.id, "export") ? [
-            { text: "Copy", action: () => { navigator.clipboard?.writeText(table.innerText).then(() => R.notice("Table copied.")); } },
-            { text: "Excel", action: () => R.exportModule("xlsx") }, { text: "PDF", action: () => R.exportModule("pdf") },
-            { text: "Print", action: () => R.printTable(table, context.module.title) },
-          ] : [], language: { emptyTable: "No data available in table", search: "Search:", lengthMenu: "Show _MENU_ entries" } });
+      if ($?.fn.DataTable && schema.enhanced !== false) {
+        const exports = {
+          copy: { text: "Copy", action: async () => { try { await navigator.clipboard.writeText(table.innerText); R.notice("Table copied."); } catch { R.notice("Clipboard is unavailable in this browser.", "error"); } } },
+          csv: { text: "CSV", action: () => R.exportModule("csv") }, xlsx: { text: "Excel", action: () => R.exportModule("xlsx") },
+          pdf: { text: "PDF", action: () => R.exportModule("pdf") }, print: { text: "Print", action: () => R.printTable(table, context.module.title) }
+        };
+        const lengths = schema.lengths || [-1, 10, 50, 100, 500], serial = schema.headers.findIndex(heading => /^(sno|slno)$/.test(normalize(heading)));
+        $(table).DataTable({ pageLength: -1, lengthMenu: [lengths, lengths.map(value => value === -1 ? "All" : value)], order: serial < 0 ? [] : [[serial, "asc"]], autoWidth: true, scrollX: true, scrollY: schema.scrollY || "250px", deferRender: true,
+          dom: '<"datatable-header"fBl><"datatable-scroll-wrap"t><"datatable-footer"ip>', buttons: R.can(context.module.id, "export") ? (schema.exports || ["csv", "pdf"]).filter(format => exports[format]).map(format => ({ ...exports[format], className: `btn btn-default buttons-${format === "xlsx" ? "excel" : format}${format === "print" ? "" : " buttons-html5"}` })) : [],
+          language: { emptyTable: "No data available in table", search: "Filter:", searchPlaceholder: "Type to filter...", lengthMenu: "Show: _MENU_", paginate: { previous: "&larr;", next: "&rarr;" } } });
       }
     }
   };
@@ -187,6 +198,7 @@
     if (!control) return;
     event.preventDefault(); const entry = R.record(control.dataset.psRecord); if (!entry) return;
     const action = control.dataset.psAction;
+    if (action === "delete" && entry.deletionProtected) return R.notice("This record is used by existing transactions. Deactivate it to keep its history.", "error");
     if (action === "view") { if (entry.module === "statement-records" || entry.module === "generated-invoices") return R.openDocument?.(entry); if (entry.module === "attendance") return R.attendanceDialog?.(entry); if (entry.module === "payroll") return R.payrollDetail?.(entry); return R.detail(entry); }
     if (action === "edit") return R.editRecord?.(entry);
     if (["delete", "toggle", "reconcile"].includes(action)) return R.confirm(action === "delete" ? "Delete this entry and update its related balances?" : action === "reconcile" ? "Mark this transaction as reconciled?" : "Change the status of this entry?", async () => {

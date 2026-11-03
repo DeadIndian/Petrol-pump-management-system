@@ -96,6 +96,7 @@ No real messages or government documents were issued during development or verif
 
 ```bash
 npm run test:petrosoft
+npm run petrosoft:check-privacy
 npm run lint
 npm run typecheck
 npm run build
@@ -114,3 +115,13 @@ This checks every captured module at 1600×1080 and 390×844, including selected
 Where the private original report captures are available, `npx tsx scripts/petrosoft/check-reports.ts` renders the local report matrix into `.petrosoft/report-checks` without changing the station. The original account was inspected read-only. Captured source failures in reports 23, 35, 39, 43, and 56 are replaced with working local reports.
 
 This is a working replica of the 85 accessible screens and 91 captured report definitions. Selected customer balances, employee accounting, attendance, and DSR cells were reconciled against original responses. Exact parity for every financial valuation, dealer margin/profit convention, Tally invoice numbering, and spreadsheet constant has not been established. Source company-logo files that return 404 use a local avatar fallback. Provider delivery, actual biometric hardware, NIC/GSP issuance, and BPCL live access depend on your configured bridges. The original application's server source and unavailable modules were not accessible, so the implementation does not claim verified one-to-one parity for those internals.
+
+## Verification record: 3 November 2026
+
+- All 18 Petrosoft database and export tests passed. Service tests used a local HTTP mock.
+- The privacy check passed for all 102 shipped HTML templates and fragments; captured credential fields, including nameless hidden inputs, are empty.
+- Lint, TypeScript checking, and the Next.js 16.4.3 production build passed. Production starts with `npm run start:petrosoft` without requiring the older delivery application's Supabase settings.
+- The browser matrix covered 85 modules at desktop (1600×1080) and phone (390×844) sizes, with 184 captures including 12 actual auxiliary dialogs. It found no JavaScript errors, failed requests, external requests, broken images, or document horizontal overflow.
+- Two E-way provider-dialog captures were skipped because the selected date range contained no eligible invoices. The empty listings and mock-tested backend do not establish live provider delivery.
+- The Statements capture was repeated with explicit document bounds because clipped native dropdowns inflated Chrome's automatic full-page canvas. The corrected evidence retains the full visible page without changing its layout.
+- A private PostgreSQL archive was saved under `.petrosoft/backups` and checked with `pg_restore --list`; its SHA-256 manifest is stored beside it. Imported records, archives, uploads, browser sessions, and screenshots remain outside Git.

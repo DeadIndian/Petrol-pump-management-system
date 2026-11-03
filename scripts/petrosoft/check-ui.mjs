@@ -18,6 +18,7 @@ const capture = async (page, path) => {
   await page.evaluate(async () => {
     await document.fonts.ready;
     window.scrollTo(0, 0);
+    document.querySelectorAll('.ps-dialog-backdrop').forEach(dialog => dialog.scrollTo(0, 0));
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   });
   // Clipped native selects can inflate Chrome's full-page canvas. Capture the

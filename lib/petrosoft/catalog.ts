@@ -9,7 +9,7 @@ export interface FieldSchema {
 export interface FormSchema {
   index: number; action: string; fields: FieldSchema[]; title: string; operation: string;
 }
-export interface TableSchema { id: string; headers: string[]; columns: (string | null)[] }
+export interface TableSchema { id: string; headers: string[]; columns: (string | null)[]; exports?: string[]; scrollY?: string; lengths?: number[]; enhanced?: boolean }
 export interface ModuleSchema {
   id: string; path: string; title: string; kind: string; forms: FormSchema[]; tables: TableSchema[];
 }

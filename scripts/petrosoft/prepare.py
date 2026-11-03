@@ -129,6 +129,19 @@ FIELD_COLUMNS = {
 def clean_text(element):
     return element.get_text(" ", strip=True).replace("\xa0", " ")
 
+def table_appearance(document, table_id, headings):
+    table = document.find('table', id=table_id)
+    if not table:
+        table = next((candidate for candidate in document.select('table') if [clean_text(node) for node in candidate.select('thead th')] == headings), None)
+    wrapper = table.find_parent(class_='dataTables_wrapper') if table else None
+    enhanced = bool(wrapper or table and any(name in ['display', 'dataTable', 'datatable-basic'] for name in table.get('class', [])))
+    formats = {'Copy': 'copy', 'CSV': 'csv', 'PDF': 'pdf', 'Print': 'print', 'Excel': 'xlsx'}
+    exports = [formats[clean_text(node)] for node in wrapper.select('.dt-buttons > *') if clean_text(node) in formats] if wrapper else ['csv', 'pdf'] if enhanced else []
+    lengths = [int(option['value']) for option in wrapper.select('.dataTables_length select option') if re.fullmatch(r'-?\d+', option.get('value', ''))] if wrapper else []
+    scroll = wrapper.select_one('.dataTables_scrollBody') if wrapper else None
+    height = re.search(r'(?:^|;)\s*(?:max-)?height\s*:\s*(\d+(?:\.\d+)?px)', scroll.get('style', '')) if scroll else None
+    return {'exports': exports, 'lengths': lengths or [-1, 10, 50, 100, 500], 'scrollY': height.group(1) if height else '250px', 'enhanced': enhanced}
+
 def relation(name, labels):
     name = name.lower().replace("[]", "")
     if re.search(r"(organiz|credit_org|rec_organiz|org_input|crd_cust|cust_id)", name): return "customers"
@@ -217,6 +230,7 @@ for route,module,title,kind in PATHS:
     path=CAPTURES/(name+".source.html")
     if not path.exists(): raise SystemExit("Reference capture missing: "+route)
     soup=BeautifulSoup(path.read_text(),PARSER)
+    hydrated=soup
     hydrated_path=CAPTURES/(name+".html")
     if hydrated_path.exists():
         hydrated=BeautifulSoup(hydrated_path.read_text(),PARSER)
@@ -244,7 +258,7 @@ for route,module,title,kind in PATHS:
         if module=="gifts":columns=[None,"join_dt","emp_name","emp_no","emp_desc"]
         if module=="loyalty-tiers":columns=[None,"tier_name","points_rate"]
         if module=="loyalty-points":columns=[None,"tier_name","prod_id","points_rate"]
-        meta["tables"].append({"id":table_id,"headers":headings,"columns":columns})
+        meta["tables"].append({"id":table_id,"headers":headings,"columns":columns,**table_appearance(hydrated,table_id,headings)})
         if table.tbody:
             for ri,row in enumerate(table.tbody.find_all("tr",recursive=False)):
                 cells=row.find_all(["td","th"],recursive=False)
@@ -365,6 +379,12 @@ for route,module,title,kind in PATHS:
         for field in soup.select('input[name],textarea[name]'):
             setting={'emp_ph_no':'contact','email':'email','emp_name':'company_name'}.get(field.get('name',''))
             if setting:field['data-ps-setting']=setting;field['value']=''
+    # Clear credentials outside named forms too: the legacy password page
+    # includes a nameless hidden input containing the current password.
+    for field in soup.select('input'):
+        identity = ' '.join([field.get('id', ''), field.get('name', '')])
+        if field.get('type', '').lower() == 'password' or re.search(r'password|passwd|pwd|secret|token', identity, re.I):
+            field['value'] = ''
     # Source scripts are reference material. Local controllers implement all writes.
     for script in soup.select("script"):script.decompose()
     for comment in list(soup.find_all(string=lambda value:isinstance(value,Comment))):comment.extract()

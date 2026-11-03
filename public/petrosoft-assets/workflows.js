@@ -3,6 +3,7 @@
   const R = window.PetrosoftRuntime;
   if (!R) return;
   const { state, context, esc } = R;
+  if (context.module.id === "meter-sales") document.querySelectorAll('.op-bill-left').forEach(summary => { if (summary.querySelector('[id^="totgross"]')) summary.classList.add("ps-meter-summary"); });
   const fragments = new Map();
   R.array = (fields, name) => { const value = fields[`${name}[]`] ?? fields[name]; return value === undefined ? [] : Array.isArray(value) ? value : [value]; };
   R.fragment = async name => {
@@ -258,7 +259,17 @@
         if (inModal) source.prepend(form);
         R.localForm(form, module === "permissions" ? "roles" : module, module === "permissions" ? parent : undefined);
         form.dataset.psAuxType = module; form.dataset.psParent = parent?.externalId || ""; form.dataset.psParentId = parent?.id || "";
-        if (module === "nozzles") { R.set(form, "tank_no", R.value(parent.fields, "tank_no")); R.set(form, "prod_id", R.value(parent.fields, ["product", "pro_name"])); R.childTable(source.querySelector("table"), (state.masters.nozzles || []).filter(entry => R.value(entry.fields, "tank_no") === R.value(parent.fields, "tank_no"))); }
+        if (module === "nozzles") {
+          source.classList.add("ps-nozzles-surface");
+          const product = R.value(parent.fields, ["product", "pro_name"]);
+          const summary = source.querySelector(".kgn-details-grids");
+          if (summary) {
+            summary.classList.add("ps-tank-summary");
+            summary.innerHTML = [["tank-name", "Tank Name :", parent.name], ["capacity", "Capacity :", R.format(R.value(parent.fields, ["tank_cap", "capacity"]))], ["product", "Product :", R.master("fuel-products", product)?.name || product]].map(([id, label, value]) => `<div><label class="ps-tank-label" for="${id}">${label}</label><input id="${id}" class="form-control input-sm" readonly value="${esc(value)}"></div>`).join("");
+          }
+          R.set(form, "tank_no", R.value(parent.fields, "tank_no")); R.set(form, "prod_id", product);
+          R.childTable(source.querySelector("table"), (state.masters.nozzles || []).filter(entry => R.value(entry.fields, "tank_no") === R.value(parent.fields, "tank_no")));
+        }
         if (module === "vehicles") R.childTable(source.querySelector("table"), (state.masters.vehicles || []).filter(entry => R.value(entry.fields, "customer_id") === parent.externalId));
         if (module === "pump-incentives") { R.set(form, "pump_id", parent.externalId); R.childTable(source.querySelector("table"), (state.masters["pump-incentives"] || []).filter(entry => R.value(entry.fields, "pump_id") === parent.externalId)); }
         if (module === "permissions") {

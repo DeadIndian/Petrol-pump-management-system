@@ -44,7 +44,7 @@
   R.dialog = (title, content, footer = "") => {
     R.closeDialog(); previousFocus = document.activeElement;
     activeDialog = document.createElement("div"); activeDialog.className = "ps-dialog-backdrop";
-    activeDialog.innerHTML = `<section class="ps-dialog" role="dialog" aria-modal="true" aria-labelledby="ps-dialog-title"><div class="ps-dialog-heading"><h2 id="ps-dialog-title">${esc(title)}</h2><button class="close" type="button" data-ps-close aria-label="Close">×</button></div><div class="ps-dialog-content"></div>${footer ? `<div class="ps-dialog-footer">${footer}</div>` : ""}</section>`;
+    activeDialog.innerHTML = `<section class="ps-dialog" role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="ps-dialog-title"><div class="ps-dialog-heading"><h2 id="ps-dialog-title">${esc(title)}</h2><button class="close" type="button" data-ps-close aria-label="Close">×</button></div><div class="ps-dialog-content"></div>${footer ? `<div class="ps-dialog-footer">${footer}</div>` : ""}</section>`;
     const body = activeDialog.querySelector(".ps-dialog-content");
     if (typeof content === "string") body.innerHTML = content; else body.append(content);
     document.body.append(activeDialog); document.body.style.overflow = "hidden";
@@ -58,7 +58,13 @@
       if (event.shiftKey && document.activeElement === first) { last?.focus(); event.preventDefault(); }
       else if (!event.shiftKey && document.activeElement === last) { first?.focus(); event.preventDefault(); }
     });
-    setTimeout(() => body.querySelector("input:not([type=hidden]),button,select")?.focus(), 0);
+    const opened = activeDialog;
+    setTimeout(() => {
+      if (opened !== activeDialog) return;
+      const controls = Array.from(opened.querySelectorAll("input:not([type=hidden]),button,select,textarea,a[href],[tabindex='0']")).filter(element => !element.disabled && element.offsetParent !== null);
+      const initial = controls.find(element => body.contains(element)) || controls[0] || opened.querySelector('[role="dialog"]');
+      initial.focus({ preventScroll: true });
+    }, 0);
     return body;
   };
   R.confirm = async (message, callback) => {

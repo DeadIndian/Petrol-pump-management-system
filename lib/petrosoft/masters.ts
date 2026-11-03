@@ -85,7 +85,7 @@ const references: Record<string, string[]> = {
   roles: ["role", "user_role"], "duty-shifts": ["emp_shift", "shift"], "business-shifts": ["shift"],
   "expiry-categories": ["cat_id"], "expiry-items": ["item_id"], "loyalty-tiers": ["tier_name", "tier_id"],
 };
-export async function hasMasterReferences(database: Database, entry: PetrosoftEntry) {
+export async function hasMasterReferences(database: Database, entry: Pick<PetrosoftEntry, "id" | "module" | "workspaceId" | "externalId" | "number" | "name" | "fields">) {
   const keys = references[entry.module];
   if (!keys) return false;
   const identity = entry.externalId || String(entry.number), f = jsonFields(entry.fields);
@@ -98,7 +98,7 @@ export async function hasMasterReferences(database: Database, entry: PetrosoftEn
     gifts: ["gift-purchases", "gift-sales"], "duty-shifts": ["attendance-details"], "business-shifts": ["meter-sales", "credit-sales", "expenses", "swipes", "recoveries", "settlements"],
     roles: ["users"],
   };
-  const count = await database.petrosoftEntry.count({ where: { workspaceId: entry.workspaceId, id: { not: entry.id }, status: { not: "void" }, ...(scope[entry.module] ? { module: { in: scope[entry.module] } } : {}),
-    OR: keys.flatMap(key => values.map(value => ({ fields: { path: [key], equals: value } }))) } });
-  return count > 0;
+  const reference = await database.petrosoftEntry.findFirst({ where: { workspaceId: entry.workspaceId, id: { not: entry.id }, status: { not: "void" }, ...(scope[entry.module] ? { module: { in: scope[entry.module] } } : {}),
+    OR: keys.flatMap(key => values.map(value => ({ fields: { path: [key], equals: value } }))) }, select: { id: true } });
+  return Boolean(reference);
 }
