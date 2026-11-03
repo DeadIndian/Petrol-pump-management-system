@@ -1,11 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
-const supabase = createClient(
-	process.env.NEXT_PUBLIC_SUPABASE_URL!,
-	process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+import { createSupabaseServerClient } from "./supabase";
 
 export interface AuthenticatedRequest extends NextRequest {
 	user?: {
@@ -23,18 +18,19 @@ export async function authenticate(
 ): Promise<AuthenticatedRequest | NextResponse> {
 	const authHeader = request.headers.get("authorization");
 
-	if (!authHeader?.startsWith("Bearer ")) {
+	const token = authHeader?.startsWith("Bearer ")
+		? authHeader.slice(7)
+		: request.cookies.get("auth_token")?.value;
+	if (!token) {
 		return NextResponse.json(
 			{ error: "Missing or invalid authorization header" },
 			{ status: 401 },
 		);
 	}
 
-	const token = authHeader.slice(7);
-
 	try {
 		// Verify the JWT token with Supabase
-		const { data, error } = await supabase.auth.getUser(token);
+		const { data, error } = await createSupabaseServerClient().auth.getUser(token);
 
 		if (error || !data.user) {
 			return NextResponse.json(

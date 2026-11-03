@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/>
+
+<title>__PS_STATION__</title>
+
+<meta content="Live Demo Petrol bunk Management System,It is designed for bunks  to assistant them in storing and keeping track of all correlated information such as sale , stock variation , credit customers dues , expenses , billing and report generation and more. " name="description" property="description"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<meta content="Petrolbunk Management System Free Trial Demo" property="og:site_name"/>
+<meta content="Petrolbunk Management System" property="og:title"/>
+<meta content="Live Demo Petrol bunk Management System,It is designed for bunks  to assistant them in storing and keeping track of all correlated information such as sale , stock variation , credit customers dues , expenses , billing and report generation and more. " name="description" property="og:description"/>
+<meta content="Petrosoft" name="author"/>
+<meta content="website" property="og:type"/>
+<meta content="http://petrolbunksoftware.com/assets/imgweb/favicon.png" property="og:image"/>
+<meta content="http://petrolbunksoftware.com/" property="og:url"/>
+
+
+	<link href="/petrosoft-assets/assets/login/css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
+	<link crossorigin="anonymous" href="/petrosoft-assets/external/72bcb834938f4280202a58f2.css" integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA==" referrerpolicy="no-referrer" rel="stylesheet"/>
+	<link href="/petrosoft-assets/assets/login/css/style.css" rel="stylesheet" type="text/css"/>
+<style>
+    .login-form .form-section{
+        padding-bottom: 30px !important;
+        padding-top: 30px !important;
+    }
+    .login-form .form-section a.forgot-password{
+        position: relative !important;
+        top: -18px;
+    }
+.login-form {
+  background: url('/petrosoft-assets/assets/login/img/bunk.png');
+  background-size: 100%;
+  background-repeat: no-repeat;
+  background-position-y: -40px;
+}
+
+.checkbox.form-group.form-box.text-right{
+        float: right;
+        text-align: right;
+}
+
+.second_no{
+        font-weight:500 !important;
+    }
+    .float-container {
+  position: relative;
+  width: 100%;
+  height: 3rem;
+  margin-bottom: 1.5rem;
+}
+.login-form .form-section .form-box{
+    margin-bottom: 15px !important;
+}
+
+.top-space {
+  margin-top: 25px !important;
+  height:55px;
+}
+
+.float-label {
+  position: absolute;
+  font-family: inherit;
+  font-weight: 400;
+  line-height: inherit;
+  left: 1rem;
+  top: 0.3rem;
+  padding: 0 0.25rem;
+  transition: all 0.3s ease;
+  color: #6c757d !important;
+  z-index: 1;
+}
+
+.float-input {
+  position: absolute;
+  font-family: inherit;
+  color: #000 !important;
+  font-weight: 400;
+  line-height: inherit;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  resize: none;
+  width: 100%;
+  height: auto;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.25rem;
+  transition: all 0.2s ease-in-out;
+}
+
+
+
+.float-input:focus~.float-label {
+  top: -1.5rem;
+  left: 0rem;
+  z-index: 5;
+  color: #fff !important;
+  z-index: 1;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.float-input::-moz-placeholder {
+  opacity: 0;
+  visibility: hidden;
+  color: transparent;
+}
+
+.float-input:-ms-input-placeholder {
+  opacity: 0;
+  visibility: hidden;
+  color: transparent;
+}
+
+.float-input::placeholder {
+  opacity: 0;
+  visibility: hidden;
+  color: transparent;
+}
+
+.float-input:focus {
+  outline: none;
+}
+
+.float-input:not(:-moz-placeholder-shown).float-input:not(:focus)~.float-label {
+  top: -2.75rem;
+  left: 0rem;
+  z-index: 9;
+  font-weight: 500;
+  -moz-transition: all 0.2s ease-in-out;
+  transition: all 0.2s ease-in-out;
+  color: #fff !important;
+  z-index: 1;
+}
+
+.float-input:not(:-ms-input-placeholder).float-input:not(:focus)~.float-label {
+  top: -2.75rem;
+  left: 0rem;
+  z-index: 9;
+  font-weight: 500;
+  -ms-transition: all 0.2s ease-in-out;
+  transition: all 0.2s ease-in-out;
+  color: #fff !important;
+  z-index: 1;
+}
+
+.float-input:not(:placeholder-shown).float-input:not(:focus)~.float-label {
+  top: -1.5rem;
+  left: 0rem;
+  z-index: 9;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+  color: #fff !important;
+  z-index: 1;
+}
+.footer {
+    z-index: 2;
+}
+i.fa.fa-fw.toggle-password.field-icon.fa-eye, i.fa.fa-fw.toggle-password.field-icon.fa-eye-slash{
+    top:10px;
+    z-index: 1;
+}
+.login-form .form-section .form-group{
+    margin-bottom: 30px;
+}
+.login-form .logo img {
+    margin-bottom: 45px;
+    width: 170px;
+}
+.mobile_image{
+    display: none;
+}
+@media(max-width:991px){
+    .footer{
+        position: static;
+    }
+}
+@media(max-width:480px){
+    .login-form{
+        /* background: #12304d; */
+        /* background-image: linear-gradient(#596cd7, #576cd7); */
+        height:100vh;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        overflow: hidden;
+    }
+    .login-form .form-section {
+        min-height: auto;
+    }
+    .footer{
+        background: #12304d;
+        /* padding: 20px 0px 0 115px; */
+        padding: 20px 17px 0 40px;
+    }
+    .footer-sale-text ul li {
+        color: #fff;
+    }
+    .second_no{
+        display:block;
+        font-weight:500 !important;
+    }
+    .login-form .form-section a.forgot-password {
+        color: #fff;
+        font-weight: 600;
+    }
+    .login-form .form-inner{
+        padding: 0px 20px;
+    }
+    .footer-website-link{
+        color:#fff;
+    }
+    .footer-website-link a{
+        color: #f28a22;
+    }
+
+
+
+
+
+    body{
+        background-image: linear-gradient(#596cd7, #576cd7) !important;
+    }
+    .mobile-flex{
+        display: flex;
+        padding: 0;
+        justify-content: center;
+    }
+    .footer-sale-text {
+        padding-left: 16px;
+    }
+    .footer-sale-text ul{
+        padding-left:0;
+
+    }
+    .login-form{
+        height:auto;
+        background: transparent ;
+    }
+    .login-form .form-inner {
+    padding: 0px 20px;
+}
+.login-form .form-section .form-group{
+    margin-bottom: 1.5rem !important;
+}
+.top-space {
+    margin-top: 0px !important;
+    height: auto;
+}
+.login-form .form-inner{
+        padding: 0px 10px !important;
+    }
+    .mobile_image{
+        display: block;
+        position: relative;
+    }
+    .login-form .mobile_image img{
+        height: 175px;
+        object-fit: cover;
+        width: 100%;
+        border-bottom-right-radius: 50%;
+        border-bottom-left-radius: 50%;
+        transform: scale(1.3);
+        z-index: 1;
+        position: relative;
+    }
+    .login-form{
+        display: block !important;
+        padding: 0px 0 0px;
+        /* height:100vh !important; */
+    }
+    .mobile_image::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    background: #586cd74a;
+    z-index: 1;
+    transform: scale(1.3);
+    /* border-radius: 50%; */
+    border-bottom-right-radius: 50%;
+    border-bottom-left-radius: 50%;
+    box-shadow: 0 0 6px 1px #0a1a6e;
+}
+.login-form .form-inner,
+.footer {
+    background: transparent !important;
+    box-shadow:none;
+}
+.float-label {
+  top: 0.75rem;
+}
+i.fa.fa-fw.toggle-password.field-icon.fa-eye, i.fa.fa-fw.toggle-password.field-icon.fa-eye-slash {
+    top: 18px;
+    z-index: 1;
+    color:#6d6d6d;
+}
+.login-form a{
+    position: relative;
+    top: -34px;
+    z-index: 2;
+}
+.footer-website-link{
+    text-align: center;
+}
+.footer-website-link  a{
+    position: static !important;
+}
+
+
+
+}
+@media(max-width:425px){
+    .login-form .form-inner{
+        padding: 20px 30px;
+    }
+    .footer{
+        background: #12304d;
+        padding: 20px 0px 0 10px;
+    }
+    .footer-sale-text {
+    padding-left: 8px;
+}
+
+.login-form .form-section{
+    padding-bottom: 0 !important;padding-top: 0 !important;
+}
+.login-form .form-section .form-control{
+    height:48px !important;
+}
+}
+@media(max-width:375px){
+    .footer{
+        background: #12304d;
+        /* padding: 20px 0px 0 45px; */
+    }
+    .login-form{
+        padding-bottom:25px;
+    }
+}
+
+
+
+
+
+
+
+</style><link href="/petrosoft-assets/runtime.css" rel="stylesheet"/></head>
+
+
+<body><script id="ps-context" type="application/json">__PS_CONTEXT__</script>
+<div class="login-form">
+        <div class="mobile_image">
+            <img alt="" src="/petrosoft-assets/assets/images/mobile-banner/pumps1.png"/>
+        </div>
+        <div class="container-fluid">
+            <div class="row login-box">
+                <div class="col-lg-7 bg-color-15 pad-0 none-992 bg-img">
+                    <!-- <div class="photo">
+                        <img src="bunk.png" alt="logo" class="w-100 img-fluid">
+                    </div> -->
+                </div>
+                <div class="col-lg-5 align-self-center pad-0 form-section">
+                    <div class="form-inner">
+                        <a class="logo" href="#">
+                            <img alt="logo" src="/petrosoft-assets/assets/login/img/logo-white.png"/>
+                        </a>
+
+                        <form action="/api/petrosoft/auth" autocomplete="off" data-ps-auth="login" id="frmLogin" method="post" name="frmLogin">
+															                            <div class="top-space">
+                                <h5 style="color:white;text-transform: uppercase;margin-bottom:30px">WELCOME __PS_STATION__</h5>
+                                <div class="form-group form-box float-container">
+                                    <input class="form-control float-input" id="username" name="username" placeholder=" " required="" style="" type="text" value=""/>
+                                    <label class="input-label float-label" for="username">Username</label>
+                                    <!-- <input type="email" name="email" class="form-control" aria-label="Email Address"> -->
+                                </div>
+                            </div>
+                            <div class="top-space">
+                                <div class="form-group form-box clearfix float-container">
+                                    <input class="form-control float-input" id="password" name="password" placeholder=" " required="" style="" type="password" value=""/>
+                                    <label class="input-label float-label" for="password">Password</label>
+                                    <i class="fa fa-fw toggle-password field-icon fa-eye" toggle="#password"></i>
+                                </div>
+                            </div>
+                            <div class="checkbox form-group form-box">
+                                <!-- <div class="form-check checkbox-theme">
+                                    <input class="form-check-input" type="checkbox" value="" id="rememberMe">
+                                    <label class="form-check-label" for="rememberMe">
+                                        Remember me
+                                    </label>
+                                </div> -->
+                                <a class="forgot-password" href="/petrosoft/login/reset_pwd">Forgot Password</a>
+                            </div>
+                            <div class="checkbox form-group form-box text-right">
+                                <a class="switch-bunk text-white" href="/petrosoft/login/switch_bunk">Switch Station</a>
+                            </div>
+                            <div class="form-group clearfix">
+                                <button class="btn-md btn-theme w-100" type="submit">Login</button>
+                            </div>
+                            <div>
+                                <label style="color: white;"><b>Version :</b> 3.4.4.4.3</label>
+                            </div>
+                        </form>
+                        <div class="clearfix"></div>
+
+                    </div>
+                </div>
+            </div>
+            <div class="footer">
+                <div class="row">
+                    <div class="col-lg-3 col-6 mobile-flex">
+                        <div class="footer-sale-icon">
+                            <i class="fas fa-headset"></i>
+                        </div>
+                        <div class="footer-sale-text">
+                            <ul>
+                                <li><span>Support </span></li>
+                                <li>+91 9393939064</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-lg-5 col-6 mobile-flex">
+                        <div class="footer-sale-icon">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <div class="footer-sale-text">
+                            <ul>
+                                <li><span>Sales </span></li>
+                                <li><span class="second_no">+91 8688400282</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-12">
+                        <div class="footer-website-link">
+                            Visit <a href="https://petrolbunksoftware.com/" target="_blank">www.petrolbunksoftware.com</a><br/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    
+   
+
+
+
+
+
+<script src="/petrosoft-assets/runtime.js"></script></body></html>

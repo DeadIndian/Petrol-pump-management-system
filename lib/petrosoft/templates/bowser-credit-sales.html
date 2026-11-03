@@ -1,0 +1,3434 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head>
+	<meta charset="utf-8"/>
+	<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+	<meta content="width=device-width, initial-scale=1" name="viewport"/>
+	<title>__PS_STATION__</title>
+
+	
+	<link href="/petrosoft-assets/external/a59a407574539d90fb64f747.css" rel="stylesheet" type="text/css"/>
+	<link href="/petrosoft-assets/assets/css/google_fonts.css" rel="stylesheet" type="text/css"/>
+	<link href="/petrosoft-assets/assets/css/icons/icomoon/styles.css" rel="stylesheet" type="text/css"/>
+	<link href="/petrosoft-assets/assets/css/bootstrap.css" rel="stylesheet" type="text/css"/>
+	<link href="/petrosoft-assets/assets/css/core.css" rel="stylesheet" type="text/css"/>
+	<link href="/petrosoft-assets/assets/css/components.css" rel="stylesheet" type="text/css"/>
+	<link href="/petrosoft-assets/assets/css/stylesnew.css" rel="stylesheet" type="text/css"/>
+	<link href="/petrosoft-assets/assets/css/jquery.dataTables.min.css" rel="stylesheet" type="text/css"/>
+	
+	
+	
+	<link href="/petrosoft-assets/assets/select2/css/select2.min.css" rel="stylesheet" type="text/css"/>
+	<link href="/petrosoft-assets/assets/select2/css/select2-bootstrap.min.css" rel="stylesheet" type="text/css"/>
+	
+	<link href="/petrosoft-assets/assets/css/colors.css" rel="stylesheet" type="text/css"/>
+	<link href="/petrosoft-assets/assets/css/icons/fontawesome/styles.min.css" rel="stylesheet" type="text/css"/>
+	
+	
+	
+	
+	<link href="/petrosoft-assets/assets/calc/calculator.min.css" rel="stylesheet" type="text/css"/>
+	<link href="/petrosoft-assets/assets/input_tags/bootstrap-tagsinput.css" rel="stylesheet" type="text/css"/>
+	
+    <link href="/petrosoft-assets/assets/css/apexcharts.css" rel="stylesheet" type="text/css"/>
+
+
+    
+	<link href="/petrosoft-assets/assets/tom_select/tom-select.css" rel="stylesheet" type="text/css"/>
+	
+	
+	
+
+	
+	
+	
+
+	
+	
+	
+	
+	
+
+	<style type="text/css">
+		*:fullscreen *:-ms-fullscreen,
+		*:-webkit-full-screen,
+		*:-moz-full-screen {
+			overflow: auto !important;
+		}
+	</style>
+	
+
+	
+	<style type="text/css">
+		td.day {
+			position: relative;
+		}
+
+		td.day.disabled:hover:before {
+			content: 'Date is disabled';
+			color: white;
+			background-color: orange;
+			top: -22px;
+			position: absolute;
+			width: 126px;
+			left: -34px;
+			border-radius: 3px;
+			/*margin-top: 5px;*/
+			transition: 0.5s all;
+			/*padding: 5px;*/
+			z-index: 1000;
+			text-align: center;
+			padding: 7px;
+		}
+	</style>
+	            <style>
+    /* Overwrite the default to keep the scrollbar always visible */
+
+    ::-webkit-scrollbar {
+        -webkit-appearance: none;
+        width: 7px;
+		height:10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        border-radius: 2px;
+        background-color: rgba(152,152,152,.5);
+        -webkit-box-shadow: 0 0 1px rgba(255,255,255,.5);
+    }
+            </style>
+
+			
+<style>
+		#dsmReleaseModal{overflow:hidden}
+
+    /* Your existing CSS */
+    #searchContainer select {
+        position: absolute;
+        top: 38px;  
+        left: 0;
+        width: 100%;
+        z-index: 9999;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background-color: #fff;
+    }
+    
+    /* Updated CSS for dropdown results - positioned below the input */
+    .dropdown-results {
+        position: absolute;
+        top: 100%;  /* Changed from 38px to 100% to appear directly below the input */
+        left: 0;
+        width: 100%;
+        margin-top: 2px;  /* Small gap between input and dropdown */
+        max-height: 300px;
+        overflow-y: auto;
+        background: white;
+		color:black;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        z-index: 9999;
+    }
+    
+    .dropdown-results .search-item {
+        padding: 8px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid #eee;
+        font-size: 14px;
+    }
+    
+    .dropdown-results .search-item:hover {
+        background-color: #f5f5f5;
+    }
+    
+    .dropdown-results .no-results {
+        padding: 8px 12px;
+        color: #999;
+        text-align: center;
+    }
+
+	.dropdown-profile .dd-edit-overlay:hover,
+	.dropdown-profile [data-target="#modal_update_logo"]:hover .dd-edit-overlay {
+		opacity: 1 !important;
+	}
+</style>
+
+<style>
+
+    /* ===== DASHBOARD TOP BAR ===== */
+    .dashboard-top-bar {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center;
+        padding: 15px 25px;
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #ddd;
+        font-family: Arial, sans-serif;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .welcome-text {
+        color: #18135fff;
+        font-size: 18px;
+        padding: 10px;
+        border-left: 5px solid #0275d8;
+        background-color: #f8f9fa;
+    }
+
+    .view-notice-btn {
+        background-color: #0275d8;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+        border-radius: 4px;
+        font-weight: bold;
+        margin-left: auto;
+        display: inline-block;
+        font-size: 14px;
+    }
+
+    .view-notice-btn:hover {
+        background-color: #025aa5;
+    }
+
+    /* ===== SCROLL LOCK ===== */
+    body.notice-open {
+        overflow: hidden !important;
+    }
+
+    /* ===== OVERLAY ===== */
+    .notice-overlay {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.65);
+        overflow-y: auto;
+    }
+
+    /* ===== MODAL CONTAINER ===== */
+    .notice-container {
+        position: relative;
+        background-color: #ffffff;
+        margin: 4vh auto;
+        width: 85%;
+        max-width: 1100px;
+        height: 82vh;
+        display: flex;
+        flex-direction: column;
+        border-radius: 6px;
+        font-family: Arial, sans-serif;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+        overflow: hidden;
+    }
+
+    /* ===== MODAL HEADER ===== */
+    .notice-header {
+        padding: 15px 22px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: linear-gradient(135deg, #1a237e, #0275d8);
+    }
+
+    .notice-header h2 {
+        margin: 0;
+        font-size: 17px;
+        color: #ffffff;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .live-badge {
+        background: rgba(255,255,255,0.2);
+        color: #ffffff;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+
+    /* Cancel button — pill shape, red */
+    .btn-cancel {
+        background-color: #e53935;
+        color: white;
+        border: none;
+        padding: 8px 20px;
+        cursor: pointer;
+        font-weight: 700;
+        border-radius: 20px;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn-cancel:hover {
+        background-color: #c62828;
+    }
+
+    /* ===== MODAL BODY ===== */
+    .notice-body {
+        padding: 20px 22px;
+        flex: 1;
+        overflow-y: auto;
+        background: #ffffff;
+    }
+
+    /* ===== SEARCH ROW ===== */
+    .search-row {
+        display: flex;
+        align-items: stretch;
+        gap: 8px;
+        margin-bottom: 18px;
+    }
+
+    /* Feature label — navy, left 4px curve */
+    .title-label {
+        background-color: #1a237e;
+        color: white;
+        padding: 9px 16px;
+        font-weight: 600;
+        font-size: 13px;
+        border-radius: 4px 0 0 4px;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid #1a237e;
+    }
+
+    /* Input — flat middle connected */
+    .search-input {
+        flex-grow: 1;
+        padding: 9px 12px;
+        border: 1px solid #ced4da;
+        border-left: none;
+        border-right: none;
+        outline: none;
+        font-size: 13px;
+        color: #333;
+    }
+
+    .search-input:focus {
+        border-color: #0275d8;
+        box-shadow: 0 0 0 2px rgba(2,117,216,0.12);
+    }
+
+    /* Search button — outlined style */
+    #btn-search {
+        padding: 9px 18px;
+        background: #ffffff;
+        color: #333;
+        border: 1px solid #ced4da;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        border-radius: 4px;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    #btn-search:hover {
+        background: #f0f0f0;
+        border-color: #aaa;
+    }
+
+    /* Reset button — outlined style */
+    #btn-reset {
+        padding: 9px 18px;
+        background: #ffffff;
+        color: #333;
+        border: 1px solid #ced4da;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        border-radius: 4px;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    #btn-reset:hover {
+        background: #f0f0f0;
+        border-color: #aaa;
+    }
+
+    /* ===== TABLE ===== */
+    .notice-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+
+    /* Table headings — navy blue */
+    .notice-table th {
+        background-color: #1a237e;
+        color: #ffffff;
+        padding: 12px 14px;
+        text-align: left;
+        vertical-align: top;
+        word-wrap: break-word;
+        font-size: 13px;
+        font-weight: 600;
+        border: 1px solid #283593;
+        letter-spacing: 0.3px;
+    }
+
+    /* Table data cells */
+    .notice-table td {
+        border: 1px solid #e0e0e0;
+        padding: 12px 14px;
+        text-align: left;
+        vertical-align: top;
+        word-wrap: break-word;
+        font-size: 13px;
+        color: #333;
+    }
+
+    /* Alternating rows */
+    .notice-table tbody tr:nth-child(even) td {
+        background-color: #f5f7ff;
+    }
+
+    /* Row hover */
+    .notice-table tbody tr:hover td {
+        background-color: #e8eaf6;
+    }
+
+    /* Description scroll */
+    .desc-scroll-box {
+        max-height: 75px;
+        overflow-y: auto;
+        padding-right: 5px;
+        font-size: 13px;
+        color: #555;
+        line-height: 1.5;
+    }
+
+    .desc-scroll-box::-webkit-scrollbar { width: 4px; }
+    .desc-scroll-box::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
+
+    /* Version badge */
+    .version-tag {
+        background-color: #0275d8;
+        color: white;
+        padding: 3px 10px;
+        font-size: 11px;
+        font-weight: 700;
+        border-radius: 12px;
+        display: inline-block;
+    }
+
+    /* View count */
+    .view-count-cell {
+        color: #1a237e;
+        font-weight: 700;
+        font-size: 14px;
+    }
+
+    /* ===== FOOTER ===== */
+    .notice-footer {
+        padding: 12px 22px;
+        background-color: #f5f5f5;
+        border-top: 1px solid #e0e0e0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    #totalNoticesCount {
+        font-weight: 700;
+        font-size: 13px;
+        color: #1a237e;
+    }
+
+    #paginationControls {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* Prev / Next — outlined style */
+    #btn-prev, #btn-next {
+        padding: 6px 14px;
+        background: #ffffff;
+        color: #333;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    #btn-prev:disabled, #btn-next:disabled {
+        background: #f5f5f5;
+        color: #bbb;
+        border-color: #e0e0e0;
+        cursor: not-allowed;
+    }
+
+    #btn-prev:not(:disabled):hover,
+    #btn-next:not(:disabled):hover {
+        background: #f0f0f0;
+        border-color: #aaa;
+    }
+
+    #pageInfo {
+        padding: 6px 18px;
+        background: #1a237e;
+        color: white;
+        border-radius: 4px;
+        font-weight: 700;
+        font-size: 13px;
+    }
+
+</style>
+<style>
+/* Modern Search Container Styles */
+.search-container {
+    position: relative;
+    width: 300px;
+    transition: all 0.3s ease;
+}
+
+/* Style the list item to remove default padding/margin and add modern look */
+li.search-wrapper {
+    position: relative;
+    width: auto;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* Modern Search Input */
+.modern-search-input {
+    width: 70%;
+    padding: 7px 16px 7px 35px;
+    font-size:12px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background-color: #ffffff;
+    color: #1e293b;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.modern-search-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15), 0 1px 2px rgba(0, 0, 0, 0.05);
+    background-color: #ffffff;
+}
+
+.modern-search-input::placeholder {
+    color: #94a3b8;
+    font-weight: 400;
+    letter-spacing: -0.2px;
+}
+
+/* Search Icon */
+.search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 16px;
+    pointer-events: none;
+    transition: color 0.2s ease;
+}
+
+.modern-search-input:focus + .search-icon,
+.search-container:focus-within .search-icon {
+    color: #3b82f6;
+}
+
+/* Clear button (optional but adds beauty) */
+.clear-search {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 14px;
+    display: none;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    transition: all 0.2s;
+    align-items: center;
+    justify-content: center;
+}
+
+.clear-search:hover {
+    background-color: #f1f5f9;
+    color: #475569;
+}
+
+/* Dropdown Results Styling */
+.dropdown-results-modern {
+    position: absolute;
+    top: calc(100% + 8px);
+	width: 70%;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+    border: 1px solid #eef2f6;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+    backdrop-filter: blur(0px);
+    animation: fadeInDown 0.2s ease-out;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Search result items */
+.search-item-modern {
+	width: 90%;
+    padding: 7px 7px;
+    font-size: 11px;
+    color: #1e293b;
+    cursor: pointer;
+    transition: all 0.15s;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+.search-item-modern:last-child {
+    border-bottom: none;
+}
+
+.search-item-modern:hover {
+    background-color: #f8fafc;
+    padding-left: 20px;
+}
+
+.search-item-modern:active {
+    background-color: #f1f5f9;
+}
+
+/* Add icon before each result for better visual */
+.search-item-modern::before {
+    content: "🔍";
+    font-size: 12px;
+    opacity: 0.7;
+    margin-right: 8px;
+}
+
+.no-results-modern {
+    justify-content: center;
+    color: #64748b;
+    font-style: normal;
+    cursor: default;
+    pointer-events: none;
+}
+
+.no-results-modern::before {
+    content: "📭";
+    opacity: 0.6;
+}
+
+/* Custom scrollbar */
+.dropdown-results-modern::-webkit-scrollbar {
+    width: 6px;
+}
+
+.dropdown-results-modern::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+}
+
+.dropdown-results-modern::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+.dropdown-results-modern::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Loading state */
+.search-loading {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    border: 2px solid #e2e8f0;
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: none;
+}
+
+@keyframes spin {
+    to { transform: translateY(-50%) rotate(360deg); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .search-container {
+        width: 70%;
+    }
+    
+    .dropdown-results-modern {
+        position: fixed;
+        top: auto;
+        left: 16px;
+        right: 16px;
+        width: calc(100% - 32px);
+        margin-top: 4px;
+    }
+}
+
+
+.notice-btn{
+    position:relative;
+}
+
+.new-badge{
+    position:absolute;
+    top:-10px;
+    right:-15px;
+    background:#ff5722;
+    color:#fff;
+    font-size:10px;
+    font-weight:700;
+    padding:2px 6px;
+    border-radius:20px;
+    animation:pulse 1.5s infinite;
+}
+
+@keyframes pulse{
+    0%{transform:scale(1);}
+    50%{transform:scale(1.1);}
+    100%{transform:scale(1);}
+}
+</style>
+
+<link href="/petrosoft-assets/runtime.css" rel="stylesheet"/></head>
+
+<body class="navbar-top"><script id="ps-context" type="application/json">__PS_CONTEXT__</script>
+
+
+	
+	<div class="navbar navbar-inverse navbar-fixed-top">
+		<div class="navbar-header">
+			<a class="navbar-brand" href="/petrosoft/app/dashboard">__PS_STATION__</a>
+			<ul class="nav navbar-nav visible-xs-block">
+				<li><a data-target="#navbar-mobile" data-toggle="collapse"><i class="icon-tree5"></i></a></li>
+				<li><a class="sidebar-mobile-main-toggle" id="tab-btn"><i class="icon-paragraph-justify3"></i></a></li>
+			</ul>
+		</div>
+		<div class="navbar-collapse collapse" id="navbar-mobile">
+			<ul class="nav navbar-nav">
+				<li style="    display: flex !important;
+    justify-content: center;
+    align-items: center;
+    height: 50px;"><a class="sidebar-control sidebar-main-toggle hidden-xs">
+						<i class="icon-paragraph-justify3"></i></a>
+				</li>
+				<li class="search-wrapper" style="position: relative;height: 50px;
+    display: flex;
+    align-items: center;">
+					<div class="search-container">
+    <i class="fa fa-search search-icon"></i>
+    
+    <input autocomplete="off" class="modern-search-input" id="globalSearch" placeholder="Search modules,reports..." style="padding-right: 30px;" type="search"/>
+    
+    <button aria-label="Clear search" class="clear-search" id="clearSearchBtn" style="position:absolute; right:32%; top:50%; transform:translateY(-50%); 
+               z-index:10; display:none;">✕</button>
+
+    <div class="search-loading" id="searchLoading" style="right:32%;"></div>
+    
+    <div class="dropdown-results-modern" id="searchResults"></div>
+</div>
+				</li>
+				<li class="dropdown">
+					<div class="dropdown-menu dropdown-content">
+						<div class="dropdown-content-heading">
+							Git updates
+							<ul class="icons-list">
+								<li><a href="#"><i class="icon-sync"></i></a></li>
+							</ul>
+						</div>
+						<div class="dropdown-content-footer">
+							<a data-popup="tooltip" href="#" title="All activity"><i class="icon-menu display-block"></i></a>
+						</div>
+					</div>
+				</li>
+			</ul>
+			<ul class="nav navbar-nav navbar-right">
+				
+				<li>
+					<div id="google_translate_element"></div>
+				</li>
+				<li id="notices" style="position:relative;">
+					<a data-ps-onclick="openNotice()" href="#" style="color:black;border:1px solid #F5DEB3;background-color:#F5DEB3;border-radius:7px;padding:2px 6px" title="Notices">
+						
+						 Notices
+
+											</a>
+				</li>
+				
+				
+				
+				<li class="dropdown"><a data-ps-onclick="getcurrency_modal()" title="Currence Converter"><i aria-hidden="true" class="fa fa-usd"></i></a> </li>
+				
+
+				<li class="dropdown"><a href="#" title="Enable / Disable Full Screen"><i class="fa fa-arrows-alt"></i></a> </li>
+
+				<li class="dropdown hidden-xs">
+					<a class="btn tip" data-placement="bottom" data-toggle="dropdown" href="#" title="Calculator">
+						<i class="fa fa-calculator"></i>
+					</a>
+					<ul class="dropdown-menu pull-right calc">
+						<li class="dropdown-content">
+							<span id="inlineCalc"></span>
+						</li>
+					</ul>
+				</li>
+				<li class="dropdown">
+					<a class="dropdown-toggle" data-toggle="dropdown" href="#">
+						<i class="icon-bell3"></i>
+						<span class="visible-xs-inline-block position-right">Messages</span>
+						<span class="badge bg-warning-400">1</span>
+					</a>
+					<div class="dropdown-menu dropdown-content" style="width:350px">
+						<div class="dropdown-content-heading text-danger">
+							To Be Expire
+							<ul class="icons-list">
+								
+							</ul>
+						</div>
+						<ul class="media-list dropdown-content-body">
+															<li class="media">
+									<div class="media-body">
+										<a class="media-heading" href="/petrosoft/app/expiryItems/ExpiryList">
+											<span class="text-semibold text-danger">PERMIT</span>
+											<span class="media-annotation pull-right text-info">15-Mar-2028</span>
+										</a>
+										<span class="text-muted"><b>Category:</b> TANKER PERMIT , <b>Item NO. : </b>2<br/><b>Note : </b></span><br/>
+
+										
+
+									</div>
+								</li>
+													</ul>
+						<div class="dropdown-content-footer">
+							<a data-popup="tooltip" href="/petrosoft/app/expiryItems/ExpiryList" title="All Items">Go To Page</a>
+						</div>
+					</div>
+				</li>
+								<li class="dropdown dropdown-user">
+					<a class="dropdown-toggle" data-toggle="dropdown">
+						<i aria-hidden="true" class="fa fa-user-o"></i>
+						<span>Super Admin</span>
+						<i class="caret"></i>
+					</a>
+					<ul class="dropdown-menu dropdown-menu-right">
+													<li><a href="/petrosoft/BunkMaster"><i class="fa fa-building"></i> Organization Details</a></li>
+							<li><a href="/petrosoft/UserRole"><i class="icon-user-plus"></i>Role Permission</a></li>
+							<li><a href="/petrosoft/my_bunks"><i aria-hidden="true" class="fa fa-book"></i>My Bunks</a></li>
+							<li><a href="/petrosoft/myprofile/changepwd"><i class="icon-lock"></i> Change Password</a></li>
+							<li><a href="/petrosoft/SystemSettings"><i class="fa fa-cog"></i>System Settings</a></li>
+												<li><a href="/petrosoft/Backup"><i class="icon-download"></i> Backup Data</a></li>
+						<li><a href="/petrosoft/app/reportus/add"><i aria-hidden="true" class="fa fa-flag"></i> Report Us</a></li>
+						<li><a href="/petrosoft/CreateUsres"><i aria-hidden="true" class="fa fa-users"></i><span class="title">Bunk Users</span></a></li>					</ul>
+				</li>
+<li class="dropdown dropdown-profile">
+    <a class="dropdown-toggle" data-toggle="dropdown" href="#" style="padding:10px; display: inline-block;">
+                            <div style="width:35px; height:35px; border-radius:50%; background-color:#ffffff; 
+                        border:1px solid #ddd; display:flex; align-items:center; justify-content:center;">
+                <i class="fa fa-user" style="color:#ccc; font-size:18px;"></i>
+            </div>
+            </a>
+
+    <ul class="dropdown-menu dropdown-menu-right" style="min-width:240px; padding:15px;">
+        <li style="list-style:none; padding:4px 0;">
+            <div style="display:flex; align-items:center; gap:12px;">
+
+                
+                <div data-target="#modal_update_logo" data-toggle="modal" style="position:relative; width:48px; height:48px; border-radius:50%;
+                            overflow:hidden; cursor:pointer; flex-shrink:0;" title="Click to change photo">
+
+                                            <div style="width:100%; height:100%; background-color:#e0e0e0;
+                                    display:flex; align-items:center; justify-content:center;">
+                            <i class="fa fa-user" style="color:#999; font-size:20px;"></i>
+                        </div>
+                    
+                    
+                    <div class="dd-edit-overlay" style="position:absolute; inset:0; background:rgba(0,0,0,0.4);
+                                display:flex; align-items:center; justify-content:center;
+                                opacity:0; transition:opacity 0.2s; border-radius:50%;">
+                        <svg fill="none" height="16" stroke="#fff" stroke-width="1.8" viewBox="0 0 24 24" width="16">
+                            <path d="M16 3l5 5L7 21H3v-4L16 3z"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                
+                <div>
+                    <div style="font-weight:700; font-size:15px; color:#222; white-space:nowrap;">
+                        Super Admin                    </div>
+                    <div style="font-size:12px; color:#888; margin-top:3px;">
+                        Admin                    </div>
+                </div>
+
+            </div>
+        </li>
+    </ul>
+</li>
+				<li class="dropdown"><a href="/petrosoft/login/logout"><i class="icon-switch2"></i> Logout</a></li>
+				<li class="dropdown"><a style="cursor: auto;"><i aria-hidden="true" class="fa fa-code-fork"></i> V 3.4.4.4.3</a></li>
+			</ul>
+		</div>
+	</div>
+<div class="modal fade" id="modal_update_logo" role="dialog">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Update Profile Image</h4>
+            </div>
+            <form action="/api/petrosoft/action" data-ps-form="0" data-ps-operation="profile" enctype="multipart/form-data" method="post">
+                
+                <input data-ps-field="user_log" name="user_log" type="hidden" value="admin"/>
+                <input data-ps-field="delete_image" id="delete_flag" name="delete_image" type="hidden" value="0"/>
+
+                <div class="modal-body" style="display:flex; flex-direction:column; align-items:center; gap:16px; padding:24px 20px;">
+
+                    
+                    <div style="width:90px; height:90px; border-radius:50%; overflow:hidden; border:2px solid #ddd;">
+                        <img id="preview_img" src="/petrosoft-assets/assets/images/default_avatar.png" style="width:100%; height:100%; object-fit:cover;"/>
+                    </div>
+
+                    
+                    <div style="width:100%; display:flex; align-items:center; gap:10px;">
+                        <label style="margin:0;">
+                            <span class="btn btn-primary" style="white-space:nowrap; cursor:pointer; padding:6px 12px;">
+                                Browse…
+                                <input accept="image/png,image/PNG,image/jpeg,image/JPEG,image/gif,image/GIF" data-ps-field="logo" data-ps-onchange="image_validation()" id="file1" name="logo" style="display:none;" type="file"/>
+                            </span>
+                        </label>
+
+                        <div style="flex:1; display:flex; align-items:center; border:1px solid #ddd; border-radius:4px; padding:6px 10px; gap:8px; min-width:0;">
+                            <span id="file_name" style="flex:1; font-size:13px; color:#666; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                No file chosen                            </span>
+                            
+                            <img data-ps-onclick="clearFile()" id="delete_btn" src="/petrosoft-assets/assets/images/delete.png" style="width:20px; height:20px; cursor:pointer; flex-shrink:0; display:none;" title="Remove photo"/>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-default" data-dismiss="modal" data-ps-onclick="resetModal()" type="button">Cancel</button>
+                    <button class="btn btn-success" type="submit">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+	<div class="modal fade" id="Currency_myModal" role="dialog">
+		<div class="modal-dialog modal-lg" style="margin-top:60px;">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button class="close" data-dismiss="modal" type="button">×</button>
+					<h4 class="modal-title">Currency Converter</h4>
+				</div>
+				<div class="modal-body">
+					<div class="col-md-3 col-sm-6 col-xs-12 kgn-details-info" style="margin-left: 20px;">
+						<div class="m_10 op-text-grid1" style="color: black;">
+							Amount
+						</div>
+						<div class="m_10">
+							<input autocomplete="off" class="input-sm cus_form" id="amt" name="amt" placeholder="Amount"/>
+						</div>
+					</div>
+					<div class="col-md-3 col-sm-6 col-xs-12 kgn-details-info">
+						<div class="m_10 op-text-grid1" style="color: black;">
+							From <b><span id="from_alert" style="color: #673ab7;"></span></b>
+						</div>
+						<div class="m_10">
+							<select class="form-control input-sm cus_form select2" id="Currency_from" name="currency_a">
+								<option value="">Choose Currency</option>
+								<option value="ALL">ALL - Albanian Lek </option>
+								<option value="DZD">DZD - Algerian Dinar </option>
+								<option value="ADP">ADP - Andorran Peseta </option>
+								<option value="AOA">AOA - Angolan Kwanza </option>
+								<option value="AON">AON - Angolan Old Kwanza </option>
+								<option value="ARS">ARS - Argentine Peso </option>
+								<option value="AMD">AMD - Armenian Dram </option>
+								<option value="AWG">AWG - Aruban Florin </option>
+								<option value="AUD">AUD - Australian Dollar </option>
+								<option value="ATS">ATS - Austrian Schilling </option>
+								<option value="AZN">AZN - Azerbaijan New Manat </option>
+								<option value="AZM">AZM - Azerbaijan Old Manat </option>
+								<option value="BSD">BSD - Bahamian Dollar </option>
+								<option value="BHD">BHD - Bahraini Dinar </option>
+								<option value="BDT">BDT - Bangladeshi Taka </option>
+								<option value="BBD">BBD - Barbados Dollar </option>
+								<option value="BYR">BYR - Belarusian Old Ruble </option>
+								<option value="BYN">BYN - Belarusian Ruble </option>
+								<option value="BEF">BEF - Belgian Franc </option>
+								<option value="BZD">BZD - Belize Dollar </option>
+								<option value="BMD">BMD - Bermudian Dollar </option>
+								<option value="BTN">BTN - Bhutan Ngultrum </option>
+								<option value="XBT">XBT - Bitcoin </option>
+								<option value="BTC">BTC - Bitcoin </option>
+								<option value="BOB">BOB - Bolivian Boliviano </option>
+								<option value="BAM">BAM - Bosnian Mark </option>
+								<option value="BWP">BWP - Botswana Pula </option>
+								<option value="BRL">BRL - Brazilian Real </option>
+								<option value="GBP">GBP - British Pound </option>
+								<option value="BND">BND - Brunei Dollar </option>
+								<option value="BGN">BGN - Bulgarian Lev </option>
+								<option value="BGL">BGL - Bulgarian Old Lev </option>
+								<option value="BIF">BIF - Burundi Franc </option>
+								<option value="XOF">XOF - CFA Franc BCEAO </option>
+								<option value="XAF">XAF - CFA Franc BEAC </option>
+								<option value="XPF">XPF - CFP Franc </option>
+								<option value="KHR">KHR - Cambodian Riel </option>
+								<option value="CAD">CAD - Canadian Dollar </option>
+								<option value="CVE">CVE - Cape Verde Escudo </option>
+								<option value="KYD">KYD - Cayman Islands Dollar </option>
+								<option value="CFP">CFP - Central Pacific Franc </option>
+								<option value="CLP">CLP - Chilean Peso </option>
+								<option value="CLF">CLF - Chilean Unidad de Fomento </option>
+								<option value="CNY">CNY - Chinese Yuan Renminbi </option>
+								<option value="CNH">CNH - Chinese Yuan Renminbi (offshore) </option>
+								<option value="COP">COP - Colombian Peso </option>
+								<option value="KMF">KMF - Comoros Franc </option>
+								<option value="CDF">CDF - Congolese Franc </option>
+								<option value="CRC">CRC - Costa Rican Colon </option>
+								<option value="HRK">HRK - Croatian Kuna </option>
+								<option value="CUC">CUC - Cuban Convertible Peso </option>
+								<option value="CUP">CUP - Cuban Peso </option>
+								<option value="CYP">CYP - Cyprus Pound </option>
+								<option value="CZK">CZK - Czech Koruna </option>
+								<option value="CSK">CSK - Czechoslovak Koruna </option>
+								<option value="DKK">DKK - Danish Krone </option>
+								<option value="DJF">DJF - Djibouti Franc </option>
+								<option value="DOP">DOP - Dominican R. Peso </option>
+								<option value="NLG">NLG - Dutch Guilder </option>
+								<option value="XEU">XEU - ECU </option>
+								<option value="XCD">XCD - East Caribbean Dollar </option>
+								<option value="ECS">ECS - Ecuador Sucre </option>
+								<option value="EGP">EGP - Egyptian Pound </option>
+								<option value="SVC">SVC - El Salvador Colon </option>
+								<option value="ERN">ERN - Eritrean Nakfa </option>
+								<option value="EEK">EEK - Estonian Kroon </option>
+								<option value="ETH">ETH - Ethereum </option>
+								<option value="ETB">ETB - Ethiopian Birr </option>
+								<option value="EUR">EUR - Euro </option>
+								<option value="FKP">FKP - Falkland Islands Pound </option>
+								<option value="FJD">FJD - Fiji Dollar </option>
+								<option value="FIM">FIM - Finnish Markka </option>
+								<option value="FRF">FRF - French Franc </option>
+								<option value="GMD">GMD - Gambian Dalasi </option>
+								<option value="GEL">GEL - Georgian Lari </option>
+								<option value="DEM">DEM - German Mark </option>
+								<option value="GHC">GHC - Ghanaian Cedi </option>
+								<option value="GHS">GHS - Ghanaian New Cedi </option>
+								<option value="GIP">GIP - Gibraltar Pound </option>
+								<option value="XAU">XAU - Gold (oz.) </option>
+								<option value="GRD">GRD - Greek Drachma </option>
+								<option value="GTQ">GTQ - Guatemalan Quetzal </option>
+								<option value="GNF">GNF - Guinea Franc </option>
+								<option value="GYD">GYD - Guyanese Dollar </option>
+								<option value="HTG">HTG - Haitian Gourde </option>
+								<option value="HNL"> HNL - Honduran Lempira </option>
+								<option value="HKD">HKD - Hong Kong Dollar </option>
+								<option value="HUF">HUF - Hungarian Forint </option>
+								<option value="ISK">ISK - Iceland Krona </option>
+								<option value="INR">INR - Indian Rupee </option>
+								<option value="IDR">IDR - Indonesian Rupiah </option>
+								<option value="IRR">IRR - Iranian Rial </option>
+								<option value="IQD">IQD - Iraqi Dinar </option>
+								<option value="IEP">IEP - Irish Punt </option>
+								<option value="ILS">ILS - Israeli New Shekel </option>
+								<option value="ITL">ITL - Italian Lira </option>
+								<option value="JMD">JMD - Jamaican Dollar </option>
+								<option value="JPY">JPY - Japanese Yen </option>
+								<option value="JOD">JOD - Jordanian Dinar </option>
+								<option value="KZT">KZT - Kazakhstan Tenge </option>
+								<option value="KES">KES - Kenyan Shilling </option>
+								<option value="KWD">KWD - Kuwaiti Dinar </option>
+								<option value="KGS">KGS - Kyrgyzstanian Som </option>
+								<option value="LAK">LAK - Lao Kip </option>
+								<option value="LVL">LVL - Latvian Lats </option>
+								<option value="LBP">LBP - Lebanese Pound </option>
+								<option value="LSL">LSL - Lesotho Loti </option>
+								<option value="LRD">LRD - Liberian Dollar </option>
+								<option value="LYD">LYD - Libyan Dinar </option>
+								<option value="LTC">LTC - Litecoin </option>
+								<option value="LTL">LTL - Lithuanian Litas </option>
+								<option value="LUF">LUF - Luxembourg Franc </option>
+								<option value="MOP">MOP - Macau Pataca </option>
+								<option value="MKD">MKD - Macedonian Denar </option>
+								<option value="MGA">MGA - Malagasy Ariary </option>
+								<option value="MGF">MGF - Malagasy Franc </option>
+								<option value="MWK">MWK - Malawi Kwacha </option>
+								<option value="MYR">MYR - Malaysian Ringgit </option>
+								<option value="MVR">MVR - Maldive Rufiyaa </option>
+								<option value="MTL">MTL - Maltese Lira </option>
+								<option value="MRO">MRO - Mauritanian Old Ouguiya </option>
+								<option value="MRU">MRU - Mauritanian Ouguiya </option>
+								<option value="MUR">MUR - Mauritius Rupee </option>
+								<option value="MXP">MXP - Mexican Old Peso </option>
+								<option value="MXN">MXN - Mexican Peso </option>
+								<option value="MDL">MDL - Moldovan Leu </option>
+								<option value="MNT">MNT - Mongolian Tugrik </option>
+								<option value="MAD">MAD - Moroccan Dirham </option>
+								<option value="MZM">MZM - Mozambique Metical </option>
+								<option value="MZN">MZN - Mozambique New Metical </option>
+								<option value="MMK">MMK - Myanmar Kyat </option>
+								<option value="ANG">ANG - NL Antillian Guilder </option>
+								<option value="NAD">NAD - Namibia Dollar </option>
+								<option value="NPR">NPR - Nepalese Rupee </option>
+								<option value="NZD">NZD - New Zealand Dollar </option>
+								<option value="NIO">NIO - Nicaraguan Cordoba Oro </option>
+								<option value="NGN">NGN - Nigerian Naira </option>
+								<option value="KPW">KPW - North Korean Won </option>
+								<option value="NOK">NOK - Norwegian Kroner </option>
+								<option value="OMR">OMR - Omani Rial </option>
+								<option value="PKR">PKR - Pakistan Rupee </option>
+								<option value="XPD">XPD - Palladium (oz.) </option>
+								<option value="PAB">PAB - Panamanian Balboa </option>
+								<option value="PGK">PGK - Papua New Guinea Kina </option>
+								<option value="PYG">PYG - Paraguay Guarani </option>
+								<option value="PEN">PEN - Peruvian Nuevo Sol </option>
+								<option value="PHP">PHP - Philippine Peso </option>
+								<option value="XPT">XPT - Platinum (oz.) </option>
+								<option value="PLZ">PLZ - Polish Old Zloty </option>
+								<option value="PLN">PLN - Polish Zloty </option>
+								<option value="PTE">PTE - Portuguese Escudo </option>
+								<option value="QAR">QAR - Qatari Rial </option>
+								<option value="ROL">ROL - Romanian Lei </option>
+								<option value="RON">RON - Romanian New Lei </option>
+								<option value="RUB">RUB - Russian Rouble </option>
+								<option value="RWF">RWF - Rwandan Franc </option>
+								<option value="WST">WST - Samoan Tala </option>
+								<option value="STN">STN - Sao Tome/Principe Dobra </option>
+								<option value="STD">STD - Sao Tome/Principe Old Dobra </option>
+								<option value="SAR">SAR - Saudi Riyal </option>
+								<option value="RSD">RSD - Serbian Dinar </option>
+								<option value="CSD">CSD - Serbian Old Dinar </option>
+								<option value="SCR">SCR - Seychelles Rupee </option>
+								<option value="SLL">SLL - Sierra Leone Leone </option>
+								<option value="XAG">XAG - Silver (oz.) </option>
+								<option value="SGD">SGD - Singapore Dollar </option>
+								<option value="SKK">SKK - Slovak Koruna </option>
+								<option value="SIT">SIT - Slovenian Tolar </option>
+								<option value="SBD">SBD - Solomon Islands Dollar </option>
+								<option value="SOS">SOS - Somali Shilling </option>
+								<option value="ZAR">ZAR - South African Rand </option>
+								<option value="KRW">KRW - South-Korean Won </option>
+								<option value="ESP">ESP - Spanish Peseta </option>
+								<option value="LKR">LKR - Sri Lanka Rupee </option>
+								<option value="SHP">SHP - St. Helena Pound </option>
+								<option value="SDD">SDD - Sudanese Dinar </option>
+								<option value="SDP">SDP - Sudanese Old Pound </option>
+								<option value="SDG">SDG - Sudanese Pound </option>
+								<option value="SRD">SRD - Suriname Dollar </option>
+								<option value="SRG">SRG - Suriname Guilder </option>
+								<option value="SZL">SZL - Swaziland Lilangeni </option>
+								<option value="SEK">SEK - Swedish Krona </option>
+								<option value="CHF">CHF - Swiss Franc </option>
+								<option value="SYP">SYP - Syrian Pound </option>
+								<option value="TWD">TWD - Taiwan Dollar </option>
+								<option value="TJS">TJS - Tajikistani Somoni </option>
+								<option value="TZS">TZS - Tanzanian Shilling </option>
+								<option value="THB">THB - Thai Baht </option>
+								<option value="TOP">TOP - Tonga Pa'anga </option>
+								<option value="TTD">TTD - Trinidad/Tobago Dollar </option>
+								<option value="TND">TND - Tunisian Dinar </option>
+								<option value="TRY">TRY - Turkish Lira </option>
+								<option value="TRL">TRL - Turkish Old Lira </option>
+								<option value="TMM">TMM - Turkmenistan Manat </option>
+								<option value="TMT">TMT - Turkmenistan New Manat </option>
+								<option value="USD">USD - US Dollar </option>
+								<option value="UGX">UGX - Uganda Shilling </option>
+								<option value="UGS">UGS - Uganga Old Shilling </option>
+								<option value="UAH">UAH - Ukraine Hryvnia </option>
+								<option value="UYP">UYP - Uruguayan Old Peso </option>
+								<option value="UYU">UYU - Uruguayan Peso </option>
+								<option value="AED">AED - Utd. Arab Emir. Dirham </option>
+								<option value="UZS">UZS - Uzbekistan Som </option>
+								<option value="VUV">VUV - Vanuatu Vatu </option>
+								<option value="VEB">VEB - Venezuelan Bolivar </option>
+								<option value="VEF">VEF - Venezuelan Bolivar Fuerte </option>
+								<option value="VES">VES - Venezuelan Bolivar Soberano </option>
+								<option value="VND">VND - Vietnamese Dong </option>
+								<option value="YER">YER - Yemeni Rial </option>
+								<option value="YUN">YUN - Yugoslav Dinar </option>
+								<option value="ZMK">ZMK - Zambian Kwacha </option>
+								<option value="ZMW">ZMW - Zambian Kwacha </option>
+								<option value="ZWL">ZWL - Zimbabwe Dollar </option>
+								<option value="ZWD">ZWD - Zimbabwe Dollar </option>
+							</select>
+						</div>
+					</div>
+					<div class="col-md-3 col-sm-6 col-xs-12 kgn-details-info">
+						<div class="m_10 op-text-grid1" style="color: black;">
+							To <b><span id="to_alert" style="color: #673ab7;"></span></b>
+						</div>
+						<div class="m_10">
+							<select class="form-control input-sm cus_form select2" id="Currency_to" name="currency_b">
+								<option value="">Choose Currency</option>
+								<option value="ALL">ALL - Albanian Lek </option>
+								<option value="DZD">DZD - Algerian Dinar </option>
+								<option value="ADP">ADP - Andorran Peseta </option>
+								<option value="AOA">AOA - Angolan Kwanza </option>
+								<option value="AON">AON - Angolan Old Kwanza </option>
+								<option value="ARS">ARS - Argentine Peso </option>
+								<option value="AMD">AMD - Armenian Dram </option>
+								<option value="AWG">AWG - Aruban Florin </option>
+								<option value="AUD">AUD - Australian Dollar </option>
+								<option value="ATS">ATS - Austrian Schilling </option>
+								<option value="AZN">AZN - Azerbaijan New Manat </option>
+								<option value="AZM">AZM - Azerbaijan Old Manat </option>
+								<option value="BSD">BSD - Bahamian Dollar </option>
+								<option value="BHD">BHD - Bahraini Dinar </option>
+								<option value="BDT">BDT - Bangladeshi Taka </option>
+								<option value="BBD">BBD - Barbados Dollar </option>
+								<option value="BYR">BYR - Belarusian Old Ruble </option>
+								<option value="BYN">BYN - Belarusian Ruble </option>
+								<option value="BEF">BEF - Belgian Franc </option>
+								<option value="BZD">BZD - Belize Dollar </option>
+								<option value="BMD">BMD - Bermudian Dollar </option>
+								<option value="BTN">BTN - Bhutan Ngultrum </option>
+								<option value="XBT">XBT - Bitcoin </option>
+								<option value="BTC">BTC - Bitcoin </option>
+								<option value="BOB">BOB - Bolivian Boliviano </option>
+								<option value="BAM">BAM - Bosnian Mark </option>
+								<option value="BWP">BWP - Botswana Pula </option>
+								<option value="BRL">BRL - Brazilian Real </option>
+								<option value="GBP">GBP - British Pound </option>
+								<option value="BND">BND - Brunei Dollar </option>
+								<option value="BGN">BGN - Bulgarian Lev </option>
+								<option value="BGL">BGL - Bulgarian Old Lev </option>
+								<option value="BIF">BIF - Burundi Franc </option>
+								<option value="XOF">XOF - CFA Franc BCEAO </option>
+								<option value="XAF">XAF - CFA Franc BEAC </option>
+								<option value="XPF">XPF - CFP Franc </option>
+								<option value="KHR">KHR - Cambodian Riel </option>
+								<option value="CAD">CAD - Canadian Dollar </option>
+								<option value="CVE">CVE - Cape Verde Escudo </option>
+								<option value="KYD">KYD - Cayman Islands Dollar </option>
+								<option value="CFP">CFP - Central Pacific Franc </option>
+								<option value="CLP">CLP - Chilean Peso </option>
+								<option value="CLF">CLF - Chilean Unidad de Fomento </option>
+								<option value="CNY">CNY - Chinese Yuan Renminbi </option>
+								<option value="CNH">CNH - Chinese Yuan Renminbi (offshore) </option>
+								<option value="COP">COP - Colombian Peso </option>
+								<option value="KMF">KMF - Comoros Franc </option>
+								<option value="CDF">CDF - Congolese Franc </option>
+								<option value="CRC">CRC - Costa Rican Colon </option>
+								<option value="HRK">HRK - Croatian Kuna </option>
+								<option value="CUC">CUC - Cuban Convertible Peso </option>
+								<option value="CUP">CUP - Cuban Peso </option>
+								<option value="CYP">CYP - Cyprus Pound </option>
+								<option value="CZK">CZK - Czech Koruna </option>
+								<option value="CSK">CSK - Czechoslovak Koruna </option>
+								<option value="DKK">DKK - Danish Krone </option>
+								<option value="DJF">DJF - Djibouti Franc </option>
+								<option value="DOP">DOP - Dominican R. Peso </option>
+								<option value="NLG">NLG - Dutch Guilder </option>
+								<option value="XEU">XEU - ECU </option>
+								<option value="XCD">XCD - East Caribbean Dollar </option>
+								<option value="ECS">ECS - Ecuador Sucre </option>
+								<option value="EGP">EGP - Egyptian Pound </option>
+								<option value="SVC">SVC - El Salvador Colon </option>
+								<option value="ERN">ERN - Eritrean Nakfa </option>
+								<option value="EEK">EEK - Estonian Kroon </option>
+								<option value="ETH">ETH - Ethereum </option>
+								<option value="ETB">ETB - Ethiopian Birr </option>
+								<option value="EUR">EUR - Euro </option>
+								<option value="FKP">FKP - Falkland Islands Pound </option>
+								<option value="FJD">FJD - Fiji Dollar </option>
+								<option value="FIM">FIM - Finnish Markka </option>
+								<option value="FRF">FRF - French Franc </option>
+								<option value="GMD">GMD - Gambian Dalasi </option>
+								<option value="GEL">GEL - Georgian Lari </option>
+								<option value="DEM">DEM - German Mark </option>
+								<option value="GHC">GHC - Ghanaian Cedi </option>
+								<option value="GHS">GHS - Ghanaian New Cedi </option>
+								<option value="GIP">GIP - Gibraltar Pound </option>
+								<option value="XAU">XAU - Gold (oz.) </option>
+								<option value="GRD">GRD - Greek Drachma </option>
+								<option value="GTQ">GTQ - Guatemalan Quetzal </option>
+								<option value="GNF">GNF - Guinea Franc </option>
+								<option value="GYD">GYD - Guyanese Dollar </option>
+								<option value="HTG">HTG - Haitian Gourde </option>
+								<option value="HNL"> HNL - Honduran Lempira </option>
+								<option value="HKD">HKD - Hong Kong Dollar </option>
+								<option value="HUF">HUF - Hungarian Forint </option>
+								<option value="ISK">ISK - Iceland Krona </option>
+								<option value="INR">INR - Indian Rupee </option>
+								<option value="IDR">IDR - Indonesian Rupiah </option>
+								<option value="IRR">IRR - Iranian Rial </option>
+								<option value="IQD">IQD - Iraqi Dinar </option>
+								<option value="IEP">IEP - Irish Punt </option>
+								<option value="ILS">ILS - Israeli New Shekel </option>
+								<option value="ITL">ITL - Italian Lira </option>
+								<option value="JMD">JMD - Jamaican Dollar </option>
+								<option value="JPY">JPY - Japanese Yen </option>
+								<option value="JOD">JOD - Jordanian Dinar </option>
+								<option value="KZT">KZT - Kazakhstan Tenge </option>
+								<option value="KES">KES - Kenyan Shilling </option>
+								<option value="KWD">KWD - Kuwaiti Dinar </option>
+								<option value="KGS">KGS - Kyrgyzstanian Som </option>
+								<option value="LAK">LAK - Lao Kip </option>
+								<option value="LVL">LVL - Latvian Lats </option>
+								<option value="LBP">LBP - Lebanese Pound </option>
+								<option value="LSL">LSL - Lesotho Loti </option>
+								<option value="LRD">LRD - Liberian Dollar </option>
+								<option value="LYD">LYD - Libyan Dinar </option>
+								<option value="LTC">LTC - Litecoin </option>
+								<option value="LTL">LTL - Lithuanian Litas </option>
+								<option value="LUF">LUF - Luxembourg Franc </option>
+								<option value="MOP">MOP - Macau Pataca </option>
+								<option value="MKD">MKD - Macedonian Denar </option>
+								<option value="MGA">MGA - Malagasy Ariary </option>
+								<option value="MGF">MGF - Malagasy Franc </option>
+								<option value="MWK">MWK - Malawi Kwacha </option>
+								<option value="MYR">MYR - Malaysian Ringgit </option>
+								<option value="MVR">MVR - Maldive Rufiyaa </option>
+								<option value="MTL">MTL - Maltese Lira </option>
+								<option value="MRO">MRO - Mauritanian Old Ouguiya </option>
+								<option value="MRU">MRU - Mauritanian Ouguiya </option>
+								<option value="MUR">MUR - Mauritius Rupee </option>
+								<option value="MXP">MXP - Mexican Old Peso </option>
+								<option value="MXN">MXN - Mexican Peso </option>
+								<option value="MDL">MDL - Moldovan Leu </option>
+								<option value="MNT">MNT - Mongolian Tugrik </option>
+								<option value="MAD">MAD - Moroccan Dirham </option>
+								<option value="MZM">MZM - Mozambique Metical </option>
+								<option value="MZN">MZN - Mozambique New Metical </option>
+								<option value="MMK">MMK - Myanmar Kyat </option>
+								<option value="ANG">ANG - NL Antillian Guilder </option>
+								<option value="NAD">NAD - Namibia Dollar </option>
+								<option value="NPR">NPR - Nepalese Rupee </option>
+								<option value="NZD">NZD - New Zealand Dollar </option>
+								<option value="NIO">NIO - Nicaraguan Cordoba Oro </option>
+								<option value="NGN">NGN - Nigerian Naira </option>
+								<option value="KPW">KPW - North Korean Won </option>
+								<option value="NOK">NOK - Norwegian Kroner </option>
+								<option value="OMR">OMR - Omani Rial </option>
+								<option value="PKR">PKR - Pakistan Rupee </option>
+								<option value="XPD">XPD - Palladium (oz.) </option>
+								<option value="PAB">PAB - Panamanian Balboa </option>
+								<option value="PGK">PGK - Papua New Guinea Kina </option>
+								<option value="PYG">PYG - Paraguay Guarani </option>
+								<option value="PEN">PEN - Peruvian Nuevo Sol </option>
+								<option value="PHP">PHP - Philippine Peso </option>
+								<option value="XPT">XPT - Platinum (oz.) </option>
+								<option value="PLZ">PLZ - Polish Old Zloty </option>
+								<option value="PLN">PLN - Polish Zloty </option>
+								<option value="PTE">PTE - Portuguese Escudo </option>
+								<option value="QAR">QAR - Qatari Rial </option>
+								<option value="ROL">ROL - Romanian Lei </option>
+								<option value="RON">RON - Romanian New Lei </option>
+								<option value="RUB">RUB - Russian Rouble </option>
+								<option value="RWF">RWF - Rwandan Franc </option>
+								<option value="WST">WST - Samoan Tala </option>
+								<option value="STN">STN - Sao Tome/Principe Dobra </option>
+								<option value="STD">STD - Sao Tome/Principe Old Dobra </option>
+								<option value="SAR">SAR - Saudi Riyal </option>
+								<option value="RSD">RSD - Serbian Dinar </option>
+								<option value="CSD">CSD - Serbian Old Dinar </option>
+								<option value="SCR">SCR - Seychelles Rupee </option>
+								<option value="SLL">SLL - Sierra Leone Leone </option>
+								<option value="XAG">XAG - Silver (oz.) </option>
+								<option value="SGD">SGD - Singapore Dollar </option>
+								<option value="SKK">SKK - Slovak Koruna </option>
+								<option value="SIT">SIT - Slovenian Tolar </option>
+								<option value="SBD">SBD - Solomon Islands Dollar </option>
+								<option value="SOS">SOS - Somali Shilling </option>
+								<option value="ZAR">ZAR - South African Rand </option>
+								<option value="KRW">KRW - South-Korean Won </option>
+								<option value="ESP">ESP - Spanish Peseta </option>
+								<option value="LKR">LKR - Sri Lanka Rupee </option>
+								<option value="SHP">SHP - St. Helena Pound </option>
+								<option value="SDD">SDD - Sudanese Dinar </option>
+								<option value="SDP">SDP - Sudanese Old Pound </option>
+								<option value="SDG">SDG - Sudanese Pound </option>
+								<option value="SRD">SRD - Suriname Dollar </option>
+								<option value="SRG">SRG - Suriname Guilder </option>
+								<option value="SZL">SZL - Swaziland Lilangeni </option>
+								<option value="SEK">SEK - Swedish Krona </option>
+								<option value="CHF">CHF - Swiss Franc </option>
+								<option value="SYP">SYP - Syrian Pound </option>
+								<option value="TWD">TWD - Taiwan Dollar </option>
+								<option value="TJS">TJS - Tajikistani Somoni </option>
+								<option value="TZS">TZS - Tanzanian Shilling </option>
+								<option value="THB">THB - Thai Baht </option>
+								<option value="TOP">TOP - Tonga Pa'anga </option>
+								<option value="TTD">TTD - Trinidad/Tobago Dollar </option>
+								<option value="TND">TND - Tunisian Dinar </option>
+								<option value="TRY">TRY - Turkish Lira </option>
+								<option value="TRL">TRL - Turkish Old Lira </option>
+								<option value="TMM">TMM - Turkmenistan Manat </option>
+								<option value="TMT">TMT - Turkmenistan New Manat </option>
+								<option value="USD">USD - US Dollar </option>
+								<option value="UGX">UGX - Uganda Shilling </option>
+								<option value="UGS">UGS - Uganga Old Shilling </option>
+								<option value="UAH">UAH - Ukraine Hryvnia </option>
+								<option value="UYP">UYP - Uruguayan Old Peso </option>
+								<option value="UYU">UYU - Uruguayan Peso </option>
+								<option value="AED">AED - Utd. Arab Emir. Dirham </option>
+								<option value="UZS">UZS - Uzbekistan Som </option>
+								<option value="VUV">VUV - Vanuatu Vatu </option>
+								<option value="VEB">VEB - Venezuelan Bolivar </option>
+								<option value="VEF">VEF - Venezuelan Bolivar Fuerte </option>
+								<option value="VES">VES - Venezuelan Bolivar Soberano </option>
+								<option value="VND">VND - Vietnamese Dong </option>
+								<option value="YER">YER - Yemeni Rial </option>
+								<option value="YUN">YUN - Yugoslav Dinar </option>
+								<option value="ZMK">ZMK - Zambian Kwacha </option>
+								<option value="ZMW">ZMW - Zambian Kwacha </option>
+								<option value="ZWL">ZWL - Zimbabwe Dollar </option>
+								<option value="ZWD">ZWD - Zimbabwe Dollar </option>
+							</select>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer text-center" style="margin-top:7px; ">
+					<button class="btn btn-success" data-ps-onclick="getrequest()">Convert</button>
+				</div>
+				<div id="show_convertedmoney" style="font-size: 20px;margin-left: 22px;color: black"></div>
+				<div id="from_div" style="font-size: 13px;margin-top: 10px;margin-left: 22px;color: #9c27b0;"></div>
+				<div id="to_div" style="font-size:13px;margin-top: 10px;margin-left: 22px;color: #9c27b0;    margin-bottom: 15px;"></div>
+			</div>
+		</div>
+	</div>
+
+
+	
+    <div class="notice-overlay" id="noticePop">
+        <div class="notice-container">
+
+            
+            <div class="notice-header">
+                <h2>
+                    <i class="fa fa-bell"></i>
+                    New Update Notices
+                    <span class="live-badge">LIVE</span>
+                </h2>
+                <button class="btn-cancel" data-ps-onclick="closeNotice()">
+                    ✕ Cancel
+                </button>
+            </div>
+
+            
+            <div class="notice-body">
+
+                
+                <div class="search-row">
+                    <div class="title-label">
+                        <i class="fa fa-circle"></i> Feature
+                    </div>
+                    <input class="search-input" placeholder="Search feature here..." type="text"/>
+                    <button id="btn-search">
+                        <i class="fa fa-search"></i> Search
+                    </button>
+                    <button id="btn-reset">
+                        <i class="fa fa-refresh"></i> Reset
+                    </button>
+                </div>
+
+                
+                <table class="notice-table">
+                    <thead>
+                        <tr>
+                            <th style="width:25%;">Feature</th>
+                            <th style="width:15%;">Version</th>
+                            <th style="width:15%;">Module</th>
+                            <th style="width:45%;">Description</th>
+                            <th style="width:15%;">Feature Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="noticeTableBody">
+                    </tbody>
+                </table>
+
+            </div>
+
+            
+            <div class="notice-footer">
+                <div id="totalNoticesCount">
+                    <i class="fa fa-bar-chart"></i> Total Data: 0 Feature(s) recorded
+                </div>
+                <div id="paginationControls">
+                    <button data-ps-onclick="changePage('prev')" id="btn-prev">
+                        <i class="fa fa-download"></i> Prev
+                    </button>
+                    <span id="pageInfo">Page 1 of 1</span>
+                    <button data-ps-onclick="changePage('next')" id="btn-next">
+                        Next →
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+<div class="modal fade" id="shortcutModal" role="dialog" tabindex="-1">
+	<div class="modal-dialog" style="margin-top:60px;">
+		<div class="modal-content" style="background:#fff; color:#000;">
+		<div class="modal-header">
+			<button class="close" data-dismiss="modal" type="button">×</button>
+			<h4 class="modal-title"><i class="fa fa-keyboard-o"></i> Keyboard Shortcuts</h4>
+		</div>
+		<div class="modal-body">
+			<p style="color:#555;">Hold <kbd>Alt</kbd> and press a letter to open a Module quickly from anywhere.</p>
+			<table class="table table-bordered table-striped">
+			<thead><tr><th style="width:40%;">Shortcut</th><th>Opens</th></tr></thead>
+			<tbody>
+							<tr>
+					<td><kbd>Alt</kbd> + <kbd>C</kbd></td>
+					<td>Credit Sale</td>
+				</tr>
+								<tr>
+					<td><kbd>Alt</kbd> + <kbd>S</kbd></td>
+					<td>Meter Sale</td>
+				</tr>
+								<tr>
+					<td><kbd>Alt</kbd> + <kbd>L</kbd></td>
+					<td>Lubs Sale</td>
+				</tr>
+								<tr>
+					<td><kbd>Alt</kbd> + <kbd>P</kbd></td>
+					<td>Swipe Sales</td>
+				</tr>
+								<tr>
+					<td><kbd>Alt</kbd> + <kbd>X</kbd></td>
+					<td>Expenses</td>
+				</tr>
+								<tr>
+					<td><kbd>Alt</kbd> + <kbd>R</kbd></td>
+					<td>Recovery</td>
+				</tr>
+								<tr>
+					<td><kbd>Alt</kbd> + <kbd>K</kbd></td>
+					<td>Emp Cash Recovery</td>
+				</tr>
+								<tr>
+					<td><kbd>Alt</kbd> + <kbd>O</kbd></td>
+					<td>Day Opening Stock</td>
+				</tr>
+								<tr>
+					<td><kbd>Alt</kbd> + <kbd>Z</kbd></td>
+					<td>Day Settlement</td>
+				</tr>
+								<tr>
+					<td><kbd>Alt</kbd> + <kbd>A</kbd></td>
+					<td>Day Assignings</td>
+				</tr>
+								<tr>
+					<td><kbd>Alt</kbd> + <kbd>D</kbd></td>
+					<td>Daily Sale Rate</td>
+				</tr>
+								<tr>
+					<td><kbd>Alt</kbd> + <kbd>I</kbd></td>
+					<td>Liquid Invoice</td>
+				</tr>
+								<tr>
+					<td><kbd>Alt</kbd> + <kbd>U</kbd></td>
+					<td>Lubs Invoice</td>
+				</tr>
+								<tr>
+					<td><kbd>Alt</kbd> + <kbd>G</kbd></td>
+					<td>Statement Generation</td>
+				</tr>
+								<tr><td><kbd>Alt</kbd> + <kbd>/</kbd></td><td>Show this help window</td></tr>
+			</tbody>
+			</table>
+			
+		</div>
+		<div class="modal-footer">
+			<button class="btn btn-danger" data-dismiss="modal" type="button">Close</button>
+		</div>
+		</div>
+	</div>
+	</div>
+
+
+    
+
+	
+
+	
+	
+	<div class="page-container">
+		
+		<div class="page-content">
+
+			
+
+
+			
+		
+
+
+<div class="sidebar sidebar-main sidebar-fixed">
+	<div class="sidebar-content" id="sidebar-content">
+		
+		<div class="sidebar-category sidebar-category-visible">
+			<div class="category-content no-padding">
+				<ul class="navigation navigation-main navigation-accordion">
+
+					
+					<li class="dashboard"><a href="/petrosoft/Dashboard"><i class="icon-home4"></i> <span>Dashboard</span></a></li>
+
+
+					<li class="nav-item" style="    background: none;">
+						<a href="#"><i class="icon-diamond"></i> <span>Master</span></a>
+						<ul class="sub-menu">
+
+							<li><a href="/petrosoft/LiquidAdd"><span class="title">Fuel Products </span></a></li>
+							<li><a href="/petrosoft/AddLubprods">Lubricants</a></li>
+
+							
+							
+
+							<li><a href="/petrosoft/AddCreditParty"><span class="title">Credit Customer </span></a></li>							<li><a href="/petrosoft/AddEmplys">Employees </a></li>							<li><a href="/petrosoft/AddExptype">Expense Types</a></li>							<li><a href="/petrosoft/addBusinsParty">Busi. Crd/Debit Party</a></li>							<li><a href="/petrosoft/app/vendor/add">Vendor</a></li>							<li><a href="/petrosoft/AddSwipeModes">Swipe Machines</a></li>							
+
+
+
+							
+
+
+														
+
+							
+							
+
+
+
+							 <li><a href="/petrosoft/ExpiryAlerts"><span class="title">Expiry Items</span></a></li>							<li><a href="/petrosoft/AddTanks">Tank &amp; Nozzle</a></li>							<li><a href="/petrosoft/ConnectPumps">Pump Setting</a></li>
+							<li><a href="/petrosoft/AddWorkShift">DutyPay Shift</a></li>							<li><a href="/petrosoft/AddBusiShift">Business Shift</a></li>							<li><a href="/petrosoft/print-master">Print Templates</a></li>							<li><a href="/petrosoft/Master_Gustcust"><span class="title">Guest Entry</span></a></li>							
+							<li><a href="/petrosoft/app/denomination/add">Denominations</a></li>
+							
+														
+
+							
+
+							<div style="display: none">
+								
+								<li><a href="/petrosoft/app/parameters/lists"><span class="title">Parameters Master</span></a></li>
+							</div>
+						</ul>
+					</li>
+					<li>
+						<a href="#"><i class="icon-copy"></i> <span>Invoice</span></a>
+						<ul>
+							<li><a href="/petrosoft/LqInvoice"><span class="title">Fuel Purchase</span></a></li>							<li><a href="/petrosoft/LubInvoice"><span class="title">Lubricant Purchase</span></a></li>							<li><a href="/petrosoft/LfrInvoice"><span class="title">LFR Invoice</span></a></li>							<li><a href="/petrosoft/GstInvoice"><span class="title">Other-Purchases</span></a></li>							
+							
+
+													</ul>
+					</li>
+					<li class="nav-item">
+						<a href="#"><i aria-hidden="true" class="fa fa-usd"></i> <span>Day Business</span></a>
+						<ul class="sub-menu">
+
+							<li><a href="/petrosoft/Dayassignings">Day Assignings</a></li>
+							<li><a href="/petrosoft/DaySalerate">Daily Sale Rate</a></li>
+							<li><a href="/petrosoft/MeterSale"><span class="title">Sale Entry</span></a></li>
+							<li><a href="/petrosoft/LubsSale"> Lubricants</a></li>
+							
+
+							<li><a href="/petrosoft/Swipesales"><span class="title">Swipe</span></a></li>
+							<li><a href="/petrosoft/CreditSaleMulti"><span class="title">Credit Sale</span></a></li>
+							<li><a href="/petrosoft/DaySadar"><span class="title">Expenses</span></a></li>
+							<li><a href="/petrosoft/PartyCollection"><span class="title">Recovery</span></a></li>
+							
+							<li><a href="/petrosoft/empCashRec"><span class="title">Emp Cash Recovery</span></a></li>
+							<li><a href="/petrosoft/lqDayopen_stock"><span class="title">Day Opening Stock</span></a></li>
+							<li><a href="/petrosoft/Daysettlement"><span class="title">Day Settlement</span></a></li>						</ul>
+					</li>
+
+					<li class="nav-item">
+												<ul class="sub-menu">
+
+							<li><a href="/petrosoft/app/bowser/bowser_sale"><span class="title">Bowser Sale</span></a></li>
+							<li><a href="/petrosoft/BowserLubsle"> Lubricants</a></li>
+							<li><a href="/petrosoft/BowserSwipesales"><span class="title">Bowser Swipe</span></a></li>
+							<li class="active"><a href="/petrosoft/CrediBowsertSale"><span class="title">Bowser Credit Sale</span></a></li>
+							<li><a href="/petrosoft/BowserExpence"><span class="title">Bowser Expenses</span></a></li>
+							<li><a href="/petrosoft/BowserCollection"><span class="title">Bowser Recovery</span></a></li>
+
+						</ul>
+					</li>
+					 <li><a href="/petrosoft/app/master/box/sheet"><i aria-hidden="true" class="fa fa-diamond"></i><span class="title">Shift Sheet Entry</span></a></li>					<li><a href="/petrosoft/app/credit_report/bill_generation"><i aria-hidden="true" class="fa fa-asterisk"></i><span class="title">Statement Generation</span></a></li>					<li><a href="/petrosoft/Reports"><i aria-hidden="true" class="fa fa-flag"></i><span class="title">Reports </span></a></li>
+				<li class="nav-item">
+					<a href="#"><i aria-hidden="true" class="fa-file-text-o"></i> <span>Others</span></a>
+					<ul class="sub-menu">
+					<li><a href="/petrosoft/TransMovement"><span class="title">Busi. Cr/Dr Trxns</span></a></li>					 <li><a href="/petrosoft/VendorTrns"><span class="title">Vendor Transaction</span></a></li>					<li>
+							<a href="/petrosoft/app/credit/generate_bill"> <span>Generate SaleInvoice</span></a>
+						</li> 					<li>
+						<a href="/petrosoft/CreditInvoice"><span class="title">Credit Invoices</span></a></li>
+					<li>					</li><li><a href="/petrosoft/app/credit/prev_invoices"><span class="title">Generated Invoices</span></a></li>
+						<li>						</li><li><a href="/petrosoft/app/einvoice/prev_eway"><span class="title">Generated Eway Bills</span></a></li>
+                        <li>
+						
+						</li>
+
+						<li><a href="/petrosoft/CreidtPartyLImit"><span class="title">Credit Limit Reports</span></a></li>					</ul>
+                </li>
+					<li>
+						<a href="#"><i aria-hidden="true" class="fa fa-tint"></i> <span>Product Stock <span class="badge bg-warning-400">
+							1</span></span></a>
+						<ul class="sub-menu">
+							<li><a href="/petrosoft/stockReport"><span class="title">Stock Report</span></a></li>
+							<li><a href="/petrosoft/app/product/lub_lossadd">Lub Loss</a></li>
+							
+							<li><a href="/petrosoft/Lubstock"><span class="title"> Lubs Stock </span></a></li>
+							<li><a href="/petrosoft/app/product/minimu_stock_alert"><span class="title"> Minimum stock <span class="badge bg-warning-400">1</span> </span></a></li>							<li><a href="/petrosoft/app/product/lq_minimu_stock"><span class="title">Lq Minimum stock <span class="badge bg-warning-400"></span> </span></a></li>						</ul>
+
+					</li>
+
+										
+										
+					
+
+				
+
+					
+
+											<li class="nav-item">
+							<a href="#"><i aria-hidden="true" class="fa fa-link"></i> <span>Relational features</span></a>
+							<ul class="sub-menu">
+
+																	<li><a href="/petrosoft/app/interest/add"><i aria-hidden="true" class="fa fa-bell-o"></i><span class="title">Interest Trans</span></a></li>
+								
+
+								 <li><a href="/petrosoft/app/master/module_entries"><i aria-hidden="true" class="fa fa-bell-o"></i><span class="title">Sheet Records</span></a></li> 
+								<li><a href="/petrosoft/DayBusi_flow"><i aria-hidden="true" class="fa fa-money"></i><span class="title">Day cash report</span></a></li>
+								<li><a href="/petrosoft/T-Tsaleflow"><i aria-hidden="true" class="fa fa-truck"></i><span class="title">Tanker sale</span></a></li>								<li><a href="/petrosoft/GuestSale"><i aria-hidden="true" class="fa fa-user"></i><span class="title">Guest Sales</span></a></li>								<li><a href="/petrosoft/AttendanceEmp"><i aria-hidden="true" class="fa fa-calendar-check-o"></i><span class="title">Attendance</span></a></li>								<li><a href="/petrosoft/payroll"><i aria-hidden="true" class="fa fa-calendar-check-o"></i><span class="title">Pay Roll</span></a></li>
+								<li><a href="/petrosoft/Sales_Officer"><i aria-hidden="true" class="fa fa-book"></i><span class="title">Sales Officer</span></a></li>								<li><a href="/petrosoft/Crd_Req"><i aria-hidden="true" class="fa fa-book"></i><span class="title">Credit Requests</span></a></li>								<li><a href="/petrosoft/app/expiryItems/ExpiryList"><i aria-hidden="true" class="fa fa-bell-o"></i><span class="title">Expiry Items</span></a></li>
+								
+
+								<li><a href="/petrosoft/app/expiryItems/Brs_statement"><i aria-hidden="true" class="fa fa-bell-o"></i><span class="title">BRS</span></a></li>
+								<li><a href="/petrosoft/app/credit_report/brs_generation"><i aria-hidden="true" class="fa fa-bell-o"></i><span class="title">Generate BRS</span></a></li>
+								<li><a href="/petrosoft/app/expiryItems/Vrs_statement"><i aria-hidden="true" class="fa fa-bell-o"></i><span class="title">VRS</span></a></li>
+								<li><a href="/petrosoft/app/credit_report/vrs_generation"><i aria-hidden="true" class="fa fa-bell-o"></i><span class="title">Generate VRS</span></a></li>
+								<li><a href="/petrosoft/app/guestcust/hand_add"><i aria-hidden="true" class="fa fa-bell-o"></i><span class="title">Handling Loss</span></a></li>								<li><a href="/petrosoft/app/master/audit_report"><i aria-hidden="true" class="fa fa-bell-o"></i><span class="title">Audit Report</span></a></li>
+
+								<li><a href="/petrosoft/feedback"><i aria-hidden="true" class="fa fa-book"></i><span class="title">Feedback </span></a></li>								
+
+							</ul>
+						</li>
+							<li class="nav-item">
+							<a href="#"><i aria-hidden="true" class="fa fa-gift"></i> <span>Loyalty program</span></a>
+							<ul class="sub-menu">
+																	<li><a href="/petrosoft/app/loyalty_programme/dashboard"><i aria-hidden="true" class="fa fa-tachometer"></i><span class="title">Dashboard</span></a></li>
+								
+																	<li><a href="/petrosoft/app/loyalty_programme/detail_points"><i aria-hidden="true" class="fa fa-trophy"></i><span class="title">Tiers</span></a></li>
+																									<li><a href="/petrosoft/app/loyalty_programme/point_details"><i aria-hidden="true" class="fa fa-star"></i><span class="title">Points</span></a></li>
+																									<li><a href="/petrosoft/app/loyalty_programme/master_gifts"><i aria-hidden="true" class="fa fa-gift"></i><span class="title">Gifts</span></a></li>
+																									<li><a href="/petrosoft/app/loyalty_programme/gift_purchase"><i aria-hidden="true" class="fa fa-shopping-cart"></i><span class="title">Gift Purchase</span></a></li>
+																									<li><a href="/petrosoft/app/loyalty_programme/gift_sale"><i aria-hidden="true" class="fa fa-tag"></i><span class="title">Gift Sale</span></a></li>
+																
+									</ul>
+						</li>
+						
+
+					
+
+						
+						 						
+						
+
+				</ul>
+			</div>
+		</div>
+		
+	</div>
+</div>
+
+
+
+
+<div class="content-wrapper">
+	<style>
+		.sidebar {
+			background: url('/petrosoft-assets/assets/images/navbg.png');
+			background-color: #222d32;
+		}
+
+		.sidebar-fixed .sidebar-content {
+			/* background-color: #001a2de3; */
+			background-color: #222d32;
+		}
+
+		.navbar-inverse {
+			z-index: 9999;
+			border-color: #162e3f !important;
+		}
+
+		/* Day Entry — always highlighted at bottom of sidebar */
+		.sidebar .navigation > li.day-entry-nav {
+			margin: 10px 8px 14px;
+			border-radius: 8px;
+			overflow: hidden;
+			box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35), 0 4px 14px rgba(0, 0, 0, 0.25);
+		}
+		.sidebar .navigation > li.day-entry-nav > a {
+			background: linear-gradient(90deg, #2d52b3 0%, #4a76e0 50%, #2d52b3 100%) !important;
+			color: #fff !important;
+			font-weight: 700 !important;
+			letter-spacing: 0.02em;
+			padding-top: 12px !important;
+			padding-bottom: 12px !important;
+		}
+		.sidebar .navigation > li.day-entry-nav > a i,
+		.sidebar .navigation > li.day-entry-nav > a .title {
+			color: #fff !important;
+		}
+		.sidebar .navigation > li.day-entry-nav.active > a,
+		.sidebar .navigation > li.day-entry-nav > a:hover {
+			background: linear-gradient(90deg, #3b66d1 0%, #6a92ec 50%, #3b66d1 100%) !important;
+			color: #fff !important;
+		}
+
+	</style>
+
+
+	<style type="text/css">
+button.add_field_button,
+button.add_field_button1,
+a.remove_field {
+    /* position: relative;
+    top: 40px; */
+    margin: 37px 0 0;
+}
+
+.box-dynamic {
+    border: 1px solid;
+    padding: 7px 10px 0;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+.modal-header .close {
+    top: 25%;
+    margin-top: 0 !important;
+}
+
+.modal-content {
+    background-color: #cbcbcb;
+    color: white;
+}
+
+.modal-header {
+    padding: 10px 20px;
+    border-bottom: 1px solid transparent;
+    background: #009688;
+}
+
+.plist {
+    margin: 4px 1px;
+    padding: 0 10px;
+}
+
+.cls-confirm {
+    margin-top: 15px;
+    padding: 9px 45px;
+    background: gold;
+    color: black;
+    border-color: #9a8f09;
+    font-weight: 500;
+}
+
+.selet_alert {
+    color: #ffeb3b;
+    font-weight: bold;
+    padding: 3px;
+    /* position: absolute; */
+    bottom: -30px;
+    left: 0px;
+}
+
+/* .inside-box .selet_alert{
+    bottom:0 !important;
+  } */
+.new-border {
+    padding: 10px 5px 39px !important;
+}
+
+input[type=checkbox],
+input[type=radio] {
+    vertical-align: text-bottom;
+}
+
+.d-flex-lg {
+    display: flex;
+    text-align: left;
+    padding: 10px;
+}
+
+.form-box-lg {
+    padding: 5px;
+    width: 20%;
+}
+
+.form-box input {
+    margin-top: 5px;
+}
+
+.employee_wrapper {
+    margin-bottom: 15px;
+}
+
+.float-label {
+    top: 0.8rem;
+}
+
+.tooltip {
+    position: relative;
+    display: inline-block;
+    opacity: 1;
+    z-index: 0 !important;
+}
+
+/* Tooltip text */
+.tooltip .tooltxt {
+    visibility: hidden;
+    max-width: 250px;
+    background-color: #000;
+    color: #fff;
+    text-align: center;
+    padding: 5px 0;
+    border-radius: 6px;
+
+    /* Position the tooltip text - see examples below! */
+    position: absolute;
+    top: -27px;
+    left: -64px;
+    z-index: 1;
+}
+
+/* Show the tooltip text when you mouse over the tooltip container */
+.tooltip:hover .tooltxt {
+    visibility: visible;
+}
+
+.blocking-contaier {
+    display: inline-block;
+    width: 100%;
+}
+
+.height85 {
+    height: 85px;
+}
+
+#crddue1 {
+    position: absolute;
+    /* top: -22px; */
+    right: 0;
+    bottom: -25px;
+}
+
+.width-md-75 {
+    width: 90px;
+}
+
+.postion_ckeck_box {
+    position: absolute;
+    top: -15px;
+    right: -20px;
+}
+
+.width-lg85 {
+    width: 80px;
+}
+
+.width-lg-40 {
+    width: 80px;
+}
+
+.width-lg-150 {
+    width: 150px;
+}
+
+.top-space {
+    height: 56px !important;
+
+}
+
+div#addcustModal .modal-dialog {
+    margin: 60px auto 30px !important;
+}
+
+
+
+ul.ks-cboxtags {
+    list-style: none;
+    padding-left: 0;
+    display: inline-block;
+    margin-bottom: 0 !important;
+    height: 7px;
+}
+
+ul.ks-cboxtags li {
+    display: inline;
+}
+
+ul.ks-cboxtags li label {
+    display: inline-block;
+    color: #fff;
+    white-space: nowrap;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: all .2s;
+}
+
+ul.ks-cboxtags li label {
+    cursor: pointer;
+}
+
+ul.ks-cboxtags li label::before {
+    display: inline-block;
+    font-style: normal;
+    font-variant: normal;
+    text-rendering: auto;
+    -webkit-font-smoothing: antialiased;
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    font-size: 13px;
+    /* padding: 2px 6px 2px 2px; */
+    content: "\f096";
+    font: normal normal normal 14px/1 FontAwesome;
+    transition: transform .3s ease-in-out;
+}
+
+ul.ks-cboxtags li input[type="checkbox"]:checked+label::before {
+    content: "\f00c";
+    font-size: 11px;
+    font: normal normal normal 14px/1 FontAwesome;
+    transform: rotate(-360deg);
+    transition: transform .3s ease-in-out;
+}
+
+ul.ks-cboxtags li input[type="checkbox"]:checked+label {
+    color: #fff;
+    transition: all .2s;
+}
+
+ul.ks-cboxtags li input[type="checkbox"] {
+    display: absolute;
+}
+
+ul.ks-cboxtags li input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+}
+
+.tooltiptext {
+    width: 12px !important;
+}
+
+.top-space {
+    margin-top: 32px !important;
+    height: 50px;
+}
+
+.height75 {
+    height: 75px;
+}
+
+.height-lg-60 {
+    height: 60px;
+}
+
+.col-md-2,
+.col-sm-6,
+.col-xs-12 {
+    padding: 0px 3px;
+}
+
+.form-control.tom {
+    padding: 0;
+    border: 0;
+}
+
+.help-block {
+    position: absolute;
+    top: 30px;
+}
+
+button.btn.btn-primary.pic-button {
+    margin-top: 25px;
+}
+
+/* 
+@media(max-width:1920px){
+  .tooltiptext{
+  margin-left: 10px !important;
+}
+} */
+
+.shift-checkbox {
+    z-index: 1;
+    position: relative;
+}
+
+.width-125 {
+    width: 125px;
+}
+
+.height-sm-90 {
+    height: 90px;
+}
+
+.height-sm-93 {
+    height: 93px;
+}
+
+.kgn-details-info {
+    padding: 0 3px;
+}
+
+.height-xxl-69 {
+    height: 69px !important;
+}
+
+.height-sm-93.height-lg-69,
+.height-sm-90.height-lg-69,
+.width-125.height-lg-69,
+.kgn-details-info.height-lg-69 {
+    height: 69px !important;
+}
+
+.inside-box.new-border .selet_alert {
+    bottom: -16px !important;
+}
+
+/* .col-md-2, .col-sm-6, .col-xs-12{
+      z-index:1;
+    } */
+.ts-hidden-accessible {
+    bottom: 0;
+}
+
+.modal-body.newfields .col-lg-2.col-md-2.col-sm-6.col-xs-12 {
+    min-height: 75px;
+}
+
+.modal-body.newfields label {
+    margin-top: 10px;
+}
+
+@media(max-width:1920px) {
+    .height-sm-90 {
+        height: 88px;
+    }
+}
+
+@media(min-width:1448px) {
+    .tooltiptext {
+        margin-left: 6px !important;
+    }
+}
+
+@media(max-width:1447px) {
+    .tooltiptext {
+        margin-left: 0px !important;
+    }
+}
+
+@media(max-width:1375px) {
+    .height-sm-93 {
+        height: 88px;
+    }
+}
+
+@media(max-width:1246px) {
+    .top-space {
+        height: 56px;
+    }
+
+    .width-lg85 {
+        width: 80px;
+    }
+
+    .width-lg-40 {
+        width: 40px;
+    }
+
+    .width-lg-150 {
+        width: 150px;
+    }
+}
+
+@media(max-width:1240px) {
+    .elipse_container {
+        white-space: nowrap;
+        width: 65px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .m_10.elipses {
+        white-space: nowrap;
+        width: 70px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+@media(max-width:1199px) {
+
+    /* .width-lg-40 .add_field_button{
+    top:0 !important;
+    margin:8px 0 !important;
+  } */
+    /* .col-md-1.col-sm-12.col-xs-12.text-right.width-lg-40{
+    width:100%;
+  } */
+    .height-sm-90 {
+        height: 85px;
+    }
+
+    .height-lg-69 {
+        height: 69px;
+    }
+
+    .kgn-details-info.height-sm-85.height-lg-69 {
+        height: 69px !important;
+    }
+}
+
+@media(max-width:1124px) {
+    .col-md-1.width-lg-120 {
+        width: 120px;
+    }
+}
+
+@media(max-width:1100px) {
+    .height-sm-85 {
+        height: 85px;
+    }
+
+    .height-sm-90 {
+        height: 85px;
+    }
+
+    .kgn-details-info.height-sm-90.height-lg-69 {
+        height: 69px !important;
+    }
+}
+
+@media(max-width:1039px) {
+    .height-sm-90.height-lg-69 {
+        height: 69px;
+    }
+}
+
+
+
+@media (max-width:1024px) {
+
+    button.add_field_button1,
+    a.remove_field {
+        top: 0;
+        margin: 15px 6px 7px;
+        right: 10px;
+    }
+
+    button.add_field_button {
+        top: 0;
+        margin: 0px 0 7px;
+    }
+
+    .form-group div[class*=col-md-]:not(.control-label)+div[class*=col-md-] {
+        margin-top: 0;
+    }
+
+    .msn-grid .col-sm-6 .m_10:first-child,
+    .msn-grid .col-sm-6 .m_10 {
+        width: 100% !important;
+        text-align: left;
+    }
+
+
+    .col-sm-6.col-xs-12.op-text-grid1 {
+        padding-left: 10px;
+    }
+
+    .col-md-4.pix.kgn-details-info.op-bill-left {
+        padding: 10px 10px;
+        margin-bottom: 0;
+    }
+
+    .elipse_container {
+        white-space: nowrap;
+        width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .width-md-75 {
+        width: 50%;
+    }
+
+    .height-md55 {
+        height: 55px;
+    }
+
+    .width-lg-150,
+    .width-lg85 {
+        width: 50%;
+    }
+
+    .help-block {
+        position: absolute;
+        top: 28px;
+        right: 0;
+    }
+
+    .top-space {
+        height: 53px;
+    }
+
+    /* .text-right.width-lg-40{
+      width:100%;
+      text-align:right;
+    } */
+    .width-125 {
+        width: 50%;
+    }
+
+    .height-sm-90 {
+        height: 88px;
+    }
+
+    .col-md-1.col-sm-12.col-xs-12.text-right.width-lg-40 {
+        margin-top: 37px !important;
+    }
+
+    .col-md-1.width-lg-120 {
+        width: auto !important;
+    }
+
+    .height-sm-85 {
+        height: 69px;
+    }
+
+    .top-space {
+        height: 40px;
+    }
+
+}
+
+/* 
+  .ts-control {
+    margin-top: 4px;
+  } */
+
+@media (max-width : 990px) {
+    .d-flex-lg {
+        display: block;
+    }
+
+    .form-box-lg {
+        width: 100%;
+    }
+}
+
+@media (min-width: 769px) {
+    div#addcustModal .modal-dialog {
+        width: 730px;
+        margin: 30px auto;
+    }
+
+}
+
+@media (max-width: 769px) {
+    .width-lg-40 {
+        width: 100%;
+        text-align: right;
+    }
+
+}
+
+@media(max-width:767px) {
+
+    /* .shift-checkbox {
+                    margin-top: 0px;
+                    z-index: 0;
+                }
+                .ts-control {
+                    position: static !important;
+                    z-index: 1;
+                }
+                .z-index-0{
+                    z-index: 0 !important;
+                }
+                .float-input{
+                  position: static;
+                } */
+    /* .float-input:not(:placeholder-shown).float-input:not(:focus)~.float-label,
+                .did-floating-label,
+                .float-label{
+                  z-index: 0 !important;
+                } */
+    div#addcustModal .modal-dialog {
+        margin: 60px 5px 30px !important;
+    }
+}
+
+@media (max-width: 600px) {
+    .top-space {
+        margin-top: 26px !important;
+    }
+
+    .width-md-75,
+    .width-lg-150,
+    .width-lg85 {
+        width: 100%;
+    }
+
+    .height-lg-60 {
+        height: 85px;
+    }
+
+    .width-125 {
+        width: 100%;
+    }
+
+    .col-md-1.width-lg-120 {
+        float: right;
+    }
+
+    .employee_wrapper.col-md-6 {
+        padding-right: 0;
+    }
+
+    .col-xs-12 {
+        width: 100% !important;
+    }
+
+}
+
+@media (max-width: 480px) {
+    button.add_field_button {
+        margin-left: 0 !important;
+        position: relative;
+        top: -10px;
+    }
+}
+
+/* .inside-box .kgn-details-info{
+    height:86px;
+  } */
+.inside-box {
+    padding-bottom: 25px;
+}
+
+.sale-info-grid {
+    position: relative;
+    z-index: 0;
+}
+</style>
+
+<aside class="right-side">
+    
+    <section class="content-header">
+        <ol class="breadcrumb">
+            <li><a href="/petrosoft/app/dashboard"><i class="fa fa-home"></i> Dashboard</a></li>
+            <li><a href="/petrosoft/app/credit">Credit</a></li>
+            <li class="active">Add Credit</li>
+        </ol>
+    </section>
+    
+    <section class="content">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="m_10">
+                    <div class="col-md-3 col-sm-6 col-xs-6">
+                        
+                    </div>
+                    <div class="col-md-3 col-sm-6 col-xs-6">
+                        
+                    </div>
+                    <div class="clearfix"> </div>
+                    
+                    <div class="clearfix"> </div>
+                </div>
+
+                <div class="m_10">
+                    
+
+                </div>
+                <div class="clearfix"> </div>
+
+                <div class="col-md-12">
+
+                    
+                    <input id="jsonorg_list" type="hidden" value=""/>
+
+                                        <div class="op-bill-cancel">
+
+                        
+                                                <form action="/api/petrosoft/action" data-ps-form="1" data-ps-onsubmit="pleasewait()" data-ps-operation="save" enctype="multipart/form-data" method="post" role="form">
+                            <input data-ps-field="orgpost_pagetype" name="orgpost_pagetype" type="hidden" value="array_org"/>
+                            <div class="kgn-details-grids">
+                                <div class="col-md-2 col-xs-4 kgn-top-heading kgn-left-heading mb-15">
+                                    <h3>Bowser Credit Sale</h3> <br/>
+                                    <a class="label bg-orange-400 advnc-btn" href="#">Advance</a>
+                                </div>
+
+                                
+                                <div class="col-md-10 col-xs-8" style="float: left">
+                                    <button class="indent_add1 bttn btn btn-rounded add-modal-btn" data-ps-onclick="showmodel()" style=" float: right;" type="button"><b style="color: #000">Add
+                                            Party</b>  <img height="20" src="/petrosoft-assets/assets/images/add.png" width="20"/></button>
+                                    <button class="btn btn-rounded" data-ps-onclick="showUploadmodel()" style=" float: right;color:#000;margin-right: 10px;display:none" type="button"><b>Upload File</b>  <i aria-hidden="true" class="fa fa-upload"></i></button>
+                                </div>
+                                <div class="clearfix"></div>
+                                
+                                <div class="modal fade dismodal" id="addcustModal" role="dialog">
+                                    <div class="modal-dialog modal-lg" data-ps-onclick="remove_dynamic_list()">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <button class="close" data-dismiss="modal" type="button">×</button>
+                                                <h4 class="modal-title">Add Credit Organization</h4>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="kgn-top-info">
+                                                    <div class="row" style="color: black">
+                                                        <div class="col-xs-12 col-md-12">
+                                                            <input class="hidenindt_cunt" id="indecnt" type="hidden" value="0"/>
+                                                            <div class="col-xs-12 col-md-12">
+                                                            </div>
+                                                            <div class="d-flex-lg">
+                                                                <div class="col-sm-6 col-xs-12">
+                                                                    <div class="form-box">
+                                                                        <lable><b>Org.Name</b>  <span style="color:#f00">*</span></lable>
+                                                                        <input autocomplete="off" class="input-sm cus_form form-control" data-ps-field="orgname" data-ps-onblur="custnamevalidation()" data-ps-oninput="validateOrgName()" data-ps-onkeyup="custname_valid()" id="orgname" maxlength="30" minlength="1" name="orgname" placeholder="Org Name" type="text"/>
+                                                                        <div 10px;="" id="showlistdiv" padding:0="" style="color: #f0fd25;position: absolute;background-color: #325d51f2;z-index: 9;width: 100%;max-height: 145px;overflow-y: auto; font-weight: 400;"></div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-sm-6 col-xs-12">
+                                                                    <div class="form-box">
+                                                                        <lable><b>Cust.Name</b>  <span style="color:#f00">*</span></lable>
+                                                                        <input class="input-sm cus_form form-control" data-ps-field="custname" data-ps-oninput="validateCustName()" id="custname" maxlength="30" minlength="1" name="custname" placeholder="Customer Name" type="text"/>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-sm-6 col-xs-12">
+                                                                    <div class="form-box">
+                                                                        <lable><b>Phone No</b></lable>
+                                                                        <input class="form-control input-sm indamt inputvalid" data-ps-field="phoneno" id="phoneno" maxlength="13" minlength="10" name="phoneno" placeholder="Contact No" type="text" value=""/>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-sm-6 col-xs-12">
+                                                                    <div class="form-box">
+                                                                        <lable><b>Email</b></lable>
+                                                                        <input class="form-control input-sm indamt" data-ps-field="email" id="email" name="email" placeholder="Email Id" type="text" value=""/>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-sm-6 col-xs-12">
+                                                                    <div class="form-box">
+                                                                        <lable><b>Credit Limit</b></lable>
+                                                                        <input class="form-control input-sm indamt inputvalid" data-ps-field="crdlimit" data-ps-oninput="validateCrdtLmt()" id="crdlimit" maxlength="15" minlength="1" name="crdlimit" placeholder="Credit limit" type="text" value=""/>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer text-center">
+                                                <button class="btn btn-success indpic-button" id="finalok_btn" name="finalok_btn" type="submit"><i class="fa fa-check"></i>
+                                                    Add</button>
+                                                <button class="btn btn-danger indpic-button" data-dismiss="modal" id="btnClose" name="btnClose" type=""><i class="fa fa-close"></i> Close</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="clearfix"></div>
+                                <div class="col-md-3 col-sm-3 col-xs-6 z-index-0" style="margin-left: -11px;">
+
+                                    <div class="m_10 op-bill-left sale-info-grid">
+                                        <input class="form-control input-sm" data-ps-field="tot_cost" id="tot_cost" name="tot_cost" placeholder="Total Amount Value" readonly="" required="required" type="text"/>
+                                        <input class="form-control input-sm" data-ps-field="totamt_batta" id="totamt_batta" name="totamt_batta" placeholder="Batta Amount" required="required" type="hidden"/>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-2 col-sm-3 col-xs-6 kgn-details-info op-bill-left z-index-0">
+
+                                    <div class="m_10 op-bill-left sale-info-grid">
+                                        <input class="form-control input-sm" data-ps-field="tot_discnt" id="tot_discnt" name="tot_discnt" placeholder="Total Discount" readonly="" required="required" type="text"/>
+                                        <input class="form-control input-sm" data-ps-field="tot_quant" id="tot_quant" name="tot_quant" placeholder="Total Quantity" readonly="" required="required" type="hidden"/>
+                                    </div>
+                                </div>
+                                <div class="col-md-7 col-sm-6 col-xs-12">
+
+                                                                        <div class="col-md-3 col-xs-6 pix kgn-details-info op-bill-left" style="padding:0;margin:0;margin-top: 4px;">
+                                        <div class="col-md-5 col-xs-5 pix kgn-details-info op-bill-left" style=" background: #dcd2cdfa;color:black;text-align:center;">
+                                            <div class="" style=" color: #000;padding: 8px 5px; ">
+                                                <b>MS</b>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-7 col-xs-7 pix kgn-details-info op-bill-left">
+                                            <div class="">
+                                                <input class="form-control" id="totqty1" readonly="" style=" border-radius: 0;" type="text"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                                                        <div class="col-md-3 col-xs-6 pix kgn-details-info op-bill-left" style="padding:0;margin:0;margin-top: 4px;">
+                                        <div class="col-md-5 col-xs-5 pix kgn-details-info op-bill-left" style=" background: #dcd2cdfa;color:black;text-align:center;">
+                                            <div class="" style=" color: #000;padding: 8px 5px; ">
+                                                <b>HSD</b>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-7 col-xs-7 pix kgn-details-info op-bill-left">
+                                            <div class="">
+                                                <input class="form-control" id="totqty2" readonly="" style=" border-radius: 0;" type="text"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                                                        <div class="col-md-3 col-xs-6 pix kgn-details-info op-bill-left" style="padding:0;margin:0;margin-top: 4px;">
+                                        <div class="col-md-5 col-xs-5 pix kgn-details-info op-bill-left" style=" background: #dcd2cdfa;color:black;text-align:center;">
+                                            <div class="" style=" color: #000;padding: 8px 5px; ">
+                                                <b>OIL</b>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-7 col-xs-7 pix kgn-details-info op-bill-left">
+                                            <div class="">
+                                                <input class="form-control" id="totqty3" readonly="" style=" border-radius: 0;" type="text"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                                                    </div>
+                                <div class="clearfix"> </div>
+                                <div class="m_10">
+                                    <div class="col-md-2 col-sm-3 col-xs-6 pix kgn-details-info op-bill-left" style="padding:0;">
+                                        <div class="m_10 op-text-grid" style="background: #ffd05b;color: #000;padding: 4px 4px 4px 18px;width: 100% !important;text-align: center;">
+                                            Choose Date
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2 col-sm-3 col-xs-6 pix kgn-details-info op-bill-left">
+                                        <div class="m_10">
+                                                                                        <input autocomplete="off" class="form-control input-sm border-radius-0" data-ps-field="insert_date" id="insert_date" name="insert_date" placeholder="Date" required="" type="text" value=""/>
+                                        </div>
+                                    </div>
+                                    <div class="clearfix-sm"> </div>
+                                                                        
+
+                                    
+
+                                    
+                                    <style type="text/css">
+                                    .blnce {
+                                        background: yellow;
+                                        color: black;
+                                        border-radius: 3px;
+                                        font-weight: bold;
+                                    }
+                                    </style>
+                                    <div class="clearfix"></div>
+                                </div>
+                                <div class="input_fields_wrap">
+                                    <div class="form-group msn-grid mt-15">
+                                        <div class="employee_wrapper col-md-6" style="padding-left:0">
+                                            <fieldset class="from-filler">
+                                                <legend>
+                                                    <label class="autofill" for="">Auto-fill</label>
+                                                </legend>
+
+                                                <div class="col-md-4 col-sm-4 col-xs-12 pix">
+                                                    <div class="m_10">
+                                                        <div class="">
+                                                            Organization
+                                                        </div>
+                                                        <select class="tom" data-ps-onchange="setorg()" data-ps-relation="customers" id="organiz0">
+                                                            <option value="">Choose Organization</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-4 col-sm-4 col-xs-12 pix kgn-details-info op-bill-left">
+                                                    <div class="m_10">
+                                                        <div class="">
+                                                            Product
+                                                        </div>
+                                                        <select class="tom" data-product="crd_prod" data-ps-onchange="setprods()" data-ps-relation="fuel-products" id="pro_master">
+                                                            <option value="">choose Product</option>
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                    </select>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-4 col-sm-4 col-xs-12 pix kgn-details-info op-bill-left">
+                                                    <div class="m_10">
+                                                        <div class="">
+                                                            Employee
+                                                        </div>
+                                                        <select class="tom" data-ps-onchange="setemply()" data-ps-relation="employees" id="emp_master">
+                                                            <option value="">choose Employee</option>
+                                                            <option value=""></option>                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </fieldset>
+
+                                        </div>
+
+                                        <div class="blocking-contaier" data-ps-row="1" style="display:flex !important;flex-wrap:wrap">
+
+                                            <div class="col-md-2 col-sm-6 col-xs-12 top-space">
+                                                
+                                                <span style="position: absolute;top: -27px;"></span>
+                                                <div class="float-container">
+                                                    <select class="tom did-floating-select" data-ps-field="Bowser_Crd[]" data-ps-relation="bowsers" id="Bowser1" name="Bowser_Crd[]" required="required">
+                                                        <option value="">Choose Bowser</option>
+                                                                                                            </select>
+                                                    <label class="did-floating-label"></label>
+                                                    <span class="balnc" id="Bowser1" style="color: yellow;font-weight: 500;"></span>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-2 col-sm-6 col-xs-12 top-space">
+                                                
+                                                <span id="orgcrdi1" style="position: absolute;top: -27px;"></span>
+                                                <div class="float-container">
+                                                    <select class="tom did-floating-select" data-orgcre="orgcrdi1" data-ps-field="organiz[]" data-ps-onchange="organizChng('1')" data-ps-relation="customers" id="organiz1" name="organiz[]" required="required">
+                                                        <option value="">Choose Organization</option>
+                                                    </select>
+                                                    <label class="did-floating-label"></label>
+                                                    <span class="balnc" id="crddue1" style="color: yellow;font-weight: 500;"></span>
+
+
+
+                                                    <input data-limit="" data-pend="" id="custpendlimt1" type="hidden"/>
+                                                    <input data-ps-field="custgst_no[]" id="custgst_no1" name="custgst_no[]" type="hidden" value="0"/>
+                                                    
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-2 col-sm-6 col-xs-12 top-space width-lg-150">
+                                                <div class="float-container">
+                                                    <input autocomplete="off" class="input-sm cus_form form-control float-input" data-orgvec="org_vehicle" data-ps-field="vehi_no[]" data-ps-onchange="getlastread('1')" data-ps-oninput="validateVehiNo('1')" id="vehicleno1" list="vehi_no1" maxlength="15" minlength="1" name="vehi_no[]" placeholder=" " value=""/> <datalist id="vehi_no1"></datalist>
+                                                    <label class="float-label" for="vehicleno1"> Vehicle No</label>
+                                                    <span id="org_vehicle"></span>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-2 col-sm-6 col-xs-12 top-space">
+                                                <div class="float-container">
+                                                    <select class="tom did-floating-select" data-product="crd_prod" data-ps-field="product[]" data-ps-onchange="getproduct('1')" data-ps-relation="fuel-products" id="product1" name="product[]" required="required">
+
+                                                        <option value=""></option>
+                                                                                                                
+                                                                                                                
+                                                                                                                
+                                                        
+                                                    </select>
+                                                    <label class="did-floating-label" for="product1">Choose
+                                                        Product</label>
+                                                    <input data-ps-field="gst[]" id="gst1" name="gst[]" type="hidden" value="0"/>
+                                                    <input data-ps-field="disc_offer[]" id="disc_offer1" name="disc_offer[]" type="hidden" value="0"/>
+                                                    <input data-ps-field="offerf_type[]" id="offer_type1" name="offerf_type[]" type="hidden" value="0"/>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-1 col-sm-6 col-xs-12 kgn-details-info top-space">
+                                                <div class="float-container">
+                                                    <input class="form-control input-sm inputvalid float-input" data-ps-field="price[]" id="price1" name="price[]" placeholder=" " required="required" type="text"/>
+                                                    <label class="float-label" for="price1">Price</label>
+                                                </div>
+                                            </div>
+                                            <div class="clearfix-sm"></div>
+                                            <div class="col-md-1 col-sm-6 col-xs-12 kgn-details-info width-125" style="margin-top: 5px;">
+                                                <div class="" style="margin-bottom: 5px;margin-top: 3px;">
+                                                    Credit Amt
+                                                    <div class="tooltip">
+                                                        <div>
+                                                            
+                                                            <input data-ps-field="trxn_bowser_credit[]" id="trxn_bowser_credit1" name="trxn_bowser_credit[]" type="hidden" value="true"/>
+                                                        </div>
+                                                        <div>
+                                                            <span class="tooltxt" style="padding:4px 8px">Browser Transactions</span>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                </div>
+                                                <div class="m_10 ctot">
+                                                    <input class="form-control input-sm inputvalid" data-ps-field="cost[]" data-ps-onchange="calqnty('1')" data-ps-oninput="validateCrdtCost('1')" id="cost1" maxlength="15" minlength="1" name="cost[]" placeholder="Credit Amt" required="required" type="text"/>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-1 col-sm-6 col-xs-12 kgn-details-info height-sm-85" style="margin-top: 3px;">
+                                                <div class="m_10">
+                                                    Discount
+                                                </div>
+                                                <div class="m_10">
+                                                    <input class="form-control input-sm inputvalid" data-ps-field="credit_discnt[]" data-ps-onfocus="caldisc('1', 'focus')" data-ps-oninput="validateCrdtDisc('1')" data-ps-onkeyup="caldisc('1', 'keyup')" id="credit_discnt1" maxlength="15" minlength="1" name="credit_discnt[]" placeholder="Discount" type="text" value="0"/>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-1 col-md-2 col-sm-6 col-xs-12 kgn-details-info top-space">
+                                                <div class="float-container cqunt">
+                                                    <input class="form-control input-sm inputvalid float-input" data-loopid="1" data-ps-field="qnty[]" data-ps-oninput="validateCrdtQty('1')" data-ps-onkeyup="calcost('1')" id="qnty1" maxlength="15" minlength="1" name="qnty[]" placeholder=" " required="required" type="text"/>
+                                                    <label class="float-label" for="qnty1">Qty (Lts)</label>
+                                                </div>
+                                            </div>
+
+
+                                             <div class="col-md-1 col-sm-6 col-xs-12 kgn-details-info height-sm-90">
+                                                <div class="m_10">
+                                                    Bill no.
+                                                </div>
+                                                <div class="m_10">
+                                                    <input class="form-control input-sm" data-ps-field="credit_billno[]" data-ps-oninput="validateBillNo('1')" id="credit_billno1" maxlength="13" minlength="1" name="credit_billno[]" placeholder="Bill no" required="required" type="text" value="0"/>
+                                                </div>
+                                            </div>
+
+
+                                            <div class="col-md-1 col-sm-6 col-xs-12 kgn-details-info height-sm-93">
+                                                <div class="m_10 elipses">
+                                                    Misc.Charges
+                                                </div>
+                                                <div class="m_10 batta_amt">
+                                                    <input class="form-control input-sm inputvalid" data-ps-field="batta_amt[]" data-ps-oninput="validateCrdtMiscChrg('1')" id="misc-charges1" maxlength="15" minlength="1" name="batta_amt[]" placeholder="Miscellaneous Charges  (₹)" required="required" type="text" value="0"/>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-1 col-sm-6 col-xs-12 kgn-details-info height-sm-90" style="margin-top: 3px;">
+                                                <div class="m_10">
+                                                    Indent No
+                                                </div>
+                                                <div class="m_10">
+                                                    <input class="form-control input-sm" data-ps-field="indent_no[]" data-ps-oninput="validateIndentNo('1')" id="indent_no1" maxlength="14" minlength="1" name="indent_no[]" placeholder="Indent No" required="required" type="text" value="0"/>
+                                                </div>
+                                            </div>
+
+
+                                            
+                                           
+                                            <div class="col-md-2 col-sm-6 col-xs-12 op-bill-left z-index-0">
+                                                <div class="m_10">
+                                                    Upload Image
+                                                </div>
+                                                
+                                                <div class="s-group sale-info-grid">
+                                                    <div class="input-group">
+                                                        <label class="input-group-btn">
+                                                            <span class="btn btn-newupload">Browse…
+                                                                <input accept="image/png,image/jpeg,image/gif" autocomplete="off" class="btn btn-primary mb1 black bg-yellow" data-ps-field="credit_img[]" data-ps-onchange="image_validation(1)" id="file1" name="credit_img[]" style="display: none;" type="file"/>
+                                                            </span>
+                                                        </label><input autocomplete="off" class="form-control" readonly="" type="text"/>
+                                                    </div>
+                                                    <span class="help-block" style="color: #ffdf9a;">Allowed (JPEG, JPG,
+                                                        TIF, GIF, PNG) MaxSize:2MB</span>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2 col-sm-6 col-xs-12 kgn-details-info">
+                                                <div class="m_10"><span id="empcredit"></span> Employee</div>
+                                                <div class="m_10">
+                                                    <select class="tom" data-custemp="empcredit" data-ps-field="credsale_emp[]" data-ps-relation="employees" id="credsale_emp1" name="credsale_emp[]" required="">
+                                                        <option value=""></option>                                                    </select>
+
+                                                    <input id="cntp" type="hidden"/>
+                                                    <input id="rowcount" type="hidden"/>
+                                                </div>
+                                            </div>
+                                            <div class="clearfix-sm"></div>
+                                            <div class="col-md-1 col-sm-6 col-xs-12 kgn-details-info">
+                                                <div class="m_10">
+                                                    Effect
+                                                </div>
+                                                <div class="m_10">
+                                                    <select class="tom" data-ps-field="effectasst[]" data-ps-onchange="Credit_effectasset('1')" id="effectasst1" name="effectasst[]" type="checkbox">
+                                                        <option value="No">No</option>
+                                                        <option value="Yes">Yes</option>
+                                                    </select>
+                                                    
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2 col-sm-6 col-xs-12 top-space" id="partytypeid1" style="display: none">
+                                                <div class="float-container">
+                                                    <select class="tom did-floating-select" data-creditparty_alert="creditparty_alert1" data-ps-field="partytype[]" data-ps-option-format="party" data-ps-relation="business-parties" id="partytype1" name="partytype[]">
+                                                        <option value=""></option><optgroup label="Creditor" style="background-color: bisque;">                                                     </optgroup></select>
+                                                    <label class="did-floating-label" for="partytype1"><span></span>Effect To</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-1 col-sm-6 col-xs-12 top-space">
+                                                <div class="float-container">
+                                                    <input class="form-control input-sm float-input" data-ps-field="desc[]" id="desc1" name="desc[]" placeholder=" " type="text"/>
+                                                    <label class="float-label" for="desc1">Description</label>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-1 col-sm-6 col-xs-12 top-space">
+                                                <div class="float-container">
+                                                    <input class="form-control input-sm float-input" data-ps-field="sread[]" data-ps-oninput="validateMileage('1')" data-ps-onkeyup="calMilleage('1')" id="sread1" maxlength="15" minlength="1" name="sread[]" placeholder=" " type="text"/>
+                                                    <label class="float-label elipse_container" for="sread1">Meter.Read
+                                                    </label>
+                                                </div>
+                                                <span class="balnc" id="meter_read1" style="color: yellow;font-weight: 500;position: absolute;bottom: -2px;"></span>
+                                            </div>
+                                            <input data-ps-field="last_qty[]" id="last_qty1" name="last_qty[]" type="hidden"/>
+                                            <input data-ps-field="last_read[]" id="last_read1" name="last_read[]" type="hidden"/>
+                                            <div class="col-md-1 col-sm-6 col-xs-12 top-space">
+                                                <div class="float-container">
+                                                    <input class="form-control input-sm float-input" data-ps-field="mileage[]" id="mileage1" name="mileage[]" placeholder=" " readonly="" type="text"/>
+                                                    <label class="float-label" for="mileage1">Milleage</label>
+                                                </div>
+                                            </div>
+
+
+                                            <div class="col-md-1 col-sm-12 col-xs-12 text-right width-lg-40">
+                                                <button class="add_field_button" style="background:none; border:none;"><img height="20" src="/petrosoft-assets/assets/img/add.png" width="20"/></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                
+                                <div class="clearfix"></div>
+                                <div class="form-group text-center">
+                                    <button class="btn btn-primary pic-button" id="btn_credit_details" name="btnSubmit" type="button">Confirm <i aria-hidden="true" class="fa fa-check-square-o"></i></button>
+                                    <style type="text/css">
+                                    .bg-green {
+                                        background-color: #8bc34a;
+                                        border-color: #8bc34a;
+                                        color: #fff;
+                                        margin-top: 12px !important;
+                                    }
+                                    </style>
+                                </div>
+                            </div>
+                        </form>
+                        
+                        <div aria-hidden="true" aria-labelledby="myModalLabel" class="modal fade" id="adv_modal" role="dialog" style="color: black; padding-right:0 !important">
+                            <div class="modal-dialog" style="width:700px; max-width:100%; padding:10px;margin-top:50px;">
+                                <form action="/api/petrosoft/action" data-ps-form="2" data-ps-operation="save" method="post" role="form">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <button aria-hidden="true" class="close" data-dismiss="modal" type="button">x</button>
+                                            <h4 class="modal-title">Add Advance Amount</h4>
+                                        </div>
+                                        <div class="modal-body newfields" style=" color: black;">
+                                            <div class="row">
+                                                <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12">
+                                                    <label>Date</label>
+                                                    <input class="form-control trans_dt input-sm" data-ps-field="date_input" name="date_input" required=""/>
+                                                </div>
+                                                                                                <input data-ps-field="shift_input" name="shift_input" type="hidden" value="S-1"/>
+                                                
+                                                <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12">
+                                                    <label>Organization</label>
+                                                    <select class="tom" data-ps-field="org_input" data-ps-onchange="adv_balance(this.value)" data-ps-relation="customers" id="tom_org" name="org_input" required="">
+                                                        <option value=""> </option>                                                    </select>
+                                                </div>
+
+                                                <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12">
+                                                    <label>Mode</label>
+                                                    <select class="tom" data-ps-field="mode" data-ps-onchange="checkMOde(this.value)" id="tom_mode" name="mode" required="">
+                                                        <option value="">Select Mode</option>
+                                                        <option value="Cash">Cash</option>
+                                                        <option value="Bank">Bank</option>
+
+                                                    </select>
+                                                </div>
+
+                                                <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12" id="banktype_div1" style="display: none;">
+                                                    <label>Mode</label>
+                                                    <select class="tom" data-banktype_fieldalert="banktype_fieldAlert1" data-ps-field="banktype_field" data-ps-relation="business-parties" id="banktype_field1" name="banktype_field" placeholder="Mode Type">
+                                                        <option value=""></option>
+                                                    </select>
+                                                </div>
+
+                                                <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12">
+                                                    <label>Amount</label>
+                                                    <input class="form-control input-sm inputvalid" data-ps-field="adv_input" data-ps-onkeyup="adj_bal()" name="adv_input" required=""/>
+                                                </div>
+                                                <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12">
+                                                    <label>Employee Name</label>
+                                                    <select class="tom" data-ps-field="employeeName" data-ps-relation="employees" id="employeeName" name="employeeName">
+                                                        <option value="">Select Employee</option>
+                                                        <option value=""></option>                                                    </select>
+                                                </div>
+                                                <div class="col-lg-6 col-md-6 col-sm-6 col-xs-12">
+                                                    <label>Balance</label>
+                                                    <input class="form-control input-sm" data-ps-field="pend_input" name="pend_input" readonly="" required=""/>
+                                                    <input data-ps-field="pend_amt" name="pend_amt" type="hidden" value="0"/>
+                                                </div>
+                                                <div class="col-lg-12 col-md-12 col-sm-6 col-xs-12">
+                                                    <label>Description</label>
+                                                    <textarea class="form-control" data-ps-field="description" name="description"></textarea>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer text-center" style="border:0; padding: 9px 15px 25px;">
+                                            <button class="btn btn-primary" name="submit" type="submit"><i class="fa fa-save"></i> Submit</button>
+                                            <button class="btn btn-danger" data-dismiss="modal" type="button"><i class="fa fa-close"></i> Close</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        
+                                                <div class="search-box">
+                            <form action="/api/petrosoft/action" data-ps-form="3" data-ps-operation="filter" enctype="multipart/form-data" method="post" role="form">
+
+                                                                <div class="m_10 col-md-2 col-sm-3 col-xs-4 sale-size op-text-grid1 date text-right search-label">
+                                    Search From
+                                </div>
+                                <div class="m_10 col-md-2 col-sm-3 col-xs-8 sale-size date">
+                                    <input class="form-control cus_form" data-ps-field="frm_dt" id="frm_dt" name="frm_dt" placeholder="Filter Date" style="border: solid 1px #c1c1c1 !important;" type="text" value=""/>
+                                </div>
+                                <div class="m_10 col-md-1 col-sm-3 sale-size op-text-grid1 col-xs-4 date text-center search-label">
+                                    To
+                                </div>
+                                <div class="m_10 col-md-2 col-sm-3 col-xs-8 sale-size date">
+                                    <input class="form-control cus_form" data-ps-field="to_dt" id="to_dt" name="to_dt" placeholder="Filter Date" style="border: solid 1px #c1c1c1 !important;" type="text" value=""/>
+                                </div>
+                                <div class="m_10 col-md-1 col-sm-3 col-xs-4 sale-size op-text-grid1 text-right search-label">
+                                    Organization
+                                </div>
+                                <div class="m_10 col-md-2 col-sm-3 col-xs-8 sale-size date">
+                                    <select class="form-control cus_form tom" data-ps-field="organizq" data-ps-relation="customers" id="organiz" name="organizq">
+                                        <option value=""></option>
+                                        <option value=""> </option>                                    </select>
+                                </div>
+                                <div class="m_10 col-md-2 col-sm-3 col-xs-12">
+                                    <button class="btn bg-orange pic-button dept-button" id="btnSubmit" name="btnSubmit" type="submit"><i class="fa fa-search"></i> Search</button>
+                                </div>
+                                <div class="clearfix"> </div>
+                            </form>
+                            <div class="clearfix"> </div>
+                        </div>
+                        <form action="/api/petrosoft/action" data-ps-form="4" data-ps-operation="import" enctype="multipart/form-data" method="post" role="form">
+                            <div aria-hidden="true" aria-labelledby="myModalLabel" class="modal fade" id="uploadcustModal" role="dialog" tabindex="-1">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <button aria-hidden="true" class="close" data-dismiss="modal" type="button">x</button>
+                                            <h4 class="modal-title">Upload Credits <a class="btn btn-success" href="/petrosoft/app/credit/bulkUploadSampleFormat/">Download Sample <i aria-hidden="true" class="fa fa-download"></i></a></h4>
+                                        </div>
+                                        <div class="modal-body" style=" background: #fff; color: black;">
+                                            <p>1. Your CSV data should be in the format below. The first line of your
+                                                CSV file should be the <strong>column headers</strong> as in the table
+                                                example. Also make sure that your file is <strong>UTF-8</strong> to
+                                                avoid unnecessary encoding problems.</p>
+                                            <p>2. If the column <strong>you are trying to import is date, make sure that
+                                                    is formatted in format (03 November 2026).</strong></p>
+                                            <p>3. Due to strict validation <span style="color: red; font-weight: bold;">invalid and duplicate
+                                                    rows</span> will be ignored while importing.</p>
+                                            <div class="form-group">
+                                                <label for="file_upload">Choose <strong>CSV File</strong> <span style="color: red; font-weight: bold;">*</span></label>
+                                                <input accept=".csv" class="form-control-file input-lg" data-ps-field="file" data-ps-onchange="uploadcsv_validation('1')" id="file11" name="file" required="" style="background: #e4e4e4eb;" type="file"/>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer text-center" style="background: #fff;">
+                                            <button class="btn btn-info" name="submit" type="submit"><i class="fa fa-check"></i> Add</button>
+                                            <button class="btn btn-danger" data-dismiss="modal" type="button"><i class="fa fa-close"></i> Close</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+
+                        <div class="table-info">
+                            <div class="m_10">
+                                <div class="ward-table-grid ip-serv-canc-table">
+                                                                        <button class="btn btn-delete" id="bulk_delete" type="button"><i class="fa fa-trash-o"></i> Delete</button>
+                                                                         <button class="btn btn-default btn-default-sm" id="direct_print" type="button">Direct
+                                        Print</button>                                     <button class="btn btn-default" data-ps-onclick="add_to_bill();" type="button">Add to
+                                        Billing</button>                                    <button class="btn btn-default" data-ps-onclick="send_sms();" type="button"><img alt="" src="/petrosoft-assets/assets/images/sms2.png" style="width: 20px; height: 20px;"/> Send
+                                        SMS</button>
+
+                                    <table cellspacing="0" class="display nowrap" data-ps-table="bowser-credit-sales" id="js_example2" width="100%">
+                                        <thead>
+                                            <tr>
+                                                <th><input data-ps-onclick="check_uncheck_checkbox(this.checked)" name="check_all" style="width: 18px; height: 18px;" type="checkbox"/></th>
+                                                <th>S.No</th>
+                                                <th>Txn No</th>
+                                                <th>Date</th>
+                                                                                                <th>Org/Cust.</th>
+                                                <th>Vehicle No</th>
+                                                <th>Product</th>
+                                                <th>Employee</th>
+                                                <th>Quantity</th>
+                                                <th>Price</th>
+                                                <th>Cost (₹)</th>
+                                                <th>Discount (₹)</th>
+                                                <th>Indent No</th>
+                                                <th>Bill No</th>
+                                                <th>Advance</th>
+                                                <th>Picture</th>
+                                                <th>Effect Asset</th>
+                                                <th>Mileage</th>
+                                                <th>Description</th>
+                                                                                                <th>Action</th>
+                                                                                                                                                <th>User Log Details</th>
+                                                                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                                            </div>
+                </div>
+                <div class="clearfix"> </div>
+            </div>
+            
+            <div id="html_append"></div>
+    </div></section>
+</aside>
+</div>
+</div>
+</div>
+<div class="modal fade dismodal" id="addcustModal2" role="dialog">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="close" data-dismiss="modal" type="button">×</button>
+                <h4 class="modal-title">Bill Successfully Generated!</h4>
+            </div>
+            <div class="modal-body">
+                <div class="kgn-top-info">
+                    <div class="row" style="color: black">
+                        <div class="col-xs-12 col-md-12 text-center" id="direct_print_data">
+                            
+                                                                                    <a class="btn btn-default" href="#">Print Bill</a>
+                                                                                    <a class="btn btn-default" href="#">Print Invoice</a>
+                                                        
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer text-center">
+            </div>
+        </div>
+    </div>
+</div>
+<div aria-hidden="true" aria-labelledby="exampleModalLabel" class="modal fade" id="exampleModalprint" role="dialog" tabindex="-1">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Choose One Format (Excel) </h5>
+                <button aria-label="Close" class="close" data-dismiss="modal" type="button">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <a href="#"><img src="/petrosoft-assets/assets/bill prints/invoice1.png" style="height:400px;width:300px"/></a>    
+                <a href="#"><img src="/petrosoft-assets/assets/bill prints/invoice2.png" style="height:400px;width:300px"/></a>
+            </div>
+            <div class="modal-footer">
+                <p style="color:black">You Can Set Default Invoice Excel Format By <a href="/petrosoft/print-master" style="color:green"> Clicking Here</a> </p>
+            </div>
+        </div>
+    </div>
+</div>
+<div aria-hidden="true" aria-labelledby="exampleModalLabel" class="modal fade" id="exampleModal" role="dialog" tabindex="-1">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Choose One Format</h5>
+                <button aria-label="Close" class="close" data-dismiss="modal" type="button">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <a href="#"><img src="/petrosoft-assets/assets/bill prints/invoice1.png" style="height:400px;width:300px"/></a>    
+                <a href="#"><img src="/petrosoft-assets/assets/bill prints/invoice2.png" style="height:400px;width:300px"/></a>
+            </div>
+            <div class="modal-footer">
+                <p style="color:black">You Can Set Default Invoice Print Format By <a href="/petrosoft/print-master" style="color:green"> Clicking Here</a> </p>
+            </div>
+        </div>
+    </div>
+</div>
+<div aria-hidden="true" aria-labelledby="  " class="modal fade" id="exampleModalCenter" role="dialog" tabindex="-1">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalCenterTitle">Choose the Bill Format</h5>
+                <button aria-label="Close" class="close" data-dismiss="modal" type="button">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="modal-body">
+
+                <a href="#" style="margin-left:60px;"><img src="/petrosoft-assets/assets/bill prints/bill.png" style="height:300px;width:200px"/></a>
+
+                <a href="#" style="margin-left:60px;"><img src="/petrosoft-assets/assets/bill prints/bill2.png" style="height:300px;width:200px"/></a>
+
+            </div>
+            <div class="modal-footer">
+                <p style="color:black">You Can Set Default Bill Print Format By <a href="/petrosoft/print-master" style="color:green"> Clicking Here</a> </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+  
+
+
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="lg-b-fixed">
+    <div class="navbar-expand-lg navbar-light" style="position: relative;width: 100%;bottom: 0;">
+        <div class="text-muted footer-info">
+          
+            <div class="footer_logo">
+                <div class="footer-left">
+                    <ul>
+                        <li>
+                            <span>All rights reserved &amp; Developed by :</span> <a href="http://ymtsindia.com/"><img alt="YMTSIndia" src="/petrosoft-assets/assets/images/yongminds-logo.png" title="YMTSIndia"/></a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mobile_footer">
+                <div class="footer-right">
+                    <div class="footer-sale-icon">
+                        <i class="icon-phone-wave icon-2x"></i>
+                    </div>
+                    <div class="footer-sale-text">
+                        <ul>
+                            <li><span>Support </span></li>
+                            <li>+91 9393939064</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="footer-right">
+                    <div class="footer-sale-icon">
+                        <i class="icon-cash3 icon-2x"></i>
+                    </div>
+                    <div class="footer-sale-text">
+                        <ul>
+                            <li><span>Sale</span></li>
+                            <li class="mobile-lg-block"><span>+91 8688400282</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+ <style>
+     .footer_logo ul li span{
+        display: block;
+     }
+     .footer_logo{
+         width:40%;
+     }
+     .mobile_footer{
+         width:60%;
+         display: flex;
+        align-items: center;
+        justify-content: space-around;
+     }
+     .footer-info{
+         display: flex;
+         padding:0.7rem 0 0.7rem 240px;
+         /* position: fixed; */
+         width: 100%;
+         /* bottom: 0; */
+         /* left: 0; */
+         z-index: 2;
+    }
+    .footer-left ul li{
+        display: flex;
+        align-items: center;
+    }
+
+     .footer-sale-text{
+         width:auto !important;
+     }
+     .mobile_footer .footer-right ul li span{
+         display: block;
+     }
+     @media(max-width:1203px){
+        .mobile-lg-block span{
+            display: block;
+        }
+     }
+     @media(max-width:1301px){
+         .footer-left ul li a{
+             display: block;
+         }
+     }
+    @media(max-width:991px){
+        .footer_logo{
+         width:100% !important;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+     }
+     .footer-info{
+         display: block;
+         text-align: center;
+         width:100%;
+     }
+     .mobile_footer {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            margin-top: 8px;
+        }
+        .footer-sale-text ul li {
+            display: block;
+            text-align: left;
+        }
+        .footer-left ul li{
+            display: block;
+        }
+    }
+
+    @media(max-width:767px){
+        .footer-info{
+            padding-left:0;
+        }
+    }
+    @media(max-width:435px){
+        .footer-sale-icon {
+            float: left;
+            width: 35px;
+            height: 35px;
+            background: #f44336;
+            text-align: center;
+            border-radius: 50%;
+        }
+        .footer-sale-icon i {
+            font-size: 22px;
+            line-height: 34px;
+        }
+       
+    }
+
+ </style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script src="/petrosoft-assets/assets/js/jquery/jquery.min.js"></script><script src="/petrosoft-assets/assets/js/core/libraries/bootstrap.min.js"></script><script src="/petrosoft-assets/assets/js/plugins/ui/moment/moment.min.js"></script><script src="/petrosoft-assets/assets/datejs/bootstrap-datetimepicker.min.js"></script><script src="/petrosoft-assets/assets/js/plugins/notifications/sweet_alert.min.js"></script><script src="/petrosoft-assets/assets/tom_select/tom-select.complete.min.js"></script><script src="/petrosoft-assets/assets/select2/js/select2.full.min.js"></script><script src="/petrosoft-assets/assets/js/plugins/tables/datatables/datatables.min.js"></script><script src="/petrosoft-assets/assets/js/plugins/tables/datatables/extensions/buttons.min.js"></script><script src="/petrosoft-assets/assets/js/apexcharts.js"></script><script src="/petrosoft-assets/runtime.js"></script><script src="/petrosoft-assets/widgets.js"></script><script src="/petrosoft-assets/tables.js"></script><script src="/petrosoft-assets/forms.js"></script><script src="/petrosoft-assets/workflows.js"></script><script src="/petrosoft-assets/views.js"></script></body></html>

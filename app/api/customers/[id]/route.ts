@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { OrderFilterSchema } from "@/lib/validation";
 import {
 	authenticate,
 	requireRole,
@@ -13,8 +14,9 @@ import {
  */
 export async function GET(
 	request: NextRequest,
-	{ params }: { params: { id: string } },
+	{ params }: { params: Promise<{ id: string }> },
 ) {
+    const routeParams = await params;
 	try {
 		const authResult = await authenticate(request);
 		if (authResult instanceof NextResponse) return authResult;
@@ -30,10 +32,12 @@ export async function GET(
 		const endDate = searchParams.get("endDate");
 		const limit = parseInt(searchParams.get("limit") || "100");
 		const offset = parseInt(searchParams.get("offset") || "0");
+        OrderFilterSchema.parse({ status: status || undefined, limit, offset });
+        if ([startDate, endDate].some(value => value && Number.isNaN(Date.parse(value)))) return errorResponse("Invalid date filter", 400);
 
 		// Get customer
 		const customer = await prisma.user.findUnique({
-			where: { id: params.id },
+			where: { id: routeParams.id },
 			include: {
 				customerProfile: {
 					include: {
@@ -56,7 +60,7 @@ export async function GET(
 
 		// Build where clause for orders
 		const orderWhere: any = {
-			customerId: params.id,
+			customerId: routeParams.id,
 		};
 
 		if (status) {
@@ -73,10 +77,10 @@ export async function GET(
 		if (startDate || endDate) {
 			orderWhere.createdAt = {};
 			if (startDate) {
-				orderWhere.createdAt.gte = new Date(startDate);
+				orderWhere.createdAt.gte = new Date(`${startDate}T00:00:00+05:30`);
 			}
 			if (endDate) {
-				orderWhere.createdAt.lte = new Date(endDate);
+				orderWhere.createdAt.lt = new Date(new Date(`${endDate}T00:00:00+05:30`).getTime() + 86400000);
 			}
 		}
 
@@ -95,7 +99,7 @@ export async function GET(
 		const vehicles = await prisma.order.groupBy({
 			by: ["vehicleNumber"],
 			where: {
-				customerId: params.id,
+				customerId: routeParams.id,
 			},
 			_count: {
 				id: true,
@@ -122,7 +126,8 @@ export async function GET(
 			},
 		});
 	} catch (error: any) {
-		console.error("Error fetching customer details:", error);
+		if (error.name === "ZodError") return errorResponse("Invalid order filters", 400);
+        console.error("Error fetching customer details:", error);
 		return errorResponse(
 			error.message || "Failed to fetch customer details",
 			500,

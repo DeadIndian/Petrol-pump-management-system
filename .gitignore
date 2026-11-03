@@ -17,6 +17,10 @@ node_modules/
 # Testing
 coverage/
 .nyc_output/
+playwright-report/
+test-results/
+tests/.state/
+.env.test.local
 
 # IDE
 .vscode/
@@ -47,6 +51,12 @@ out
 
 # Optional npm cache
 .npm
+
+# Private Petrosoft reference captures, imported records and uploaded files
+.petrosoft/
+.env.petrosoft.local
+tests/petrosoft/.state/
+.impeccable/review/
 
 # Yarn
 .yarn/cache

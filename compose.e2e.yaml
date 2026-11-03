@@ -1,0 +1,63 @@
+name: petrol-pump-e2e
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: petrol-test-password
+      POSTGRES_DB: petrol_test
+    ports:
+      - "127.0.0.1:54329:5432"
+    volumes:
+      - test-data:/var/lib/postgresql/data
+      - ./tests/support/database-init.sql:/docker-entrypoint-initdb.d/00-auth.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d petrol_test"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  auth:
+    image: supabase/gotrue:v2.177.0
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: http://127.0.0.1:54328/auth/v1
+      GOTRUE_SITE_URL: http://127.0.0.1:3100
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://postgres:petrol-test-password@db:5432/petrol_test?search_path=auth
+      GOTRUE_DB_NAMESPACE: auth
+      GOTRUE_JWT_SECRET: petrol-pump-isolated-e2e-jwt-secret-at-least-32-characters
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      GOTRUE_MAILER_AUTOCONFIRM: "true"
+      GOTRUE_DISABLE_SIGNUP: "false"
+
+  gateway:
+    image: kong:2.8.1
+    depends_on:
+      - auth
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yaml
+      KONG_PROXY_LISTEN: 0.0.0.0:8000
+      KONG_ADMIN_LISTEN: "off"
+      KONG_LOG_LEVEL: warn
+    ports:
+      - "127.0.0.1:54328:8000"
+    volumes:
+      - ./tests/support/kong.yaml:/etc/kong/kong.yaml:ro
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  test-data:

@@ -1,57 +1,74 @@
 {
-	"name": "petrol-pump-management-system",
-	"version": "1.0.0",
-	"description": "Digitized fuel delivery management system for petrol pumps in India",
-	"main": "index.js",
-	"scripts": {
-		"dev": "next dev",
-		"build": "next build",
-		"start": "next start",
-		"lint": "next lint",
-		"prisma:generate": "prisma generate",
-		"prisma:migrate:dev": "prisma migrate dev",
-		"prisma:migrate:deploy": "prisma migrate deploy",
-		"prisma:studio": "prisma studio",
-		"prisma:seed": "tsx prisma/seed.ts"
-	},
-	"prisma": {
-		"seed": "tsx prisma/seed.ts"
-	},
-	"keywords": [
-		"petrol",
-		"fuel",
-		"management",
-		"system"
-	],
-	"author": "",
-	"license": "ISC",
-	"dependencies": {
-		"@prisma/client": "^5.7.1",
-		"@radix-ui/react-dialog": "^1.1.15",
-		"@radix-ui/react-label": "^2.1.8",
-		"@radix-ui/react-select": "^2.2.6",
-		"@radix-ui/react-tabs": "^1.1.13",
-		"@supabase/auth-helpers-nextjs": "^0.7.4",
-		"@supabase/supabase-js": "^2.38.4",
-		"lucide-react": "^0.575.0",
-		"next": "^14.0.4",
-		"react": "^18.2.0",
-		"react-dom": "^18.2.0",
-		"recharts": "^3.7.0",
-		"zod": "^3.22.4"
-	},
-	"devDependencies": {
-		"@types/node": "^20.10.0",
-		"@types/react": "^18.2.45",
-		"@types/react-dom": "^18.2.18",
-		"autoprefixer": "^10.4.16",
-		"dotenv": "^17.3.1",
-		"eslint-config-next": "16.1.6",
-		"postcss": "^8.4.32",
-		"prisma": "^5.7.1",
-		"tailwindcss": "^3.3.6",
-		"ts-node": "^10.9.2",
-		"tsx": "^4.21.0",
-		"typescript": "^5.3.3"
-	}
+  "name": "petrol-pump-management-system",
+  "version": "1.0.0",
+  "description": "Digitized fuel delivery management system for petrol pumps in India",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint app components lib tests scripts playwright.config.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:studio": "prisma studio",
+    "prisma:seed": "tsx prisma/seed.ts",
+    "typecheck": "tsc --noEmit --incremental false",
+    "test:e2e": "playwright test",
+    "test:stack:up": "docker compose -f compose.e2e.yaml up -d --wait",
+    "test:stack:down": "docker compose -f compose.e2e.yaml down -v",
+    "verify": "tsx scripts/verify.ts",
+    "dev:local": "tsx scripts/local-dev.ts",
+    "dev:petrosoft": "tsx scripts/petrosoft/dev.ts",
+    "petrosoft:setup": "tsx scripts/petrosoft/setup.ts",
+    "test:petrosoft": "tsx --test --test-concurrency=1 tests/petrosoft/*.test.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "keywords": [
+    "petrol",
+    "fuel",
+    "management",
+    "system"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@e965/xlsx": "^0.20.3",
+    "@prisma/client": "^5.7.1",
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-select": "^2.2.6",
+    "@radix-ui/react-tabs": "^1.1.13",
+    "@supabase/supabase-js": "^2.38.4",
+    "exceljs": "^4.4.0",
+    "lucide-react": "^0.575.0",
+    "next": "16.4.3",
+    "playwright-core": "^1.64.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "recharts": "^3.7.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^20.10.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "autoprefixer": "^10.4.16",
+    "dotenv": "^17.3.1",
+    "eslint": "^9.39.3",
+    "eslint-config-next": "16.4.3",
+    "postcss": "^8.5.23",
+    "prisma": "^5.7.1",
+    "tailwindcss": "^3.3.6",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=20.9.0"
+  }
 }

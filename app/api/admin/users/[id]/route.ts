@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createSupabaseServerClient } from "@/lib/supabase";
 import { prisma } from "@/lib/prisma";
 import { authenticate } from "@/lib/auth";
 import { z } from "zod";
 
-const supabaseAdmin = createClient(
-	process.env.NEXT_PUBLIC_SUPABASE_URL!,
-	process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+const supabaseAdmin = createSupabaseServerClient();
 
 const UpdateUserSchema = z.object({
 	fullName: z.string().min(2).optional(),
@@ -22,8 +19,9 @@ const UpdateUserSchema = z.object({
  */
 export async function GET(
 	request: NextRequest,
-	{ params }: { params: { id: string } },
+	{ params }: { params: Promise<{ id: string }> },
 ) {
+    const routeParams = await params;
 	try {
 		const authResult = await authenticate(request);
 		if (authResult instanceof NextResponse) return authResult;
@@ -34,7 +32,7 @@ export async function GET(
 		}
 
 		const user = await prisma.user.findUnique({
-			where: { id: params.id },
+			where: { id: routeParams.id },
 			include: {
 				_count: {
 					select: { orders: true },
@@ -72,8 +70,9 @@ export async function GET(
  */
 export async function PATCH(
 	request: NextRequest,
-	{ params }: { params: { id: string } },
+	{ params }: { params: Promise<{ id: string }> },
 ) {
+    const routeParams = await params;
 	try {
 		const authResult = await authenticate(request);
 		if (authResult instanceof NextResponse) return authResult;
@@ -86,51 +85,48 @@ export async function PATCH(
 		const body = await request.json();
 		const data = UpdateUserSchema.parse(body);
 
-		// Update password in Supabase if provided
-		if (data.password) {
-			const { error } = await supabaseAdmin.auth.admin.updateUserById(
-				params.id,
-				{ password: data.password },
-			);
-			if (error) {
-				return NextResponse.json(
-					{ error: "Failed to update password: " + error.message },
-					{ status: 400 },
-				);
-			}
-		}
-
-		// Update profile in Prisma
-		const updateData: any = {};
-		if (data.fullName !== undefined) updateData.fullName = data.fullName;
-		if (data.phone !== undefined) updateData.phone = data.phone;
-		if (data.role !== undefined) updateData.role = data.role;
-
-		const user = await prisma.user.update({
-			where: { id: params.id },
-			data: updateData,
-			select: {
-				id: true,
-				email: true,
-				fullName: true,
-				phone: true,
-				role: true,
-				updatedAt: true,
-			},
-		});
+		const existing = await prisma.user.findUnique({ where: { id: routeParams.id } });
+        if (!existing) return NextResponse.json({ error: "User not found" }, { status: 404 });
+        if (authRequest.user.id === routeParams.id && data.role && data.role !== "ADMIN") {
+            return NextResponse.json({ error: "You cannot remove your own admin access" }, { status: 400 });
+        }
+    const user = await prisma.$transaction(async tx => {
+      await tx.$queryRaw`SELECT id FROM customer_profiles WHERE user_id = ${routeParams.id} FOR UPDATE`;
+      const current = await tx.user.findUnique({ where: { id: routeParams.id }, include: {
+        _count: { select: { orders: true } }, customerProfile: { include: { _count: { select: { payments: true } } } },
+      } });
+      if (!current) throw new Error("USER_NOT_FOUND");
+      const leavingCustomer = current.role === "CUSTOMER" && data.role && data.role !== "CUSTOMER";
+      if (leavingCustomer && (current._count.orders || current.customerProfile?._count.payments || current.customerProfile?.currentBalance)) {
+        throw new Error("CUSTOMER_HAS_HISTORY");
+      }
+      if (data.password) {
+        const { error } = await supabaseAdmin.auth.admin.updateUserById(routeParams.id, { password: data.password });
+        if (error) throw new Error("Could not update the password. Please try again.");
+      }
+      if (leavingCustomer && current.customerProfile) await tx.customerProfile.delete({ where: { userId: routeParams.id } });
+      return tx.user.update({ where: { id: routeParams.id }, data: {
+        ...(data.fullName !== undefined && { fullName: data.fullName }),
+        ...(data.phone !== undefined && { phone: data.phone }),
+        ...(data.role !== undefined && { role: data.role }),
+        ...(data.role === "CUSTOMER" && { customerProfile: { upsert: { create: {}, update: {} } } }),
+      }, select: { id: true, email: true, fullName: true, phone: true, role: true, updatedAt: true } });
+    }, { maxWait: 15000, timeout: 30000 });
 
 		return NextResponse.json({
 			message: "User updated successfully",
 			user,
 		});
 	} catch (error: any) {
+    if (error.message === "USER_NOT_FOUND") return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (error.message === "CUSTOMER_HAS_HISTORY") return NextResponse.json({ error: "Keep customer accounts with orders or payments as customers to preserve their billing history." }, { status: 409 });
 		console.error("Update user error:", error);
 		if (error.code === "P2025") {
 			return NextResponse.json({ error: "User not found" }, { status: 404 });
 		}
 		if (error.name === "ZodError") {
 			return NextResponse.json(
-				{ error: "Validation error", details: error.errors },
+				{ error: "Validation error", details: error.issues },
 				{ status: 400 },
 			);
 		}
@@ -147,8 +143,9 @@ export async function PATCH(
  */
 export async function DELETE(
 	request: NextRequest,
-	{ params }: { params: { id: string } },
+	{ params }: { params: Promise<{ id: string }> },
 ) {
+    const routeParams = await params;
 	try {
 		const authResult = await authenticate(request);
 		if (authResult instanceof NextResponse) return authResult;
@@ -159,21 +156,35 @@ export async function DELETE(
 		}
 
 		// Prevent self-deletion
-		if (authRequest.user.id === params.id) {
+		if (authRequest.user.id === routeParams.id) {
 			return NextResponse.json(
 				{ error: "Cannot delete your own account" },
 				{ status: 400 },
 			);
 		}
 
-		// Delete from Prisma (cascades related records per schema)
-		await prisma.user.delete({ where: { id: params.id } });
-
-		// Delete from Supabase Auth
-		await supabaseAdmin.auth.admin.deleteUser(params.id);
+    await prisma.$transaction(async tx => {
+      // Lock in the same order as allocation and payment writes, then check history.
+      await tx.$queryRaw`SELECT id FROM customer_profiles WHERE user_id = ${routeParams.id} FOR UPDATE`;
+      await tx.$queryRaw`SELECT id FROM users WHERE id = ${routeParams.id} FOR UPDATE`;
+      const existing = await tx.user.findUnique({ where: { id: routeParams.id }, include: {
+        _count: { select: { orders: true, fulfilledOrders: true, pricesCreated: true, auditLogs: true } },
+        customerProfile: { include: { _count: { select: { payments: true } } } },
+      } });
+      if (!existing) throw new Error("USER_NOT_FOUND");
+      if (existing._count.orders || existing._count.fulfilledOrders || existing._count.pricesCreated || existing._count.auditLogs || existing.customerProfile?._count.payments) {
+        throw new Error("ACCOUNT_HAS_HISTORY");
+      }
+      // If the Auth provider rejects deletion, the database transaction keeps the account.
+      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(routeParams.id);
+      if (authError && authError.status !== 404) throw authError;
+      await tx.user.delete({ where: { id: routeParams.id } });
+    }, { maxWait: 15000, timeout: 30000 });
 
 		return NextResponse.json({ message: "User deleted successfully" });
 	} catch (error: any) {
+    if (error.message === "USER_NOT_FOUND") return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (error.message === "ACCOUNT_HAS_HISTORY") return NextResponse.json({ error: "Accounts with orders, deliveries, payments, prices, or audit history must be kept for the records." }, { status: 409 });
 		console.error("Delete user error:", error);
 		if (error.code === "P2025") {
 			return NextResponse.json({ error: "User not found" }, { status: 404 });

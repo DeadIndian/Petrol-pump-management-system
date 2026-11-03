@@ -1,48 +1,34 @@
-/**
- * Client-side API utility for making authenticated requests to the backend.
- * Reads the auth_token cookie set at login and passes it as a Bearer token.
- */
-
-function getCookie(name: string): string | null {
-	if (typeof document === "undefined") return null;
-	const value = `; ${document.cookie}`;
-	const parts = value.split(`; ${name}=`);
-	if (parts.length === 2) return parts.pop()!.split(";").shift() || null;
-	return null;
+export class ApiError extends Error {
+  constructor(message: string, public status: number) { super(message); }
 }
 
-export async function apiRequest<T = any>(
-	url: string,
-	options: RequestInit = {},
-): Promise<T> {
-	const token = getCookie("auth_token");
+// Share a refresh when several dashboard requests discover an expired session.
+let pendingRefresh: Promise<boolean> | null = null;
+function refreshBrowserSession() {
+  pendingRefresh ??= fetch("/api/auth/refresh", { method: "POST", credentials: "same-origin" })
+    .then(response => response.ok).catch(() => false).finally(() => { pendingRefresh = null; });
+  return pendingRefresh;
+}
 
-	const headers: Record<string, string> = {
-		"Content-Type": "application/json",
-		...(options.headers as Record<string, string>),
-	};
-
-	if (token) {
-		headers["Authorization"] = `Bearer ${token}`;
-	}
-
-	const response = await fetch(url, { ...options, headers });
-
-	if (!response.ok) {
-		const errorData = await response.json().catch(() => ({}));
-		throw new Error(errorData.error || `Request failed: ${response.status}`);
-	}
-
-	return response.json();
+export async function apiRequest<T = unknown>(url: string, options: RequestInit = {}, retried = false): Promise<T> {
+  const response = await fetch(url, { ...options, credentials: "same-origin", cache: "no-store",
+    headers: { "Content-Type": "application/json", ...options.headers } });
+  if (response.status === 401 && !retried && !url.startsWith("/api/auth/")) {
+    const refreshed = await refreshBrowserSession();
+    if (refreshed) return apiRequest<T>(url, options, true);
+    if (typeof window !== "undefined") window.location.replace(new URL("/login?expired=1", window.location.origin).href);
+  }
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new ApiError(body.error || `Request failed (${response.status})`, response.status);
+  }
+  return response.json();
 }
 
 export const api = {
-	get: <T = any>(url: string) => apiRequest<T>(url, { method: "GET" }),
-	post: <T = any>(url: string, data: unknown) =>
-		apiRequest<T>(url, { method: "POST", body: JSON.stringify(data) }),
-	put: <T = any>(url: string, data: unknown) =>
-		apiRequest<T>(url, { method: "PUT", body: JSON.stringify(data) }),
-	patch: <T = any>(url: string, data: unknown) =>
-		apiRequest<T>(url, { method: "PATCH", body: JSON.stringify(data) }),
-	delete: <T = any>(url: string) => apiRequest<T>(url, { method: "DELETE" }),
+  get: <T = any>(url: string, options?: RequestInit) => apiRequest<T>(url, options),
+  post: <T = any>(url: string, data?: unknown) => apiRequest<T>(url, { method: "POST", body: JSON.stringify(data) }),
+  put: <T = any>(url: string, data: unknown) => apiRequest<T>(url, { method: "PUT", body: JSON.stringify(data) }),
+  patch: <T = any>(url: string, data: unknown) => apiRequest<T>(url, { method: "PATCH", body: JSON.stringify(data) }),
+  delete: <T = any>(url: string) => apiRequest<T>(url, { method: "DELETE" }),
 };

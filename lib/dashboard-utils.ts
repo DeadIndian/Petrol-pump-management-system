@@ -175,13 +175,13 @@ export async function getRevenueTrend(days: number = 30) {
 
 	const rows = await prisma.$queryRaw<{ date: string; revenue: number }[]>`
 		SELECT
-			DATE(completed_at)::text AS date,
+			DATE(completed_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata')::text AS date,
 			COALESCE(SUM(total_amount), 0)::float AS revenue
 		FROM orders
 		WHERE completed_at >= ${startDate}
 		  AND status = 'COMPLETED'
 		  AND total_amount IS NOT NULL
-		GROUP BY DATE(completed_at)
+		GROUP BY DATE(completed_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata')
 		ORDER BY date ASC
 	`;
 

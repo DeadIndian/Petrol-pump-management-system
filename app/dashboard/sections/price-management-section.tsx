@@ -17,9 +17,12 @@ import {
 } from "lucide-react";
 import { api } from "@/lib/api-client";
 
+import FuelPricesSection from "./fuel-prices-section";
+
 type FuelType = "PETROL" | "DIESEL";
 
 interface PriceStatus {
+    priceId: string | null;
 	fuelType: FuelType;
 	currentPrice: number | null;
 	lastUpdated: string | null;
@@ -42,7 +45,7 @@ const FUEL_CONFIG: Record<
 > = {
 	PETROL: {
 		label: "Petrol",
-		color: "text-orange-600",
+		color: "text-orange-700",
 		bg: "bg-orange-50",
 		border: "border-orange-200",
 	},
@@ -94,10 +97,11 @@ function FuelCard({
 		setSubmitting(true);
 		setErr(null);
 		try {
-			await api.post("/api/admin/prices", {
-				fuelType: status.fuelType,
-				pricePerLiter: parsed,
-			});
+			if (!status.needsUpdate && status.priceId) {
+                await api.put("/api/admin/prices", { priceId: status.priceId, newPricePerLiter: parsed });
+            } else {
+                await api.post("/api/admin/prices", { fuelType: status.fuelType, pricePerLiter: parsed });
+            }
 			setInputPrice("");
 			setSuccess(true);
 			setTimeout(() => setSuccess(false), 3000);
@@ -111,9 +115,9 @@ function FuelCard({
 
 	return (
 		<Card
-			className={`border-2 ${status.needsUpdate ? "border-red-300" : "border-green-200"}`}>
+			data-testid={`fuel-${status.fuelType}`} className={`border-2 ${status.needsUpdate ? "border-red-300" : "border-green-200"}`}>
 			<CardHeader className="pb-3">
-				<div className="flex items-center justify-between">
+				<div className="flex flex-wrap items-center justify-between gap-3">
 					<div className="flex items-center gap-2">
 						<div className={`p-2 rounded-lg ${cfg.bg}`}>
 							<Fuel className={`h-5 w-5 ${cfg.color}`} />
@@ -136,7 +140,7 @@ function FuelCard({
 			<CardContent className="space-y-5">
 				{/* Current Price Display */}
 				<div className={`rounded-xl p-4 ${cfg.bg} ${cfg.border} border`}>
-					<p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+					<p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-1">
 						Today&apos;s Price
 					</p>
 					<div className="flex items-baseline gap-1">
@@ -144,14 +148,14 @@ function FuelCard({
 							{status.currentPrice ? `₹${status.currentPrice.toFixed(2)}` : "—"}
 						</span>
 						{status.currentPrice && (
-							<span className="text-sm text-gray-500">/L</span>
+							<span className="text-sm text-gray-600">/L</span>
 						)}
 					</div>
 					<div className="flex items-center mt-1">
 						{status.currentPrice && <PriceDelta history={history} />}
 					</div>
 					{status.lastUpdated && (
-						<p className="text-xs text-gray-500 mt-2">
+						<p className="text-xs text-gray-600 mt-2">
 							Updated {new Date(status.lastUpdated).toLocaleString("en-IN")}
 						</p>
 					)}
@@ -167,13 +171,14 @@ function FuelCard({
 					<p className="text-sm font-medium text-gray-700">
 						{status.needsUpdate ? "Set today's price" : "Update today's price"}
 					</p>
-					<div className="flex gap-2">
-						<div className="relative flex-1">
-							<span className="absolute left-3 top-2.5 text-gray-400 text-sm font-medium">
+					<div className="flex flex-wrap gap-2">
+						<div className="relative min-w-0 flex-1">
+							<span className="absolute left-3 top-2.5 text-gray-600 text-sm font-medium">
 								₹
 							</span>
 							<Input
 								type="number"
+                                aria-label={`${cfg.label} price per litre`}
 								step="0.01"
 								min="0"
 								placeholder="0.00"
@@ -187,7 +192,7 @@ function FuelCard({
 							/>
 						</div>
 						<Button
-							onClick={handleSet}
+							aria-label={`${status.needsUpdate ? "Set" : "Update"} ${cfg.label} price`} onClick={handleSet}
 							disabled={submitting || !inputPrice}
 							className={success ? "bg-green-600 hover:bg-green-700" : ""}>
 							{submitting ? (
@@ -208,7 +213,7 @@ function FuelCard({
 				{/* Mini history in the card */}
 				{history.length > 0 && (
 					<div className="border-t pt-3">
-						<p className="text-xs text-gray-500 mb-2 font-medium">
+						<p className="text-xs text-gray-600 mb-2 font-medium">
 							Recent history
 						</p>
 						<div className="space-y-1.5">
@@ -216,7 +221,7 @@ function FuelCard({
 								<div
 									key={h.id}
 									className="flex justify-between items-center text-sm">
-									<span className="text-gray-500">
+									<span className="text-gray-600">
 										{new Date(h.date).toLocaleDateString("en-IN", {
 											day: "numeric",
 											month: "short",
@@ -243,51 +248,38 @@ export default function PriceManagementSection() {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
-	const fetchAll = useCallback(async () => {
-		setLoading(true);
-		setError(null);
-		try {
-			const [statusData, petrolData, dieselData] = await Promise.all([
-				api.get<{ status: PriceStatus[] }>("/api/admin/prices"),
-				api.get<{ history: PriceHistory[] }>(
-					"/api/admin/prices/history/PETROL?days=14",
-				),
-				api.get<{ history: PriceHistory[] }>(
-					"/api/admin/prices/history/DIESEL?days=14",
-				),
-			]);
-			setPriceStatus(statusData.status);
-			setPetrolHistory(petrolData.history);
-			setDieselHistory(dieselData.history);
-		} catch (err: any) {
-			setError(err.message || "Failed to load prices");
-		} finally {
-			setLoading(false);
-		}
-	}, []);
+  const fetchAll = useCallback((signal?: AbortSignal) => Promise.all([
+    api.get<{ status: PriceStatus[] }>("/api/admin/prices", { signal }),
+    api.get<{ history: PriceHistory[] }>("/api/admin/prices/history/PETROL?days=14", { signal }),
+    api.get<{ history: PriceHistory[] }>("/api/admin/prices/history/DIESEL?days=14", { signal }),
+  ]).then(([statusData, petrolData, dieselData]) => { if (!signal?.aborted) { setPriceStatus(statusData.status); setPetrolHistory(petrolData.history); setDieselHistory(dieselData.history); setError(null); } })
+    .catch(cause => { if (!signal?.aborted) setError(cause.message || "Failed to load prices"); })
+    .finally(() => { if (!signal?.aborted) setLoading(false); }), []);
 
 	useEffect(() => {
-		fetchAll();
-	}, [fetchAll]);
+    const controller = new AbortController();
+    void fetchAll(controller.signal);
+    return () => controller.abort();
+  }, [fetchAll]);
 
 	const petrolStatus = priceStatus.find((p) => p.fuelType === "PETROL");
 	const dieselStatus = priceStatus.find((p) => p.fuelType === "DIESEL");
 
 	return (
 		<div className="space-y-6">
-			<div className="flex items-center justify-between">
+			<div className="flex flex-wrap items-center justify-between gap-3">
 				<div>
 					<h2 className="text-lg font-semibold text-gray-900">
 						Fuel Price Management
 					</h2>
-					<p className="text-sm text-gray-500">
+					<p className="text-sm text-gray-600">
 						Set daily prices for each fuel type. Prices are used for billing.
 					</p>
 				</div>
 				<Button
 					variant="outline"
 					size="sm"
-					onClick={fetchAll}
+					onClick={() => { setLoading(true); void fetchAll(); }}
 					disabled={loading}>
 					<RefreshCw
 						className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
@@ -325,6 +317,7 @@ export default function PriceManagementSection() {
 					)}
 				</div>
 			)}
+            <FuelPricesSection historyOnly key={priceStatus.map(item => `${item.fuelType}-${item.currentPrice}`).join("-")} />
 		</div>
 	);
 }

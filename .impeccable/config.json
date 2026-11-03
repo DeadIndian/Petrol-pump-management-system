@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "app/globals.css"
+        ],
+        "createdAt": "2026-11-03T07:06:12.373Z",
+        "reason": "The existing badge uses gray-900 on the neutral gray-200 surface with sufficient contrast. This is a false positive; the Petrosoft document uses isolated source styling."
+      }
+    ]
+  }
+}

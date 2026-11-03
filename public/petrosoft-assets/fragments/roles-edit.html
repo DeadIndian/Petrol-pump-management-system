@@ -1,0 +1,139 @@
+<div class="content-wrapper">
+	<style>
+		.sidebar {
+			background: url('https://petrosoft.ymtsindia.in/assets/images/navbg.png');
+			background-color: #222d32;
+		}
+
+		.sidebar-fixed .sidebar-content {
+			/* background-color: #001a2de3; */
+			background-color: #222d32;
+		}
+
+		.navbar-inverse {
+			z-index: 9999;
+			border-color: #162e3f !important;
+		}
+
+		/* Day Entry — always highlighted at bottom of sidebar */
+		.sidebar .navigation > li.day-entry-nav {
+			margin: 10px 8px 14px;
+			border-radius: 8px;
+			overflow: hidden;
+			box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35), 0 4px 14px rgba(0, 0, 0, 0.25);
+		}
+		.sidebar .navigation > li.day-entry-nav > a {
+			background: linear-gradient(90deg, #2d52b3 0%, #4a76e0 50%, #2d52b3 100%) !important;
+			color: #fff !important;
+			font-weight: 700 !important;
+			letter-spacing: 0.02em;
+			padding-top: 12px !important;
+			padding-bottom: 12px !important;
+		}
+		.sidebar .navigation > li.day-entry-nav > a i,
+		.sidebar .navigation > li.day-entry-nav > a .title {
+			color: #fff !important;
+		}
+		.sidebar .navigation > li.day-entry-nav.active > a,
+		.sidebar .navigation > li.day-entry-nav > a:hover {
+			background: linear-gradient(90deg, #3b66d1 0%, #6a92ec 50%, #3b66d1 100%) !important;
+			color: #fff !important;
+		}
+
+	</style>
+
+
+	
+        <style>
+            @media (max-width: 991px) {
+
+                .form-group select,
+                .form-group input {
+                    max-width: 400px;
+                    width: 100% !important;
+                }
+            }
+            .btn-default {
+                color: #fff;
+                border-color: #fff;
+            }
+            .kgn-details-grids{
+                width: 450px;
+                margin: auto;
+                padding: 3em 4em 2rem;
+            }
+            .float-label{
+                top:0.8rem;
+            }
+        </style>
+        
+        <aside class="right-side">
+            
+            <section class="content-header">
+                <ol class="breadcrumb">
+                    <li><a href="/petrosoft/app/dashboard"><i class="fa fa-home"></i> Dashboard</a></li>
+                    
+                    <li><a href="/petrosoft/app/roles">User Roles</a></li>
+                    <li class="active">Edit Role</li>
+                </ol>
+            </section>
+
+            
+            <section class="content">
+
+
+                <div class="row">
+                    <div class="col-md-12">
+
+                        <div class="box">
+
+                            <div class="box-header">
+                                <h3 class="box-title"></h3>
+
+                            </div>
+                            <div class="box-body table-responsive kgn-details-grids">
+                                <form action="/petrosoft/app/roles/edit" data-ps-onsubmit="return confirm('Are you sure you want to save?');" method="post" role="form">
+                                    <input id="id" name="id" type="hidden" value=""/>
+                                    
+                                    <div class="form-group col-lg-12 top-space">
+                                        <div class="float-container">
+                                            <select class="form-control did-floating-select" id="module" name="module" required="" style="width: 350px;">
+                                                <option value="">  </option>
+                                                <option value="Administration">Administrator Module</option>
+                                            </select>
+                                            <label class="did-floating-label" for="module">Access Module</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group col-lg-12 mt-15 top-space">
+                                        <div class="float-container">
+                                            <input autocomplete="off" class="form-control input-sm float-input" data-ps-onblur="role_validation()" data-ps-onkeyup="role_valid()" id="role_name" name="role_name" placeholder="Role Name" required="" style="width: 350px;" type="text" value=""/>
+                                            <label class="float-label" for="role_name">Role Name</label>
+                                            <input id="user_list" type="hidden" value=""/>
+                                            <div 10px;="" id="showlistdiv" padding:0="" style="color: #f0fd25;position: absolute;top: 36px;background-color: #325d51f2;z-index: 9;width: 100%;max-height: 145px;overflow-y: auto; font-weight: 400;"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group col-lg-12 mt-15 top-space">
+                                        <div class="float-container">
+                                            <input class="form-control input-sm float-input" id="role_description" name="role_description" placeholder="Role Description" required="" style="width: 350px;" type="text" value=""/>
+                                            <label class="float-label" for="role_description">Role Description</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group col-lg-12 mt-15 text-center">
+                                        <a class="btn btn-default" href="/petrosoft/app/roles">Cancel</a>
+                                        <button class="btn btn-primary pic-button" id="btnSubmit" name="btnSubmit" type="submit"><i class="fa fa-save"></i>Update</button>
+                                    </div>
+
+                                </form>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+            </section>
+        </aside>
+        </div>

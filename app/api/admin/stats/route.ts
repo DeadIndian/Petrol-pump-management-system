@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authenticate } from "@/lib/auth";
+import { businessDate, businessDayStart } from "@/lib/dates";
+import { getRevenueTrend } from "@/lib/dashboard-utils";
 
 /**
  * GET /api/admin/stats
@@ -18,23 +20,12 @@ export async function GET(request: NextRequest) {
 		}
 
 		const now = new Date();
-		const startOfToday = new Date(now);
-		startOfToday.setHours(0, 0, 0, 0);
-
-		const startOfWeek = new Date(now);
-		startOfWeek.setDate(now.getDate() - 6);
-		startOfWeek.setHours(0, 0, 0, 0);
-
-		const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-		const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-		const endOfLastMonth = new Date(
-			now.getFullYear(),
-			now.getMonth(),
-			0,
-			23,
-			59,
-			59,
-		);
+        const calendar = businessDate(now);
+        const startOfToday = businessDayStart(now);
+        const startOfWeek = new Date(startOfToday.getTime() - 6 * 86400000);
+        const startOfMonth = new Date(Date.UTC(calendar.getUTCFullYear(), calendar.getUTCMonth(), 1) - 19800000);
+        const startOfLastMonth = new Date(Date.UTC(calendar.getUTCFullYear(), calendar.getUTCMonth() - 1, 1) - 19800000);
+        const endOfLastMonth = new Date(startOfMonth.getTime() - 1);
 
 		// Run all queries concurrently
 		const [
@@ -83,12 +74,12 @@ export async function GET(request: NextRequest) {
 			// Orders per day for the last 7 days
 			prisma.$queryRaw<{ date: string; orders: bigint; delivered: bigint }[]>`
 				SELECT 
-					DATE("created_at")::text AS date,
+					DATE("created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata')::text AS date,
 					COUNT(*) AS orders,
 					COUNT(*) FILTER (WHERE status != 'PENDING') AS delivered
 				FROM orders
 				WHERE "created_at" >= ${startOfWeek}
-				GROUP BY DATE("created_at")
+				GROUP BY DATE("created_at" AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata')
 				ORDER BY date ASC
 			`,
 
@@ -144,7 +135,7 @@ export async function GET(request: NextRequest) {
 					name: s.status,
 					value: s._count.id,
 				})),
-				billStats: [],
+				revenue: await getRevenueTrend(30),
 			},
 		});
 	} catch (error: any) {

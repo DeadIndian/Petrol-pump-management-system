@@ -59,24 +59,16 @@ export default function CashAdvancesSection() {
 	const [error, setError] = useState<string | null>(null);
 	const [searchTerm, setSearchTerm] = useState("");
 
-	const fetchTransactions = useCallback(async () => {
-		setLoading(true);
-		setError(null);
-		try {
-			const data = await api.get<{ transactions: CashAdvanceTx[] }>(
-				"/api/cash-advances",
-			);
-			setTransactions(data.transactions);
-		} catch (err: any) {
-			setError(err.message || "Failed to fetch cash advances");
-		} finally {
-			setLoading(false);
-		}
-	}, []);
+  const fetchTransactions = useCallback((signal?: AbortSignal) => api.get<{ transactions: CashAdvanceTx[] }>("/api/cash-advances", { signal })
+    .then(data => { if (!signal?.aborted) { setTransactions(data.transactions); setError(null); } })
+    .catch(cause => { if (!signal?.aborted) setError(cause.message || "Failed to fetch cash advances"); })
+    .finally(() => { if (!signal?.aborted) setLoading(false); }), []);
 
 	useEffect(() => {
-		fetchTransactions();
-	}, [fetchTransactions]);
+    const controller = new AbortController();
+    void fetchTransactions(controller.signal);
+    return () => controller.abort();
+  }, [fetchTransactions]);
 
 	const filteredTransactions = transactions.filter((tx) => {
 		if (!searchTerm) return true;
@@ -154,7 +146,7 @@ export default function CashAdvancesSection() {
 					<Button
 						variant="outline"
 						size="sm"
-						onClick={fetchTransactions}
+						onClick={() => { setLoading(true); void fetchTransactions(); }}
 						disabled={loading}>
 						<RefreshCw
 							className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}

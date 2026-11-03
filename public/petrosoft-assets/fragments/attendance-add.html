@@ -1,0 +1,361 @@
+<div class="content-wrapper">
+	<style>
+		.sidebar {
+			background: url('https://petrosoft.ymtsindia.in/assets/images/navbg.png');
+			background-color: #222d32;
+		}
+
+		.sidebar-fixed .sidebar-content {
+			/* background-color: #001a2de3; */
+			background-color: #222d32;
+		}
+
+		.navbar-inverse {
+			z-index: 9999;
+			border-color: #162e3f !important;
+		}
+
+		/* Day Entry — always highlighted at bottom of sidebar */
+		.sidebar .navigation > li.day-entry-nav {
+			margin: 10px 8px 14px;
+			border-radius: 8px;
+			overflow: hidden;
+			box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35), 0 4px 14px rgba(0, 0, 0, 0.25);
+		}
+		.sidebar .navigation > li.day-entry-nav > a {
+			background: linear-gradient(90deg, #2d52b3 0%, #4a76e0 50%, #2d52b3 100%) !important;
+			color: #fff !important;
+			font-weight: 700 !important;
+			letter-spacing: 0.02em;
+			padding-top: 12px !important;
+			padding-bottom: 12px !important;
+		}
+		.sidebar .navigation > li.day-entry-nav > a i,
+		.sidebar .navigation > li.day-entry-nav > a .title {
+			color: #fff !important;
+		}
+		.sidebar .navigation > li.day-entry-nav.active > a,
+		.sidebar .navigation > li.day-entry-nav > a:hover {
+			background: linear-gradient(90deg, #3b66d1 0%, #6a92ec 50%, #3b66d1 100%) !important;
+			color: #fff !important;
+		}
+
+	</style>
+
+
+	        <style>
+          .form-label{
+            width: fit-content !important;
+          }
+
+          #emp_filter_dropdown {
+              display: none;
+          }
+          
+          
+          .insurance-buttons ul li .check {
+            top: 5px;
+            left: 5px;
+          }
+          .insurance-buttons {
+              margin: 3px 0 0 0;
+          }
+          table.dataTable.display tbody td{
+            border:0 !important;
+          }
+          table .insurance-buttons ul li .check {
+            border-color: #95969bc4;
+        }
+        table .insurance-buttons input[type="radio"]:checked ~ .check {
+            border: 3px solid  #95969bc4;
+        }
+        table .insurance-buttons ul li:hover .check {
+            border: 3px solid  #95969bc4;
+        }
+        table .insurance-buttons input[type="radio"]:checked ~ .check::before {
+            background: #6e7aa5;
+        }
+        
+        .bg-slate {
+          background-color: #3f6678;
+          border-color: #607d8b;
+          color: #fff;
+      }
+        .bg-indigo-400 th{
+          border-bottom:#fff !important;
+        }
+        .dataTable thead .sorting:before ,
+      .dataTable thead .sorting:after{
+          color: #fff;
+      }
+          @media(max-width:1024px){
+            .mt-md-15{
+              margin-top: 15px;
+            }
+          }
+          @media(max-width:767px){
+            .form-label{
+              margin-right: 10px;
+          }
+          #addshiftModal{
+            padding-right:0 !important;
+          }
+          }
+          /* @media (min-width: 600px) and (max-width: 1024px) and (orientation: landscape) {
+            .col-sm-1 {
+              width: 50px;
+              display: inline-block;
+              float: left;
+            }
+
+            .breadcrumb {
+              width: 100% !important;
+            }
+          }
+
+          @media (max-width: 966px) and (min-width: 600px) {
+            .col-sm-1 {
+              width: 50px;
+              display: inline-block;
+              float: left;
+            }
+
+            .breadcrumb {
+              width: 100% !important;
+            }
+          } */
+
+          @media(max-width:767px){
+            table.dataTable.display tbody td {
+              border: 0 !important;
+              /* z-index: 0; */
+              position: relative;
+          }
+          }
+          @media(max-width:575px){
+            .width120{
+              min-width: 102px;
+            }
+          }
+          @media(max-width:480px){
+            .insurance-buttons ul li label {
+              padding: 0px 10px 0px 30px !important;
+            }
+            .insurance-buttons ul li .check::before {
+              height: 8px !important;
+              width: 8px !important;
+              top: 3px !important;
+              left: 3px !important;
+            }
+          }
+          @media(max-width:420px){
+            .insurance-buttons ul li .check::before {
+              top: 1px !important;
+              left: 1px !important;
+          }
+          }
+
+          @media (max-width:1366px){
+
+    .time-popup{
+        position: fixed !important;
+        top:50%;
+        left:50%;
+        transform:translate(-50%,-50%);
+        z-index:999999;
+    }
+
+}
+        </style>
+        
+        <aside class="right-side">
+          
+          <section class="content-header">
+            <ol class="breadcrumb">
+              <li><a href="/petrosoft/app/dashboard"><i class="fa fa-home"></i> Dashboard</a></li>
+              <li class=""><a href="/petrosoft/app/attendence/view">View Attendance</a></li>
+              <li class="active">Add Attendance</li>
+            </ol>
+          </section>
+
+          
+          <section class="content">
+
+
+            <div class="row">
+              <div class="col-md-12 col-xs-12">
+                <div class="op-bill-cancel">
+                                    <form action="/petrosoft/app/attendence/save" data-ps-onsubmit="return submitHandler()" id="btnSubmit" method="post" role="form">
+                    <div class="kgn-details-grids">
+
+                      <div class="m_10 kgn-top-heading mb-15" style="display: inline-flex;">
+                        <h3>Staff Attendance</h3>
+                        <button class="indent_add1 bttn btn btn-rounded add-modal-btn" data-ps-onclick="showmodel()" style="position: absolute;right: 30px;" type="button"><b style="color: #000">Add Shifts</b>  <img height="20" src="/petrosoft-assets/assets/images/add.png" width="20"/></button>
+                      </div>
+
+                      <div class="tank_info">
+                        <div class="m_10">
+                          <div class="col-md-1 col-sm-1 col-xs-3 m_10 op-text-grid1 op-bill-left form-label line-34">
+                            Date
+                          </div>
+                          <div class="col-md-2 col-sm-3 col-xs-9 m_10 op-bill-left">
+                                                        <input class="form-control cus_form attn_date" name="attend_dt" placeholder="End Date/Time" required="required" type="text" value=""/>
+                            <input id="count" type="hidden" value=""/>
+                          </div>
+                                                      <div class="col-md-5 col-sm-8 col-xs-12 op-bill-right1">
+                              <div class="col-xs-12 shift-checkbox">
+                                <div class="insurance-buttons" style="margin: 0;">
+                                  <ul>
+                                                                          <li>
+                                        <input class="shift_active" id="shift0" name="shift_input" type="radio" value="General"/>
+                                        <label for="shift0">General</label>
+                                                                                <div class="check"></div>
+                                      </li>
+                                                                      </ul>
+                                </div>
+                                <div id="shift_alert"></div>
+                              </div>
+                            </div>
+                                                    
+                                                      <div class="col-md-2 col-sm-4 col-xs-12 m_10 op-bill-left mt-md-15">
+                              <div class="form-group">
+                                  
+                                  <select id="emp_filter_dropdown" multiple="" placeholder="-- Select Employees --">
+                                                                                <option value="33"></option>
+                                                                                <option value="45"></option>
+                                                                                <option value="54"></option>
+                                                                                <option value="20"></option>
+                                                                                <option value="16"></option>
+                                                                                <option value="53"></option>
+                                                                                <option value="49"></option>
+                                                                                <option value="30"></option>
+                                                                                <option value="51"></option>
+                                                                                <option value="1"></option>
+                                                                                <option value="31"></option>
+                                                                                <option value="35"></option>
+                                                                                <option value="32"></option>
+                                                                                <option value="41"></option>
+                                                                                <option value="40"></option>
+                                                                                <option value="52"></option>
+                                                                                <option value="37"></option>
+                                                                                <option value="18"></option>
+                                                                                <option value="39"></option>
+                                                                                <option value="55"></option>
+                                                                                <option value="48"></option>
+                                                                                <option value="50"></option>
+                                                                                <option value="5"></option>
+                                                                                <option value="25"></option>
+                                                                        </select>
+                              </div>
+                          </div>
+                          
+                          <div class="col-md-2 col-sm-12 col-xs-12 m_10 op-bill-left text-center mt-md-15">
+                            <div class="form-group">
+                              <button class="btn btn-primary pic-button atn_sub" id="btnSubmit" name="btnSubmit" type="submit"><i class="fa fa-save"></i> Save</button>
+                            </div>
+                          </div>
+                          <div class="clearfix"></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="table-info col-xs-12">
+                      <div class="m_10">
+                        <div class="ward-table-grid ip-serv-canc-table">
+                          
+                          <table cellspacing="0" class="display nowrap" id="example" width="100%">
+                            <thead>
+                              <tr class="bg-indigo-4001 bg-slate1">
+                                <th>#</th>
+                                <th>Emp Name</th>
+                                <th>Designation</th>
+                                <th>Attendance</th>
+                                <th>Shift</th>
+                                <th>Hours</th>
+                                <th>Type</th>
+                                <th>Remarks</th>
+                              </tr>
+                            </thead>
+                            <tbody></tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+              <div class="clearfix"> </div>
+            </div>
+            <div class="modal fade dismodal" id="addshiftModal" role="dialog">
+              <div class="modal-dialog modal-lg" style="margin-top:60px;">
+                <form action="/petrosoft/app/work_shift/save" autocomplete="off" data-ps-onsubmit="return confirm('Are you sure you want to save?');" enctype="multipart/form-data" method="post" role="form">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <button class="close" data-dismiss="modal" type="button">×</button>
+                      <h4 class="modal-title">Add Shift</h4>
+                    </div>
+                    <div class="modal-body">
+                      <div class="kgn-top-info">
+                        <div class="row">
+                          <div class="tank_info msn-grid">
+                            <div class="kgn-details-grids1">
+                              <div class="m_10">
+                                <div class="col-md-3">
+                                  <div class="form-group">
+                                    <label for="">Shift Type</label>
+                                    <input class="form-control" data-ps-oninput="valdiateShiftType()" id="shift_type" maxlength="30" minlength="1" name="shift_type" placeholder="Enter Shift Type" required="" type="text" value=""/>
+                                  </div>
+                                </div>
+
+                                <div class="col-md-3">
+                                  <label for="">From Time</label>
+                                  <div class="input-group">
+                                    <span class="input-group-addon"><i class="icon-watch2"></i></span>
+                                    <input class="form-control" id="anytime-time3" name="from_time" type="text" value=""/>
+                                  </div>
+                                </div>
+
+                                <input name="save_from" type="hidden" value=""/>
+
+                                <div class="col-md-3">
+                                  <label for="">To Time</label>
+                                  <div class="input-group">
+                                    <span class="input-group-addon"><i class="icon-watch2"></i></span>
+                                    <input class="form-control" id="anytime-time4" name="to_time" type="text" value=""/>
+                                  </div>
+                                </div>
+
+                                <div class="col-md-3">
+                                  <div class="form-group">
+                                    <label for="">Duties</label>
+                                    <input class="form-control" data-ps-oninput="validateDuties()" data-ps-onkeypress="if( isNaN(this.value + String.fromCharCode(event.keyCode) )) return false;" id="duties" maxlength="3" minlength="1" name="duties" placeholder="Enter Duties in number" required="" type="text" value=""/>
+                                  </div>
+                                </div>
+                                <style type="text/css">
+                                  .AnyTime-pkr {
+                                    z-index: 2001
+                                  }
+                                </style>
+
+                                <div class="clearfix"> </div>
+
+
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="modal-footer text-center">
+                      <button class="btn btn-success indpic-button" id="finalok_btn" name="finalok_btn" type="submit"><i class="fa fa-check"></i> Add</button>
+                      <button class="btn btn-danger indpic-button" data-dismiss="modal" id="btnClose" name="btnClose" type=""><i class="fa fa-close"></i> Close</button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+
+          </section>
+        </aside>
+        </div>

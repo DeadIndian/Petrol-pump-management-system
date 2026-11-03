@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import { FuelType, OrderStatus } from "@prisma/client";
+import { businessDate } from "./dates";
 
 /**
  * Get the fuel price for a specific fuel type on a specific date
@@ -9,11 +10,10 @@ export async function getFuelPrice(
 	fuelType: FuelType,
 	date: Date = new Date(),
 ): Promise<number | null> {
-	const targetDate = new Date(date);
-	targetDate.setHours(0, 0, 0, 0);
+	const targetDate = businessDate(date);
 
 	// Try to get price for the exact date
-	let price = await prisma.fuelPrice.findFirst({
+	const price = await prisma.fuelPrice.findFirst({
 		where: {
 			fuelType,
 			date: {
@@ -42,6 +42,7 @@ export async function getFuelPrice(
 export async function getLatestPrices() {
 	const latestPrices = await prisma.fuelPrice.groupBy({
 		by: ["fuelType"],
+        where: { date: { lte: businessDate() } },
 		_max: {
 			date: true,
 		},
@@ -250,8 +251,9 @@ export async function setDailyPrice(
 	date: Date = new Date(),
 ) {
 	// Set date to start of day (ignore time)
-	const targetDate = new Date(date);
-	targetDate.setHours(0, 0, 0, 0);
+	const targetDate = businessDate(date);
+
+	if (targetDate.getTime() !== businessDate().getTime()) throw new Error("Prices can only be set for today");
 
 	// Check if price already exists for today
 	const existingPrice = await prisma.fuelPrice.findFirst({
@@ -312,7 +314,7 @@ export async function updateDailyPrice(
 	const priceDate = new Date(price.date);
 	const dayAfter = new Date(priceDate.getTime() + 24 * 60 * 60 * 1000);
 
-	if (now > dayAfter) {
+	if (businessDate(now).getTime() !== priceDate.getTime() || now > dayAfter) {
 		throw new Error(
 			"Cannot update price. 24-hour period has passed. Use setDailyPrice for a new day.",
 		);
@@ -366,7 +368,7 @@ export async function getPriceHistory(fuelType: FuelType, days: number = 30) {
  */
 export async function shouldUpdatePrice(fuelType: FuelType): Promise<boolean> {
 	const lastPrice = await prisma.fuelPrice.findFirst({
-		where: { fuelType },
+		where: { fuelType, date: { lte: businessDate() } },
 		orderBy: {
 			date: "desc",
 		},
@@ -412,7 +414,7 @@ export async function getPriceUpdateStatus() {
 	const status = await Promise.all(
 		fuelTypes.map(async (fuelType) => {
 			const lastPrice = await prisma.fuelPrice.findFirst({
-				where: { fuelType },
+				where: { fuelType, date: { lte: businessDate() } },
 				orderBy: {
 					date: "desc",
 				},
@@ -422,6 +424,7 @@ export async function getPriceUpdateStatus() {
 				return {
 					fuelType,
 					currentPrice: null,
+                    priceId: null,
 					lastUpdated: null,
 					needsUpdate: true,
 					hoursOverdue: null,
@@ -432,13 +435,14 @@ export async function getPriceUpdateStatus() {
 			const lastUpdateDate = new Date(lastPrice.date);
 			const hoursSinceUpdate =
 				(now.getTime() - lastUpdateDate.getTime()) / (1000 * 60 * 60);
-			const needsUpdate = hoursSinceUpdate >= 24;
+			const needsUpdate = lastUpdateDate.getTime() < businessDate().getTime();
 			const hoursOverdue = needsUpdate ? Math.round(hoursSinceUpdate - 24) : 0;
 
 			return {
 				fuelType,
 				currentPrice: lastPrice.pricePerLiter,
-				lastUpdated: lastPrice.date,
+                priceId: lastPrice.id,
+				lastUpdated: lastPrice.updatedAt,
 				needsUpdate,
 				hoursOverdue,
 			};

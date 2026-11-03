@@ -1,0 +1,9 @@
+_format_version: "2.1"
+services:
+  - name: auth
+    url: http://auth:9999
+    routes:
+      - name: auth
+        strip_path: true
+        paths:
+          - /auth/v1/

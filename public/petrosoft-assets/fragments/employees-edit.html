@@ -1,0 +1,396 @@
+<div class="content-wrapper">
+	<style>
+		.sidebar {
+			background: url('https://petrosoft.ymtsindia.in/assets/images/navbg.png');
+			background-color: #222d32;
+		}
+
+		.sidebar-fixed .sidebar-content {
+			/* background-color: #001a2de3; */
+			background-color: #222d32;
+		}
+
+		.navbar-inverse {
+			z-index: 9999;
+			border-color: #162e3f !important;
+		}
+
+		/* Day Entry — always highlighted at bottom of sidebar */
+		.sidebar .navigation > li.day-entry-nav {
+			margin: 10px 8px 14px;
+			border-radius: 8px;
+			overflow: hidden;
+			box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35), 0 4px 14px rgba(0, 0, 0, 0.25);
+		}
+		.sidebar .navigation > li.day-entry-nav > a {
+			background: linear-gradient(90deg, #2d52b3 0%, #4a76e0 50%, #2d52b3 100%) !important;
+			color: #fff !important;
+			font-weight: 700 !important;
+			letter-spacing: 0.02em;
+			padding-top: 12px !important;
+			padding-bottom: 12px !important;
+		}
+		.sidebar .navigation > li.day-entry-nav > a i,
+		.sidebar .navigation > li.day-entry-nav > a .title {
+			color: #fff !important;
+		}
+		.sidebar .navigation > li.day-entry-nav.active > a,
+		.sidebar .navigation > li.day-entry-nav > a:hover {
+			background: linear-gradient(90deg, #3b66d1 0%, #6a92ec 50%, #3b66d1 100%) !important;
+			color: #fff !important;
+		}
+
+	</style>
+
+
+	        <style type="text/css">
+          .plist {
+            margin: 4px 1px;
+            padding: 0 10px;
+          }
+
+          .op-text-grid1 {
+            text-align: center;
+          }
+
+          .tank_info.msn-grid {
+            position: relative;
+          }
+
+          .kgn-details-grids {
+            padding: 2em 1em;
+          }
+
+          .checkbox-inline+.checkbox-inline,
+          .radio-inline+.radio-inline {
+            margin-left: 0 !important;
+          }
+
+          .top-emp-space {
+            margin-top: 25px;
+          }
+          .checkbox-inline {
+            padding-left: 20px !important;
+        }
+
+          @media (max-width:1199px) {
+            .mobile-mb-24{
+              width:25% !important;
+            }
+          }
+          @media (max-width:1024px) {
+            .clear-lg-fix {
+              clear: both;
+            }
+
+            .pt-30 {
+              padding-top: 10px;
+            }
+            .mobile-mb-24{
+              width:50% !important;
+            }
+            .clearfix-md-block{
+              clear:both;
+            }
+          }
+
+          @media (max-width:600px) {
+            .tank_info.msn-grid {
+              right: 0;
+            }
+            .mobile-mb-24{
+              width:100% !important;
+              margin-bottom:25px;
+            }
+          }
+        </style>
+        
+        <aside class="right-side" data-ps-onclick="remove_dynamic_list()">
+          
+          <section class="content-header">
+            <ol class="breadcrumb">
+              <li><a href="/petrosoft/app/dashboard"><i class="fa fa-home"></i> Dashboard</a></li>
+              <li><a href="/petrosoft/app/emp_master/add">Employee Master</a></li>
+              <li class="active">Edit Employee</li>
+            </ol>
+          </section>
+
+          
+          <section class="content">
+            
+            <div class="row">
+              <div class="col-md-12">
+                <div class="op-bill-cancel">
+                                    <form action="/petrosoft/app/emp_master/edit_save/1" autocomplete="off" data-ps-onsubmit="return confirm('Are you sure you want to save?');" enctype="multipart/form-data" method="post" role="form">
+                    <div class="kgn-details-grids">
+                      <div class="m_10 kgn-top-heading mb-15">
+                        <h3>Edit Employee</h3>
+                      </div>
+                      <div class="tank_info msn-grid">
+                        <div class="m_10">
+                          <div class="col-lg-2 col-md-3 col-sm-6 col-xs-12 top-emp-space">
+                            <div class="m_10 op-bill-right float-container">
+                              <input class="form-control input-sm float-input" id="join_dt" name="join_dt" placeholder=" " required="" type="text" value=""/>
+                              <label class="m_10 float-label" for="join_dt">
+                                Join Date<font color="#FF0000">*</font>
+                              </label>
+                            </div>
+                          </div>
+                          <div class="col-lg-2 col-md-3 col-sm-6 col-xs-12 top-emp-space">
+                            <div class="m_10 op-bill-right float-container">
+                              <input class="form-control input-sm float-input" data-ps-onblur="empnamevalidation();empname_valid2()" data-ps-onkeyup="empname_valid()" id="emp_name" maxlength="25" minlength="2" name="emp_name" placeholder=" " required="" type="text" value=""/>
+                              <label class="m_10 op-bill-right float-label" for="emp_name">
+                                Employee Name<font color="#FF0000">*</font>
+                              </label>
+                              <input id="old_emp" type="hidden" value=""/>
+                              <input class="form-control input-sm" id="emp_id" name="emp_id" placeholder=" " type="hidden" value=""/>
+                            </div>
+                            <div 10px;="" id="showlistdiv" padding:0="" style="color: #f0fd25;position: absolute;background-color: #325d51f2;z-index: 9;width: 100%;max-height: 145px;overflow-y: auto; font-weight: 400;"></div>
+                            <input id="allemplist" name="allemplist" type="hidden" value=""/>
+                          </div>
+                          <div class="col-lg-2 col-md-3 col-sm-6 col-xs-12 top-emp-space">
+                            <div class="m_10 float-container">
+                              <input class="form-control input-sm float-input" data-ps-oninput="validateEmpNo()" id="emp_no" maxlength="15" minlength="1" name="emp_no" placeholder=" " type="text" value=""/>
+                              <label class="m_10 float-label" for="emp_no">
+                                Employee Num
+                              </label>
+                            </div>
+                          </div>
+                          <div class="col-lg-2 col-md-3 col-sm-6 col-xs-12 top-emp-space">
+                            <div class="m_10 float-container">
+                              <input class="form-control input-sm float-input" data-ps-oninput="validatePhno()" id="emp_ph_no" maxlength="13" minlength="10" name="emp_ph_no" placeholder=" " type="text" value=""/>
+                              <label class="m_10 float-label" for="emp_ph_no">Phone No.</label>
+                              <span id="pnoerror"> </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-lg-2 col-md-3 col-sm-6 col-xs-12 top-emp-space">
+                          <div class="m_10 float-container">
+                            <input class="form-control input-sm float-input" data-ps-oninput="validateIdNo()" id="aadhaar_no" maxlength="15" minlength="4" name="aadhaar_no" placeholder=" " type="text" value=""/>
+                            <label class="m_10 float-label" for="aadhaar_no">ID Proof No.</label>
+                            <span id="error1"> </span>
+                          </div>
+                        </div>
+                        <div class="col-lg-2 col-md-3 col-sm-6 col-xs-12 top-emp-space">
+                          <div class="m_10 float-container">
+                                                        
+                            <select class="tom did-floating-select" id="designation" name="designation" required="">
+                              <option value=""></option>
+
+                              <option value="DSM">DSM</option>
+                              <option value="DSW">DSW</option>
+                              <option value="Housekeeping">Housekeeping</option>
+                              <option value="Office assistant">Office assistant</option>
+                              <option value="Accountant">Accountant</option>
+                              <option value="Pump Boy">Pump Boy</option>
+                              <option value="Manager">Manager</option>
+                              <option value="Driver">Driver</option>
+                              <option value="System Operator">System Operator</option>
+                              <option value="Security">Security</option>
+                              <option value="Sweeper">Sweeper</option>
+                              <option value="Sweeper">Gardener </option>
+                              <option value="Cashier">Cashier</option>
+                              <option value="Shift Supervisor">Shift Supervisor</option>
+                                  <option value="Air Boy">Air Boy</option>
+                                      <option value="Windshield Cleaner">Windshield Cleaner</option>
+                            </select>
+                            <div class="m_10 did-floating-label">Designation <font color="#FF0000">*</font>
+                            </div>
+                          </div>
+                        </div>
+
+                        
+
+                        <div class="col-lg-1 col-md-2 col-sm-6 col-xs-12 mobile-mb-24 op-bill-left" style="width:125px">
+                          <div class="m_10 float-container">
+                            <label class="">Salary Type</label>
+                            <select autocomplete="off" class="form-control" id="salary_type1" name="salary_type" required="" style="cursor: pointer;">
+                              <option value="per month">Per month</option>
+                              <option value="per duty">Per Duty</option>
+                               <option value="per hour">Per hour</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div class="col-lg-1 col-md-2 col-sm-6 col-xs-12 top-emp-space mobile-mb-24" style="width:90px">
+                          <div class="m_10 float-container">
+                            <input class="form-control input-sm float-input" id="salary1" maxlength="14" minlength="1" name="salary" placeholder=" " type="text" value=""/>
+                            <label class="m_10 float-label" for="salary1">Salary  <span class="text-warning" data-target="#modal_default" data-toggle="modal" style="cursor: pointer;"><i class="fa fa-plus"></i></span></label>
+                            <span id="error1"> </span>
+                          </div>
+                        </div>
+
+                        
+                        
+                        
+
+                        <div class="col-lg-3 col-md-3 col-sm-6 col-xs-12 clearfix-md-block op-bill-left">
+                          <div class="m_10" style="display:flex">
+                            Upload Image  <span><a class="label bg-orange" data-target="#myModal10" data-toggle="modal">Saved Image</a></span>
+                          </div>
+                          <div class="m_10">
+
+
+                            
+                            
+                            
+                            
+                            <div class="input-group">
+                              <label class="input-group-btn">
+                                <span class="btn btn-newupload">
+                                  Browse… <input accept="image/png,image/jpeg,image/gif" data-ps-onchange="image_validation(1)" id="file1" multiple="" name="upload_img" style="display: none;" type="file" value=""/>
+                                </span>
+                              </label>
+                              <input class="form-control" readonly="" type="text" value=""/>
+                            </div>
+                            <span class="help-block" style="color: #ffdf9a;">Allowed (JPEG, JPG, TIF, GIF, PNG) MaxSize:2MB
+                            </span>
+                            <input name="Previously_updated_iamge" type="hidden" value=""/>
+
+
+
+
+
+
+
+
+                          </div>
+                        </div>
+                        <div class="col-lg-2 col-md-3 col-sm-6 col-xs-12 top-emp-space">
+                          <div class="m_10 float-container">
+                            <textarea class="form-control input-sm float-input" cols="80" id="emp_addrs" maxlength="300" minlength="2" name="emp_addrs" placeholder=" " rows="10" style="height:36px;" value=""></textarea>
+                            <label class="m_10 float-label" for="emp_addrs">Address</label>
+                          </div>
+                        </div>
+                        <div class="col-lg-2 col-md-3 col-sm-6 col-xs-12 clearfix-md-block top-emp-space">
+                          <div class="m_10 float-container">
+                            <textarea class="form-control input-sm float-input" cols="80" id="emp_desc" maxlength="300" minlength="2" name="emp_desc" placeholder=" " rows="10" style="height:36px;" value=""></textarea>
+                            <label class="m_10 float-label" for="emp_desc">
+                              Description
+                            </label>
+                          </div>
+                        </div>
+
+                         <div class="col-lg-2 col-md-3 col-sm-6 col-xs-12 clearfix-md-block top-emp-space">
+                          <div class="m_10 float-container">
+                            <select class="form-control input-sm float-input" data-ps-relation="duty-shifts" id="emp_shift1" name="emp_shift" style="height:36px;">
+    <option value="">-- Select Shift --</option>
+                        
+            </select>
+                            <label class="m_10 float-label" for="emp_shift1">Shifts</label>
+                          </div>
+                        </div>
+                         <div class="clearfix"> </div>
+                        <div class="col-lg-2 col-md-3 col-sm-6 col-xs-12 top-emp-space">
+                            <div class="m_10 float-container">
+                            <input class="form-control input-sm float-input" data-ps-oninput="validateShortLimit(this)" id="emp_limit" inputmode="decimal" maxlength="12" name="emp_limit" placeholder=" " type="text" value=""/>
+                              <label class="m_10 float-label" for="emp_limit">Shortage Limit</label>
+                            </div>
+                          </div>
+                        <div class="col-lg-2 col-md-3 col-sm-6 col-xs-12" style="">
+                          <div class="m_10">
+                            Benefits
+                          </div>
+                          <div class="m-10 benifits_flex">
+                            <label class="checkbox-inline">
+                              <input class="checked" name="pf" type="checkbox" value="0"/>
+                              Provident Fund
+                            </label>
+                            <label class="checkbox-inline">
+                              <input class="checked" name="esi" type="checkbox" value="0"/>
+                              Employees State Insurance
+                            </label>
+                            <label class="checkbox-inline">
+                              <input class="checked" name="it" type="checkbox" value="0"/>
+                              Income Tax
+                            </label>
+                          </div>
+                        </div>
+
+                        
+                        
+                       
+                      </div>
+                      <div class="clearfix mt-5"> </div>
+                      <div class="form-group text-center mt-15">
+                        <button class="btn btn-primary pic-button" id="btnSubmit" name="btnSubmit" type="submit"><i class="fa fa-save"></i> Update</button>
+                      </div>
+                    </div>
+
+                    <div class="container1">
+                          <div class="modal fade" id="myModal10" role="dialog">
+                            <div class="modal-dialog modal-md">
+                              <div class="modal-content">
+                                <div class="modal-header">
+                                  <h4 class="modal-title" style="color:#fff;margin-top: -2px;">Uploaded Image</h4>
+                                  <button aria-label="Close" class="close" data-dismiss="modal" group="button">×</button>
+                                </div>
+                                <div class="modal-body">
+                                                                      <p style="font-size: 15px;color: red;text-align: center;">Image is Not Uploaded Previously</p>
+                                                                  </div>
+                                <div class="modal-footer" style="text-align: center;">
+                                  <button class="btn btn-danger" data-dismiss="modal" type="button">Close</button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <style type="text/css">
+                          .modal-body {
+                            position: relative;
+                            padding: 0px !important;
+                          }
+
+                          .modal-header .close {
+                            position: absolute;
+                            right: 20px;
+                            top: 50%;
+                            margin-top: -11px !important;
+                          }
+                        </style>
+
+
+
+<div class="modal" id="modal_default" role="dialog" style="padding-right:0">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <button class="close" data-dismiss="modal" type="button">×</button>
+                      <h4 class="modal-title">Earnings</h4>
+                    </div>
+                    
+                    <div class="modal-body">
+                      <div class="row" id="allowence_list">
+                        <div class="col-md-1"></div>
+                        <div class="col-md-10">
+                          <table class="table">
+                            <thead>
+                              <tr>
+                                <th>Earnings</th>
+                                <th>Amount</th>
+                              </tr>
+                            </thead>
+                            <tbody></tbody>
+                          </table>
+                        </div>
+
+
+                      </div>
+                      <div class="clearfix"></div>
+
+                    </div>
+                    <div class="modal-footer text-center">
+                      <button class="btn btn-primary" data-dismiss="modal" data-ps-onclick="allow_submit('1')" type="button">Save changes</button>
+                      <button class="btn btn-danger" data-dismiss="modal" id="btnClose1" name="btnClose1" type=""><i class="fa fa-close"></i> Close</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+                  </form>
+                </div>
+
+
+              </div>
+            </div>
+            <div class="clearfix"> </div>
+            </section></aside></div>

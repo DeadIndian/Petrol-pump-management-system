@@ -1,0 +1,338 @@
+<div class="content-wrapper">
+	<style>
+		.sidebar {
+			background: url('https://petrosoft.ymtsindia.in/assets/images/navbg.png');
+			background-color: #222d32;
+		}
+
+		.sidebar-fixed .sidebar-content {
+			/* background-color: #001a2de3; */
+			background-color: #222d32;
+		}
+
+		.navbar-inverse {
+			z-index: 9999;
+			border-color: #162e3f !important;
+		}
+
+		/* Day Entry — always highlighted at bottom of sidebar */
+		.sidebar .navigation > li.day-entry-nav {
+			margin: 10px 8px 14px;
+			border-radius: 8px;
+			overflow: hidden;
+			box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35), 0 4px 14px rgba(0, 0, 0, 0.25);
+		}
+		.sidebar .navigation > li.day-entry-nav > a {
+			background: linear-gradient(90deg, #2d52b3 0%, #4a76e0 50%, #2d52b3 100%) !important;
+			color: #fff !important;
+			font-weight: 700 !important;
+			letter-spacing: 0.02em;
+			padding-top: 12px !important;
+			padding-bottom: 12px !important;
+		}
+		.sidebar .navigation > li.day-entry-nav > a i,
+		.sidebar .navigation > li.day-entry-nav > a .title {
+			color: #fff !important;
+		}
+		.sidebar .navigation > li.day-entry-nav.active > a,
+		.sidebar .navigation > li.day-entry-nav > a:hover {
+			background: linear-gradient(90deg, #3b66d1 0%, #6a92ec 50%, #3b66d1 100%) !important;
+			color: #fff !important;
+		}
+
+	</style>
+
+
+	
+            <style type="text/css">
+                .plist {
+                    margin: 4px 1px;
+                    padding: 0 10px;
+                }
+
+                .op-bill-left {
+                    padding-left: 10px;
+                }
+
+                .op-text-grid {
+                    text-align: center;
+                }
+                .float-label{
+                    top:0.8rem;
+                }
+                .md-mb-30{
+                    margin-bottom: 30px;
+                }
+                .content{
+                    margin-top:20px;
+                    }
+
+                @media (max-width:600px) {
+                    .insurance-buttons ul {
+                        text-align: center;
+                    }
+
+                }
+
+                @media (max-width: 1024px) and (min-width: 600px) {
+                    .col-sm-offset3 {
+                        margin-left: 25%;
+                    }
+                }
+
+
+                
+.upload-img-container {
+    height: auto !important;
+    min-height: 6rem;
+    margin-top: -32px;
+}
+.upload-img-container .upload-label {
+    display: block;
+    color: #fff;
+    font-size: 13px;
+    margin: 0 0 6px 0;
+}
+.upload-img-container .upload-input-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+}
+.upload-img-container .upload-input-row {
+    width: 100%;
+}
+.upload-img-container .btn-newupload {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
+    padding: 0 20px;
+    white-space: nowrap;
+    background-color: #549CFF;;
+    border: 1px solid #4a5fc1;
+    color: #fff;
+    font-weight: 500;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    flex-shrink: 0;
+}
+.upload-img-container .btn-newupload:hover {
+    background-color: #3d4fa8;
+    border-color: #3d4fa8;
+    color: #fff;
+}
+/* .upload-img-container #file1_display {
+    height: 40px;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left: none;
+    flex-grow: 1;
+    min-width: 150px;
+    background-color: #fff;
+} */
+
+    .upload-img-container .file-display-box {
+    height: 40px;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left: none;
+    flex-grow: 1;
+    min-width: 150px;
+    background-color: #fff;
+}
+.upload-img-container .help-block {
+    display: block;
+    margin-top: 6px;
+    font-size: 11px;
+    white-space: nowrap;
+    line-height: 12px;
+}
+
+.upload-img-container .btn-saved-image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
+    padding: 0 14px;
+    margin-left: 8px;
+    white-space: nowrap;
+    background-color: #ff8800;
+    border: 1px solid #e07800;
+    color: #fff;
+    font-weight: 600;
+    font-size: 12px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+.upload-img-container .btn-saved-image:hover {
+    background-color: #e07800;
+}
+
+
+
+.upload-img-container .upload-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+.upload-img-container .upload-label-row .upload-label {
+    margin: 0;
+}
+.upload-img-container .btn-saved-image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 26px;
+    padding: 0 10px;
+    white-space: nowrap;
+    background-color: #ff8800;
+    border: 1px solid #e07800;
+    color: #fff;
+    font-weight: 600;
+    font-size: 11px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.upload-img-container .btn-saved-image:hover {
+    background-color: #e07800;
+}
+
+
+.sweet-alert button.cancel {
+    background-color: #FF0000 !important;
+    color: #fff !important;
+}
+.sweet-alert button.cancel:hover {
+    background-color: #d40000 !important;
+}
+
+     </style>
+
+            
+            <aside class="right-side" data-ps-onclick="remove_dynamic_list()">
+                
+                <section class="content-header">
+                    <ol class="breadcrumb">
+                        <li><a href="/petrosoft/app/dashboard"><i class="fa fa-home"></i> Dashboard</a></li>
+                        <li><a href="/petrosoft/AddSwipeModes"> Swipe</a></li>
+                        <li class="active">Edit Swipe Machine</li>
+                    </ol>
+                </section>
+
+                
+                <section class="content">
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="box">
+                                <div class="box-body table-responsive1">
+                                                                                                            <div class="nav-tabs-custom">
+                                                                                <div class="tab-content">
+
+                                                                                        <div class="tab-pane active" id="tab_1">
+                                                <div class="shipping-top kgn-details-grids">
+                                                    <div class="kgn-top-info">
+                                                        <div class="m_10 kgn-top-heading md-mb-30">
+                                                            <h3>Edit Swipe Machine</h3>
+                                                        </div>
+                                                        <div class="m_10">
+                                                            <form action="/petrosoft/app/swipe/swipebanksaveedit/1" data-ps-onsubmit="return confirm('Are you sure you want to update?');" enctype="multipart/form-data" method="post" role="form">
+                                                                <div class="nozzel_grid">
+                                                                    <div class="m_10">
+
+                                                                    <div class="col-lg-2 col-md-3 col-sm-6 col-xs-12 top-space">
+                                                                        
+											                            <div class="op-bill-right float-container">
+                                                                                <input class="form-control input-sm float-input" data-ps-onblur="swpvalidations()" data-ps-onkeyup="swpname_valid()" id="swipe_name" maxlength="30" minlength="2" name="swipe_name" placeholder=" " required="" type="text" value=""/>
+                                                                                <label class="float-label" for="swipe_name">
+                                                                                    Machine Name <font color="#ff0000">*</font>
+                                                                                </label>
+                                                                            <div id="showlistdiv" style="color: #f0fd25;position: absolute; background-color: #325d51f2; z-index: 9; width: 100%; max-height: 145px; overflow-y: auto; font-weight: 400;top:40px; padding:0 10px;"></div>
+                                                                            <input id="swplist" name="swplist" type="hidden" value=""/>
+                                                                            <input id="old_swip" type="hidden" value=""/>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                     <div class="col-lg-3 col-md-5 col-sm-8 col-xs-12 top-space">
+    <div class="op-bill-right upload-img-container">
+
+        <div class="upload-label-row">
+            <label class="upload-label">Upload Image</label>
+                    </div>
+
+        <div class="upload-input-row">
+            <button class="btn btn-primary btn-newupload" data-ps-onclick="document.getElementById('machine_image').click();" type="button">Browse..</button>
+            <input class="form-control file-display-box" id="file_display" placeholder="No file chosen" readonly="" type="text" value=""/>
+            <input accept=".jpeg,.jpg,.tif,.gif,.png" data-ps-onchange="validateFileSize(this,'file_display')" id="machine_image" name="machine_image" style="display:none;" type="file" value=""/>
+        </div>
+        
+        <input id="remove_machine_image" name="remove_machine_image" style="display:none;" type="checkbox" value="1"/>
+
+        <span class="help-block">Allowed (JPEG, JPG, TIF, GIF, PNG) MaxSize:2MB</span>
+    </div>
+</div>
+
+
+
+                                                                <div class="col-lg-3 col-md-3 col-sm-6 col-xs-6">
+											                            <div class="op-bill-right">
+                                                                            <label class="m-0">Attach Type <span style="font-size: 10px; vertical-align: super;">(optional)</span></label>
+                                                                                    <div class="insurance-buttons grn-buttons tax-buttons refund-btns all-trans-buttons" style="margin: 0;">
+                                                                                        <ul>
+                                                                                            <li>
+                                                                                                <input data-ps-onchange="attach_type(1,'bank')" id="radip" name="attach_type[]" type="radio" value="Bank"/>
+                                                                                                <label for="radip" style="padding: 0px 5px 0px 30px;">Bank</label>
+                                                                                                <div class="check"></div>
+                                                                                            </li>
+                                                                                            <li>
+                                                                                                <input data-ps-onchange="attach_type(1,'vendor')" id="radip1" name="attach_type[]" type="radio" value="Vendor"/>
+                                                                                                <label for="radip1" style="padding: 0px 5px 0px 30px;">Vendor</label>
+                                                                                                <div class="check">
+                                                                                                    <div class="inside"></div>
+                                                                                                </div>
+                                                                                            </li>
+                                                                                        </ul>
+                                                                                    </div>
+                                                                                                                                                                </div>
+                                                                </div>
+
+                                                                        <div class="col-lg-2 col-md-3 col-sm-6 col-xs-6 top-space op-bill-right" id="vendor1" style="display: none;">
+                                                                            <div class="op-bill-right float-container">
+                                                                                <select class="tom did-floating-select" data-ps-relation="vendors" id="sel_vendor1" name="attach_vendor">
+                                                                                        <option value=""> </option>
+                                                                                                                                                                            </select>
+                                                                                    <label class="did-floating-label" for="sel_vendor1">Select Vendor</label>
+                                                                            </div>    
+                                                                        </div>
+
+                                                                        <div class="col-lg-2 col-md-3 col-sm-6 col-xs-6 top-space op-bill-right" id="bank1">
+                                                                        <div class="op-bill-right float-container">
+                                                                            <select class="tom did-floating-select" data-ps-relation="business-parties" id="sel_bank1" name="attach_bank">
+                                                                                    <option value=""> </option>
+                                                                                                                                                                    </select>
+                                                                                <label class="did-floating-label" for="sel_bank1">Select Bank</label>
+                                                                        </div>  
+                                                                        </div>
+                                                                        
+                                                                        <div class="clearfix"></div>
+                                                                    </div>
+                                                                </form></div>
+
+                                                                <div class="form-group" style="margin:1em 0 0 0;text-align: center;">
+                                                                    <button class="btn btn-primary pic-button text-center" id="btnSubmit" name="btnSubmit" style="" type="submit"><i class="fa fa-save"></i> Update</button>
+                                                                </div>
+                                                            
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="clearfix"> </div>
+                    </section></aside></div>

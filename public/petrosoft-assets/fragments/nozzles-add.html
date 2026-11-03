@@ -1,0 +1,223 @@
+<div class="content-wrapper">
+	<style>
+		.sidebar {
+			background: url('https://petrosoft.ymtsindia.in/assets/images/navbg.png');
+			background-color: #222d32;
+		}
+
+		.sidebar-fixed .sidebar-content {
+			/* background-color: #001a2de3; */
+			background-color: #222d32;
+		}
+
+		.navbar-inverse {
+			z-index: 9999;
+			border-color: #162e3f !important;
+		}
+
+		/* Day Entry — always highlighted at bottom of sidebar */
+		.sidebar .navigation > li.day-entry-nav {
+			margin: 10px 8px 14px;
+			border-radius: 8px;
+			overflow: hidden;
+			box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35), 0 4px 14px rgba(0, 0, 0, 0.25);
+		}
+		.sidebar .navigation > li.day-entry-nav > a {
+			background: linear-gradient(90deg, #2d52b3 0%, #4a76e0 50%, #2d52b3 100%) !important;
+			color: #fff !important;
+			font-weight: 700 !important;
+			letter-spacing: 0.02em;
+			padding-top: 12px !important;
+			padding-bottom: 12px !important;
+		}
+		.sidebar .navigation > li.day-entry-nav > a i,
+		.sidebar .navigation > li.day-entry-nav > a .title {
+			color: #fff !important;
+		}
+		.sidebar .navigation > li.day-entry-nav.active > a,
+		.sidebar .navigation > li.day-entry-nav > a:hover {
+			background: linear-gradient(90deg, #3b66d1 0%, #6a92ec 50%, #3b66d1 100%) !important;
+			color: #fff !important;
+		}
+
+	</style>
+
+
+	       <style>
+           button.add_field_button1 {
+               position: relative;
+               top: 35px;
+           }
+           .select2-container--bootstrap {
+                display: inline-block;
+            }
+
+           @media (min-width: 600px) and (max-width: 1024px) and (orientation: landscape) {
+               .kgn-reg label.control-label {
+                   display: inline-block;
+                   width: 100px;
+               }
+
+               input.form-control.input-sm {
+                   width: 150px;
+                   display: inline-block;
+               }
+
+               .kgn-reg .col-md-7 {
+                   width: 150px;
+                   display: inline-block;
+                   margin-bottom: 10px;
+               }
+
+               .kgn-reg .col-md-4 {
+                   width: 185px;
+                   display: inline-block;
+               }
+           }
+
+           @media (max-width: 966px) and (min-width: 600px) {
+               .kgn-reg label.control-label {
+                   display: inline-block;
+                   width: 100px;
+               }
+
+               input.form-control.input-sm {
+                   width: 150px;
+                   display: inline-block;
+               }
+
+               .kgn-reg .col-md-7 {
+                   width: 150px;
+                   display: inline-block;
+                   margin-bottom: 10px;
+               }
+
+               .kgn-reg .col-md-4 {
+                   width: 185px;
+                   display: inline-block;
+               }
+           }
+           .nazel-btn .add_field_button1{
+            position:static !important;
+            margin-top:35px;
+           }
+           @media (max-width:991px) {
+               .text-left-md {
+                   text-align: left !important;
+               }
+
+               .kgn-details-grids {
+                    text-align: left;
+                    display: inline-block;
+                    width: 100%;
+                }
+                .nazel-btn .add_field_button1{
+                margin-top:17px;
+                }
+           }
+          
+       </style>
+       
+       <aside class="right-side">
+           
+           <section class="content-header">
+               <ol class="breadcrumb">
+                   <li><a href="/petrosoft/app/dashboard"><i class="fa fa-home"></i> Dashboard</a></li>
+                   <li><a href="/petrosoft/app/tank/add"> Tank</a></li>
+                   <li class="active">Add Nozzle</li>
+               </ol>
+           </section>
+                      
+           <section class="content">
+                              <div class="row">
+                   <div class="col-md-12">
+                       <div class="col-md-12 kgn-details-grids">
+                            <div class="col-lg-3 col-md-3 col-sm-8 col-xs-12 top-space">
+                                <div class="float-container">
+                                    <input class="float-input" data-ps-oninput="validateTnkName()" id="tank-name" maxlength="30" minlength="1" placeholder="" readonly="" type="text" value=""/>
+                                    <label class="control-label float-label" for="tank-name">Tank Name :</label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-lg-3 col-md-3 col-sm-8 col-xs-12 top-space">
+                                <div class="float-container">
+                                    <input class="form-control input-sm float-input" data-ps-oninput="validateCpty()" id="capacity" maxlength="13" minlength="1" readonly="" type="text" value=""/>
+                                    <label class="control-label float-label">Capacity :</label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-lg-3 col-md-3 col-sm-8 col-xs-12 top-space">
+                                <div class="float-container">
+                                    <input class="form-control input-sm float-input" data-ps-oninput="validatePrdct()" id="product" readonly="" type="text" value=""/>
+                                    <label class="control-label float-label">Product :</label>
+                                </div>
+                            </div>
+                       </div>
+                       <div class="box">
+                           <div class="box-header">
+                                                                  <div class="m_10">
+                                       <button class="btn btn-primary" data-target="#myModal" data-toggle="modal" name="button" style="margin-top: 10px;" type="button"><i class="fa fa-plus"></i> Add Nozzles</button>
+                                   </div>                            </div>
+                           <div class="box-footer clearfix">
+                               <table cellspacing="0" class="display nowrap" id="example" width="100%">
+                                   <thead>
+                                       <tr>
+                                           <th>S no</th>
+                                           <th>Nozzle</th>
+                                           <th>Edit</th>
+                                           <th>Status</th>
+                                       </tr>
+                                   </thead>
+                                   <tbody></tbody>
+                               </table>
+                           </div>
+                       </div>
+                       <div class="modal fade" id="myModal" role="dialog">
+                           <div class="modal-dialog">
+                               <div class="modal-content">
+                                   <div class="modal-header">
+                                       <button class="close" data-dismiss="modal" type="button">×</button>
+                                       <h4 class="modal-title" style="font-weight:600;">Nozzels</h4>
+                                   </div>
+                                   <div class="modal-body">
+
+                                       <form action="/petrosoft/app/tank/addingnozzel/1" class="form-search" method="post">
+
+                                           <input name="tank_no" type="hidden" value=""/>
+                                           <input name="prod_id" type="hidden" value=""/>
+                                           <div class="input_fields_wrap1 nazel-btn">
+                                               <div class="form-group">
+                                                   <div class="col-md-10 col-sm-9 col-xs-10 kgn-details-info">
+                                                       <div class="m_10">
+                                                           Nozzle
+                                                       </div>
+                                                       <div class="m_10">
+                                                           <input class="form-control input-sm" data-ps-oninput="validateNozl('1')" id="vehicle_no1" maxlength="13" minlength="1" name="nozzle[]" placeholder="" required="" type="text" value=""/>
+                                                       </div>
+                                                   </div>
+
+                                                   <div class="col-md-1 col-sm-2 col-xs-2">
+                                                       <button class="add_field_button1" style="background:none; border:none; "><img height="20" src="/petrosoft-assets/assets/img/add.png" style="    filter: brightness(0.2); " width="20"/></button>
+                                                   </div>
+                                                   <div class="clearfix"> </div>
+                                               </div>
+                                           </div>
+                                           
+                                           <div class="form-group" style="margin-top: 10px;text-align:center">
+                                               <button class="btn btn-primary" name="submit" type="submit">Submit</button>
+                                               <button class="btn btn-danger" data-dismiss="modal" type="button">Close</button>
+                                           </div>
+                                       </form>
+                                   </div>
+                                   
+                               </div>
+                           </div>
+                       </div>
+                   </div>
+               </div>
+
+
+
+           </section>
+       </aside>
+       </div>

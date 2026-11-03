@@ -49,7 +49,7 @@ interface User {
 	createdAt: string;
 	_count: {
 		orders: number;
-		cashAdvanceTransactions: number;
+		fulfilledOrders: number;
 	};
 }
 
@@ -75,7 +75,9 @@ const EMPTY_EDIT = {
 };
 
 export default function UsersSection() {
+	const [offset, setOffset] = useState(0);
 	const [users, setUsers] = useState<User[]>([]);
+  const [roleCounts, setRoleCounts] = useState<Record<UserRole, number>>({ ADMIN: 0, EMPLOYEE: 0, CUSTOMER: 0 });
 	const [total, setTotal] = useState(0);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -97,29 +99,21 @@ export default function UsersSection() {
 	// Delete state
 	const [deletingId, setDeletingId] = useState<string | null>(null);
 
-	const fetchUsers = useCallback(async () => {
-		setLoading(true);
-		setError(null);
-		try {
-			const params = new URLSearchParams({ limit: "100" });
-			if (filterRole !== "all") params.set("role", filterRole);
-			if (searchTerm) params.set("search", searchTerm);
-			const data = await api.get<{
-				users: User[];
-				pagination: { total: number };
-			}>(`/api/admin/users?${params}`);
-			setUsers(data.users);
-			setTotal(data.pagination.total);
-		} catch (err: any) {
-			setError(err.message || "Failed to fetch users");
-		} finally {
-			setLoading(false);
-		}
-	}, [filterRole, searchTerm]);
+  const fetchUsers = useCallback((signal?: AbortSignal) => {
+    const params = new URLSearchParams({ limit: "20", offset: String(offset) });
+    if (filterRole !== "all") params.set("role", filterRole);
+    if (searchTerm) params.set("search", searchTerm);
+    return api.get<{ users: User[]; pagination: { total: number }; summary: Record<UserRole, number> }>(`/api/admin/users?${params}`, { signal })
+      .then(data => { if (!signal?.aborted) { setUsers(data.users); setTotal(data.pagination.total); setRoleCounts(data.summary); setError(null); } })
+      .catch(cause => { if (!signal?.aborted) setError(cause.message || "Failed to fetch users"); })
+      .finally(() => { if (!signal?.aborted) setLoading(false); });
+  }, [filterRole, searchTerm, offset]);
 
 	useEffect(() => {
-		fetchUsers();
-	}, [fetchUsers]);
+    const controller = new AbortController();
+    void fetchUsers(controller.signal);
+    return () => controller.abort();
+  }, [fetchUsers]);
 
 	// ── Create User ────────────────────────────────────────────────────────────
 	const handleCreate = async () => {
@@ -188,9 +182,9 @@ export default function UsersSection() {
 		}
 	};
 
-	const adminCount = users.filter((u) => u.role === "ADMIN").length;
-	const employeeCount = users.filter((u) => u.role === "EMPLOYEE").length;
-	const customerCount = users.filter((u) => u.role === "CUSTOMER").length;
+	const adminCount = roleCounts.ADMIN;
+	const employeeCount = roleCounts.EMPLOYEE;
+	const customerCount = roleCounts.CUSTOMER;
 
 	return (
 		<div className="space-y-6">
@@ -201,7 +195,7 @@ export default function UsersSection() {
 						<CardTitle className="text-sm font-medium">Total Users</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<div className="text-3xl font-bold">{total}</div>
+						<div className="text-3xl font-bold">{roleCounts.ADMIN + roleCounts.EMPLOYEE + roleCounts.CUSTOMER}</div>
 					</CardContent>
 				</Card>
 				<Card>
@@ -209,7 +203,7 @@ export default function UsersSection() {
 						<CardTitle className="text-sm font-medium">Admins</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<div className="text-3xl font-bold text-purple-600">
+						<div className="text-3xl font-bold text-blue-700">
 							{adminCount}
 						</div>
 					</CardContent>
@@ -238,18 +232,18 @@ export default function UsersSection() {
 
 			{/* Users Table */}
 			<Card>
-				<CardHeader className="flex flex-row items-center justify-between">
+				<CardHeader className="flex flex-wrap flex-row items-center justify-between gap-3">
 					<div>
 						<CardTitle>User Management</CardTitle>
 						<CardDescription>
 							Create, update, and manage all system users
 						</CardDescription>
 					</div>
-					<div className="flex gap-2">
+					<div className="flex flex-wrap gap-2">
 						<Button
 							variant="outline"
 							size="sm"
-							onClick={fetchUsers}
+							onClick={() => { setLoading(true); void fetchUsers(); }}
 							disabled={loading}>
 							<RefreshCw
 								className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
@@ -269,8 +263,7 @@ export default function UsersSection() {
 								<DialogHeader>
 									<DialogTitle>Create New User</DialogTitle>
 									<DialogDescription>
-										Add a new user to the system. They&apos;ll receive login
-										credentials via email.
+										Add a new user to the system. Share the email and password securely with them.
 									</DialogDescription>
 								</DialogHeader>
 								<div className="space-y-4">
@@ -279,8 +272,8 @@ export default function UsersSection() {
 											{createError}
 										</div>
 									)}
-									<div className="grid grid-cols-2 gap-4">
-										<div className="col-span-2">
+									<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+										<div className="sm:col-span-2">
 											<Label htmlFor="create-name">Full Name *</Label>
 											<Input
 												id="create-name"
@@ -294,7 +287,7 @@ export default function UsersSection() {
 												}
 											/>
 										</div>
-										<div className="col-span-2">
+										<div className="sm:col-span-2">
 											<Label htmlFor="create-email">Email *</Label>
 											<Input
 												id="create-email"
@@ -309,12 +302,12 @@ export default function UsersSection() {
 												}
 											/>
 										</div>
-										<div className="col-span-2">
+										<div className="sm:col-span-2">
 											<Label htmlFor="create-password">Password *</Label>
 											<Input
 												id="create-password"
 												type="password"
-												placeholder="Minimum 6 characters"
+												placeholder="Minimum 8 characters"
 												value={createForm.password}
 												onChange={(e) =>
 													setCreateForm({
@@ -345,7 +338,7 @@ export default function UsersSection() {
 												onValueChange={(v) =>
 													setCreateForm({ ...createForm, role: v as UserRole })
 												}>
-												<SelectTrigger>
+												<SelectTrigger aria-label="User role">
 													<SelectValue />
 												</SelectTrigger>
 												<SelectContent>
@@ -379,20 +372,20 @@ export default function UsersSection() {
 					</div>
 				</CardHeader>
 				<CardContent>
-					<div className="flex gap-4 mb-6">
+					<div className="flex flex-col sm:flex-row gap-4 mb-6">
 						<div className="flex-1 relative">
 							<Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
 							<Input
-								placeholder="Search by name or email..."
+								aria-label="Search users" placeholder="Search by name or email..."
 								value={searchTerm}
-								onChange={(e) => setSearchTerm(e.target.value)}
+								onChange={(e) => { setSearchTerm(e.target.value); setOffset(0); setLoading(true); }}
 								className="pl-10"
 							/>
 						</div>
 						<select
-							value={filterRole}
-							onChange={(e) => setFilterRole(e.target.value)}
-							className="border rounded-lg px-4 py-2 text-sm">
+							aria-label="Filter users by role" value={filterRole}
+							onChange={(e) => { setFilterRole(e.target.value); setOffset(0); setLoading(true); }}
+							className="native-select sm:max-w-48">
 							<option value="all">All Roles</option>
 							<option value="ADMIN">Admin</option>
 							<option value="EMPLOYEE">Employee</option>
@@ -420,7 +413,7 @@ export default function UsersSection() {
 										<TableHead>Phone</TableHead>
 										<TableHead>Role</TableHead>
 										<TableHead className="text-center">Orders</TableHead>
-										<TableHead className="text-center">Cash Advances</TableHead>
+										<TableHead className="text-center">Deliveries</TableHead>
 										<TableHead>Joined</TableHead>
 										<TableHead className="text-right">Actions</TableHead>
 									</TableRow>
@@ -446,7 +439,7 @@ export default function UsersSection() {
 												{user._count.orders}
 											</TableCell>
 											<TableCell className="text-center">
-												{user._count.cashAdvanceTransactions}
+												{user._count.fulfilledOrders}
 											</TableCell>
 											<TableCell className="text-sm text-gray-600">
 												{new Date(user.createdAt).toLocaleDateString("en-IN")}
@@ -463,7 +456,7 @@ export default function UsersSection() {
 															<Button
 																variant="outline"
 																size="sm"
-																onClick={() => openEdit(user)}>
+																aria-label={`Edit ${user.fullName}`} onClick={() => openEdit(user)}>
 																<Pencil className="h-3 w-3" />
 															</Button>
 														</DialogTrigger>
@@ -480,11 +473,11 @@ export default function UsersSection() {
 																		{editError}
 																	</div>
 																)}
-																<div className="grid grid-cols-2 gap-4">
-																	<div className="col-span-2">
-																		<Label>Full Name</Label>
+																<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+																	<div className="sm:col-span-2">
+																		<Label htmlFor="edit-full-name">Full Name</Label>
 																		<Input
-																			value={editForm.fullName}
+																			id="edit-full-name" value={editForm.fullName}
 																			onChange={(e) =>
 																				setEditForm({
 																					...editForm,
@@ -494,9 +487,9 @@ export default function UsersSection() {
 																		/>
 																	</div>
 																	<div>
-																		<Label>Phone</Label>
+																		<Label htmlFor="edit-phone">Phone</Label>
 																		<Input
-																			value={editForm.phone}
+																			id="edit-phone" value={editForm.phone}
 																			onChange={(e) =>
 																				setEditForm({
 																					...editForm,
@@ -515,7 +508,7 @@ export default function UsersSection() {
 																					role: v as UserRole,
 																				})
 																			}>
-																			<SelectTrigger>
+																			<SelectTrigger aria-label="User role">
 																				<SelectValue />
 																			</SelectTrigger>
 																			<SelectContent>
@@ -531,17 +524,17 @@ export default function UsersSection() {
 																			</SelectContent>
 																		</Select>
 																	</div>
-																	<div className="col-span-2">
-																		<Label>
+																	<div className="sm:col-span-2">
+																		<Label htmlFor="edit-password">
 																			New Password{" "}
-																			<span className="text-gray-400 text-xs">
+																			<span className="text-slate-600 text-xs">
 																				(leave blank to keep current)
 																			</span>
 																		</Label>
 																		<Input
 																			type="password"
 																			placeholder="New password"
-																			value={editForm.password}
+																			id="edit-password" value={editForm.password}
 																			onChange={(e) =>
 																				setEditForm({
 																					...editForm,
@@ -575,7 +568,7 @@ export default function UsersSection() {
 														variant="outline"
 														size="sm"
 														className="text-red-600 hover:text-red-700 hover:bg-red-50"
-														onClick={() => handleDelete(user.id, user.fullName)}
+														aria-label={`Delete ${user.fullName}`} onClick={() => handleDelete(user.id, user.fullName)}
 														disabled={deletingId === user.id}>
 														{deletingId === user.id ? (
 															<Loader2 className="h-3 w-3 animate-spin" />
@@ -596,6 +589,7 @@ export default function UsersSection() {
 							)}
 						</div>
 					)}
+                    <div className="mt-5 flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-slate-600">Showing {total ? offset + 1 : 0}–{Math.min(offset + users.length, total)} of {total}</p><div className="flex flex-wrap gap-2"><Button variant="outline" disabled={!offset || loading} onClick={() => { setLoading(true); setOffset(Math.max(0, offset - 20)); }}>Previous users</Button><Button variant="outline" disabled={offset + 20 >= total || loading} onClick={() => { setLoading(true); setOffset(offset + 20); }}>Next users</Button></div></div>
 				</CardContent>
 			</Card>
 		</div>

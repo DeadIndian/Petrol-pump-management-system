@@ -1,55 +1,27 @@
-# Test User Credentials
+# Disposable local test accounts
 
-## Working Login Accounts
+These accounts are created by `npm run dev:local` and `npm run verify` in the isolated local Supabase Auth/PostgreSQL stack. They are not staging or production accounts.
 
-### Admin (Web Dashboard + App)
+All passwords: **`LocalPump123!`**.
 
-- **Email:** admin@petrolpump.com
-- **Password:** admin123
-- **Role:** ADMIN
-- **Access:** http://localhost:3000/admin/login
+| Role | Email |
+| --- | --- |
+| Admin | `phone-admin@petrol.local` |
+| Customer | `phone-customer@petrol.local` |
+| Employee | `phone-employee@petrol.local` |
 
-### Employee
+Equivalent `desktop-admin`, `desktop-customer`, `desktop-employee` and `api-*` accounts at `petrol.local` are available. The generated IDs and accounts are in `tests/.state/fixtures.json`.
 
-- **Email:** employee@petrolpump.com
-- **Password:** employee123
-- **Role:** EMPLOYEE
+Open http://localhost:3000/login on the computer. On a phone connected to the same Wi-Fi, open `http://<computer-LAN-IP>:3000/login`. The computer's Wi-Fi IP during this handoff was `192.168.1.7`; it can change.
 
-### Customers
+## Manual workflow
 
-- **Email:** customer1@petrolpump.com / **Password:** customer123 (Rajesh Kumar)
-- **Email:** customer2@petrolpump.com / **Password:** customer123 (Priya Singh)
+1. Admin: in **Prices**, set petrol to ₹100/L and diesel to ₹90/L. In **Billing**, open the customer and configure an unused indent range if necessary.
+2. Customer: place a **New order** for 10 L petrol and ₹200 extra cash. Copy the vehicle number to find it easily.
+3. Employee: find that vehicle in **Orders**, open it, and complete delivery with 10 L delivered.
+4. Customer: refresh **Orders** and **My account**. This delivery adds ₹1,200 to debt.
+5. Admin: open that customer in **Billing** and add a ₹500 payment. Debt decreases by ₹500. Reverse the payment to restore it.
 
-### Extra Manual Test Accounts (Supabase Auth)
+Existing disposable records can affect the starting balance. Compare the change in balance, or create a fresh customer through signup and configure its indent range. `npm run verify` resets local business data; avoid running it during manual testing.
 
-- **Email:** gollabharath2007@gmail.com / **Password:** bharath123 — CUSTOMER
-- **Email:** qwe@gmail.com / **Password:** employee123 — EMPLOYEE
-
-## Backend URL
-
-- Local: http://192.168.0.7:3000/api
-- Localhost: http://localhost:3000/api
-
-## Database Seed Data
-
-After `npx prisma migrate reset`, the seed (`prisma/seed.ts`) creates users in **both Supabase Auth and the database** so all accounts are immediately loginable:
-
-- admin@petrolpump.com / admin123 (ADMIN)
-- employee@petrolpump.com / employee123 (EMPLOYEE)
-- customer1@petrolpump.com / customer123 (CUSTOMER — Rajesh Kumar)
-- customer2@petrolpump.com / customer123 (CUSTOMER — Priya Singh)
-- Petrol: ₹105.50/L, Diesel: ₹94.25/L (today's prices)
-- 2 sample orders, 1 bill
-
-## Price Management
-
-- Fuel prices are **admin-only** — only admins can view or set prices
-- Prices are set daily each morning by an admin
-- Prices are used internally to calculate bills; they are not exposed to customers or employees
-- Endpoints: `GET/POST /api/admin/prices` (admin token required)
-
-## Notes
-
-- Manual test accounts have confirmed emails in Supabase
-- To create a new account, use the signup endpoint/screen or the Users tab in the admin dashboard
-- New users created through the admin dashboard are immediately active in both Supabase Auth and the database
+The previous accounts and real email addresses documented here were not verified and have been removed from this guide.

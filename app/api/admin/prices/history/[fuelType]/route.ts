@@ -4,8 +4,9 @@ import { getPriceHistory } from "@/lib/db-utils";
 
 export async function GET(
 	request: NextRequest,
-	{ params }: { params: { fuelType: string } },
+	{ params }: { params: Promise<{ fuelType: string }> },
 ) {
+    const routeParams = await params;
 	try {
 		const authResult = await authenticate(request);
 		if (authResult instanceof NextResponse) return authResult;
@@ -30,19 +31,19 @@ export async function GET(
 
 		// Validate fuel type
 		const validFuelTypes = ["PETROL", "DIESEL"];
-		if (!validFuelTypes.includes(params.fuelType.toUpperCase())) {
+		if (!validFuelTypes.includes(routeParams.fuelType.toUpperCase())) {
 			return NextResponse.json({ error: "Invalid fuel type" }, { status: 400 });
 		}
 
 		// Get price history
 		const history = await getPriceHistory(
-			params.fuelType.toUpperCase() as any,
+			routeParams.fuelType.toUpperCase() as any,
 			days,
 		);
 
 		return NextResponse.json(
 			{
-				fuelType: params.fuelType.toUpperCase(),
+				fuelType: routeParams.fuelType.toUpperCase(),
 				days,
 				count: history.length,
 				history,

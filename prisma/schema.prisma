@@ -51,6 +51,7 @@ model User {
 
   // Relations
   orders        Order[]
+  fulfilledOrders Order[] @relation("FulfilledBy")
   pricesCreated FuelPrice[] @relation("CreatedByAdmin")
   auditLogs     AuditLog[]
   customerProfile CustomerProfile?
@@ -101,13 +102,17 @@ model Order {
   status                OrderStatus @default(PENDING)
   deliveredAt           DateTime?   @map("delivered_at")
   completedAt           DateTime?   @map("completed_at")
+  fulfilledById         String?     @map("fulfilled_by_id")
   createdAt             DateTime    @default(now()) @map("created_at")
   updatedAt             DateTime    @updatedAt @map("updated_at")
 
   // Relations
   customer User   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  fulfilledBy User? @relation("FulfilledBy", fields: [fulfilledById], references: [id], onDelete: SetNull)
 
   @@index([customerId])
+  @@unique([customerId, indentNumber])
+  @@index([fulfilledById])
   @@index([vehicleNumber])
   @@index([status])
   @@index([deliveredAt])
@@ -172,4 +177,151 @@ model AuditLog {
   @@index([userId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// Petrosoft is isolated from the existing delivery application's data and auth.
+model PetrosoftWorkspace {
+  id            String   @id @default(cuid())
+  referenceCode String   @unique @map("reference_code")
+  name          String
+  settings      Json     @default("{}")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  users         PetrosoftUser[]
+  entries       PetrosoftEntry[]
+  sequences     PetrosoftSequence[]
+  attachments   PetrosoftAttachment[]
+  audits        PetrosoftAudit[]
+  nativeRecords PetrosoftNativeRecord[]
+
+  @@map("petrosoft_workspaces")
+}
+
+model PetrosoftUser {
+  id           String   @id @default(cuid())
+  workspaceId  String   @map("workspace_id")
+  username     String
+  fullName     String   @map("full_name")
+  passwordHash String   @map("password_hash")
+  role         String   @default("Super Admin")
+  permissions  Json     @default("[\"*\"]")
+  active       Boolean  @default(true)
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  workspace    PetrosoftWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sessions     PetrosoftSession[]
+
+  @@unique([workspaceId, username])
+  @@map("petrosoft_users")
+}
+
+model PetrosoftSession {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique @map("token_hash")
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      PetrosoftUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("petrosoft_sessions")
+}
+
+model PetrosoftSequence {
+  id          String @id @default(cuid())
+  workspaceId String @map("workspace_id")
+  module      String
+  value       Int    @default(0)
+  workspace   PetrosoftWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, module])
+  @@map("petrosoft_sequences")
+}
+
+model PetrosoftEntry {
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  module      String
+  number      Int
+  externalId  String?  @map("external_id")
+  name        String   @default("")
+  date        DateTime @db.Date
+  amount      Decimal  @default(0) @db.Decimal(18, 4)
+  quantity    Decimal  @default(0) @db.Decimal(18, 4)
+  rate        Decimal  @default(0) @db.Decimal(18, 4)
+  status      String   @default("active")
+  fields      Json     @default("{}")
+  createdBy   String   @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  workspace   PetrosoftWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  ledger      PetrosoftLedger[]
+
+  @@unique([workspaceId, module, number])
+  @@unique([workspaceId, module, externalId])
+  @@index([workspaceId, module, date])
+  @@map("petrosoft_entries")
+}
+
+model PetrosoftLedger {
+  id          String   @id @default(cuid())
+  entryId     String   @map("entry_id")
+  entityType  String   @map("entity_type")
+  entityId    String   @map("entity_id")
+  date        DateTime @db.Date
+  debit       Decimal  @default(0) @db.Decimal(18, 4)
+  credit      Decimal  @default(0) @db.Decimal(18, 4)
+  quantity    Decimal  @default(0) @db.Decimal(18, 4)
+  description String   @default("")
+  entry       PetrosoftEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@index([entityType, entityId, date])
+  @@map("petrosoft_ledger")
+}
+
+model PetrosoftAttachment {
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  module      String   @default("organization")
+  filename    String
+  contentType String   @map("content_type")
+  storageName String   @unique @map("storage_name")
+  size        Int
+  createdAt   DateTime @default(now()) @map("created_at")
+  workspace   PetrosoftWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("petrosoft_attachments")
+}
+
+model PetrosoftAudit {
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  userId      String   @map("user_id")
+  username    String
+  action      String
+  module      String
+  entryId     String?  @map("entry_id")
+  before      Json?
+  after       Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+  workspace   PetrosoftWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@map("petrosoft_audits")
+}
+
+// Supplementary native records retain calibration charts, vehicles and historical
+// stock snapshots without mixing imported SQL or private provider credentials into code.
+model PetrosoftNativeRecord {
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  tableName   String   @map("table_name")
+  nativeId    String   @map("native_id")
+  fields      Json
+  workspace   PetrosoftWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, tableName, nativeId])
+  @@index([workspaceId, tableName])
+  @@map("petrosoft_native_records")
 }

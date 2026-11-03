@@ -6,8 +6,7 @@ import {
 	successResponse,
 	errorResponse,
 } from "@/lib/auth";
-import { CreatePaymentSchema } from "@/lib/validation";
-import { createAuditLog } from "@/lib/db-utils";
+import { CreatePaymentSchema, PaymentFilterSchema } from "@/lib/validation";
 import { recordPayment } from "@/lib/billing-utils";
 
 /**
@@ -33,25 +32,13 @@ export async function POST(request: NextRequest) {
 			validatedData.amount,
 			validatedData.paymentMethod as any,
 			{
-				paymentMethodNote: validatedData.paymentMethodNote,
+				auditUserId: authRequest.user.id,
+                paymentMethodNote: validatedData.paymentMethodNote,
 				reference: validatedData.reference,
 				notes: validatedData.notes,
 				paymentDate: validatedData.paymentDate
 					? new Date(validatedData.paymentDate)
 					: undefined,
-			},
-		);
-
-		await createAuditLog(
-			authRequest.user.id,
-			"PAYMENT_RECORDED",
-			"payments",
-			payment.id,
-			{
-				customerProfileId: validatedData.customerProfileId,
-				amount: validatedData.amount,
-				paymentMethod: validatedData.paymentMethod,
-				timestamp: new Date().toISOString(),
 			},
 		);
 
@@ -78,7 +65,7 @@ export async function GET(request: NextRequest) {
 		if (authResult instanceof NextResponse) return authResult;
 
 		const authRequest = authResult as any;
-		const roleCheck = requireRole("ADMIN")(authRequest);
+		const roleCheck = requireRole("ADMIN", "CUSTOMER")(authRequest);
 		if (roleCheck) return roleCheck;
 
 		const { searchParams } = new URL(request.url);
@@ -86,10 +73,17 @@ export async function GET(request: NextRequest) {
 		const paymentMethod = searchParams.get("paymentMethod");
 		const startDate = searchParams.get("startDate");
 		const endDate = searchParams.get("endDate");
-		const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 100);
-		const offset = parseInt(searchParams.get("offset") || "0");
+		const filters = PaymentFilterSchema.parse({ paymentMethod: paymentMethod || undefined,
+            limit: Number(searchParams.get("limit") || "20"), offset: Number(searchParams.get("offset") || "0") });
+        const { limit, offset } = filters;
 
 		const where: any = {};
+        if (authRequest.user.role === "CUSTOMER") {
+            const profile = await prisma.customerProfile.findUnique({ where: { userId: authRequest.user.id } });
+            if (!profile) return errorResponse("Customer profile not found", 404);
+            if (customerProfileId && customerProfileId !== profile.id) return errorResponse("Unauthorized", 403);
+            where.customerProfileId = profile.id;
+        }
 		if (customerProfileId) where.customerProfileId = customerProfileId;
 		if (paymentMethod) where.paymentMethod = paymentMethod;
 		if (startDate || endDate) {
@@ -133,7 +127,8 @@ export async function GET(request: NextRequest) {
 			},
 		});
 	} catch (error: any) {
-		console.error("Payments fetch error:", error);
+		if (error.name === "ZodError") return errorResponse("Invalid payment filters", 400, error.errors);
+        console.error("Payments fetch error:", error);
 		return errorResponse("Failed to fetch payments", 500);
 	}
 }

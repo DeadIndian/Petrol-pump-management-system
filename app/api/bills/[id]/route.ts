@@ -6,13 +6,10 @@ import {
 	successResponse,
 	errorResponse,
 } from "@/lib/auth";
-import { createAuditLog } from "@/lib/db-utils";
 import { reversePayment } from "@/lib/billing-utils";
 
 interface RouteParams {
-	params: {
-		id: string;
-	};
+	params: Promise<{ id: string }>;
 }
 
 /**
@@ -25,7 +22,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 		if (authResult instanceof NextResponse) return authResult;
 
 		const authRequest = authResult as any;
-		const { id } = params;
+		const { id } = await params;
+        if (authRequest.user.role === "EMPLOYEE") return errorResponse("Unauthorized", 403);
 
 		const payment = await prisma.payment.findUnique({
 			where: { id },
@@ -79,24 +77,12 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 		const roleCheck = requireRole("ADMIN")(authRequest);
 		if (roleCheck) return roleCheck;
 
-		const { id } = params;
-		const reversed = await reversePayment(id);
-
-		await createAuditLog(
-			authRequest.user.id,
-			"PAYMENT_REVERSED",
-			"payments",
-			id,
-			{
-				customerProfileId: reversed.customerProfileId,
-				amount: reversed.amount,
-				timestamp: new Date().toISOString(),
-			},
-		);
+		const { id } = await params;
+		await reversePayment(id, authRequest.user.id);
 
 		return successResponse({ message: "Payment reversed successfully" });
 	} catch (error: any) {
 		console.error("Payment reverse error:", error);
-		return errorResponse(error.message || "Failed to reverse payment", 500);
+		return errorResponse(error.message || "Failed to reverse payment", error.code === "P2025" || error.message?.startsWith("Payment not found") ? 404 : 500);
 	}
 }

@@ -44,7 +44,9 @@ interface Customer {
 
 export default function BillingSection() {
 	const router = useRouter();
+	const [offset, setOffset] = useState(0);
 	const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customerTotal, setCustomerTotal] = useState(0);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [searchTerm, setSearchTerm] = useState("");
@@ -54,35 +56,20 @@ export default function BillingSection() {
 		totalBalance: 0,
 	});
 
-	const fetchCustomers = useCallback(async () => {
-		setLoading(true);
-		setError(null);
-		try {
-			const params = new URLSearchParams({ limit: "100" });
-			if (searchTerm) params.set("search", searchTerm);
-
-			const data = await api.get<{
-				customers: Customer[];
-				pagination: { total: number };
-				summary: {
-					totalCustomers: number;
-					totalOutstanding: number;
-					totalBalance: number;
-				};
-			}>(`/api/customers?${params}`);
-
-			setCustomers(data.customers);
-			setSummary(data.summary);
-		} catch (err: any) {
-			setError(err.message || "Failed to fetch customers");
-		} finally {
-			setLoading(false);
-		}
-	}, [searchTerm]);
+  const fetchCustomers = useCallback((signal?: AbortSignal) => {
+    const params = new URLSearchParams({ limit: "20", offset: String(offset) });
+    if (searchTerm) params.set("search", searchTerm);
+    return api.get<{ customers: Customer[]; pagination: { total: number }; summary: { totalCustomers: number; totalOutstanding: number; totalBalance: number } }>(`/api/customers?${params}`, { signal })
+      .then(data => { if (!signal?.aborted) { setCustomers(data.customers); setCustomerTotal(data.pagination.total); setSummary(data.summary); setError(null); } })
+      .catch(cause => { if (!signal?.aborted) setError(cause.message || "Failed to fetch customers"); })
+      .finally(() => { if (!signal?.aborted) setLoading(false); });
+  }, [searchTerm, offset]);
 
 	useEffect(() => {
-		fetchCustomers();
-	}, [fetchCustomers]);
+    const controller = new AbortController();
+    void fetchCustomers(controller.signal);
+    return () => controller.abort();
+  }, [fetchCustomers]);
 
 	const getBalanceBadge = (balance: number) => {
 		if (balance < 0) {
@@ -151,7 +138,7 @@ export default function BillingSection() {
 
 			{/* Customers Table */}
 			<Card>
-				<CardHeader className="flex flex-row items-center justify-between">
+				<CardHeader className="flex flex-wrap flex-row items-center justify-between gap-3">
 					<div>
 						<CardTitle>Customer Billing</CardTitle>
 						<CardDescription>
@@ -161,7 +148,7 @@ export default function BillingSection() {
 					<Button
 						variant="outline"
 						size="sm"
-						onClick={fetchCustomers}
+						onClick={() => { setLoading(true); void fetchCustomers(); }}
 						disabled={loading}>
 						<RefreshCw
 							className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
@@ -173,9 +160,9 @@ export default function BillingSection() {
 					<div className="mb-6 relative">
 						<Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
 						<Input
-							placeholder="Search by customer name, email, or phone..."
+							aria-label="Search customers" placeholder="Search by customer name, email, or phone..."
 							value={searchTerm}
-							onChange={(e) => setSearchTerm(e.target.value)}
+							onChange={(e) => { setSearchTerm(e.target.value); setOffset(0); setLoading(true); }}
 							className="pl-10"
 						/>
 					</div>
@@ -273,6 +260,7 @@ export default function BillingSection() {
 							)}
 						</div>
 					)}
+                    <div className="mt-5 flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-slate-600">Showing {customerTotal ? offset + 1 : 0}–{Math.min(offset + customers.length, customerTotal)} of {customerTotal}</p><div className="flex flex-wrap gap-2"><Button variant="outline" disabled={!offset || loading} onClick={() => { setLoading(true); setOffset(Math.max(0, offset - 20)); }}>Previous customers</Button><Button variant="outline" disabled={offset + 20 >= customerTotal || loading} onClick={() => { setLoading(true); setOffset(offset + 20); }}>Next customers</Button></div></div>
 				</CardContent>
 			</Card>
 		</div>

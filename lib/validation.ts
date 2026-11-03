@@ -9,7 +9,7 @@ export const SignupSchema = z.object({
     .string()
     .regex(/^\d{10}$/, "Phone number must be 10 digits")
     .optional(),
-  role: z.enum(["CUSTOMER", "EMPLOYEE"]).default("CUSTOMER"),
+  role: z.literal("CUSTOMER").default("CUSTOMER"),
 });
 
 export const LoginSchema = z.object({
@@ -20,6 +20,7 @@ export const LoginSchema = z.object({
 // Order schemas
 export const CreateOrderSchema = z
   .object({
+    customerId: z.string().min(1).optional(),
     vehicleNumber: z.string().min(1, "Vehicle number is required"),
     fuelType: z.enum(["PETROL", "DIESEL"]),
     amountRequested: z.number().positive("Amount must be positive").optional(),
@@ -79,7 +80,7 @@ export const CreatePaymentSchema = z.object({
   paymentMethodNote: z.string().optional(),
   reference: z.string().optional(),
   notes: z.string().optional(),
-  paymentDate: z.string().optional(), // ISO date string
+  paymentDate: z.string().refine((value) => !Number.isNaN(Date.parse(value)), "Invalid payment date").optional(),
 });
 
 export const PaymentFilterSchema = z.object({

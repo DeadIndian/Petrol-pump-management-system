@@ -1,13 +1,9 @@
 import { NextRequest } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
 import { LoginSchema } from "@/lib/validation";
 import { successResponse, errorResponse } from "@/lib/auth";
-
-const supabase = createClient(
-	process.env.NEXT_PUBLIC_SUPABASE_URL!,
-	process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+import { createSupabaseServerClient } from "@/lib/supabase";
+import { setSessionCookies } from "@/lib/session";
 
 /**
  * POST /api/auth/login
@@ -19,7 +15,7 @@ export async function POST(request: NextRequest) {
 		const validatedData = LoginSchema.parse(body);
 
 		// Authenticate with Supabase
-		const { data, error } = await supabase.auth.signInWithPassword({
+		const { data, error } = await createSupabaseServerClient().auth.signInWithPassword({
 			email: validatedData.email,
 			password: validatedData.password,
 		});
@@ -44,7 +40,7 @@ export async function POST(request: NextRequest) {
 			return errorResponse("User profile not found", 404);
 		}
 
-		return successResponse({
+		return setSessionCookies(successResponse({
 			message: "Login successful",
 			session: {
 				accessToken: data.session.access_token,
@@ -58,7 +54,7 @@ export async function POST(request: NextRequest) {
 				role: userProfile.role,
 				phone: userProfile.phone,
 			},
-		});
+		}), request, data.session);
 	} catch (error: any) {
 		console.error("Login error:", error);
 		if (error.name === "ZodError") {

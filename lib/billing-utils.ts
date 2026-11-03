@@ -25,6 +25,7 @@ export async function recordPayment(
 		reference?: string;
 		notes?: string;
 		paymentDate?: Date;
+        auditUserId?: string;
 	},
 ) {
 	const profile = await prisma.customerProfile.findUnique({
@@ -65,6 +66,10 @@ export async function recordPayment(
 			},
 		});
 
+        if (options?.auditUserId) await tx.auditLog.create({ data: {
+            userId: options.auditUserId, action: "PAYMENT_RECORDED", tableName: "payments", recordId: payment.id,
+            changes: JSON.stringify({ customerProfileId, amount, paymentMethod }),
+        } });
 		return payment;
 	});
 }
@@ -74,7 +79,7 @@ export async function recordPayment(
 /**
  * Reverse a previously recorded payment and restore the customer's debt.
  */
-export async function reversePayment(paymentId: string) {
+export async function reversePayment(paymentId: string, auditUserId?: string) {
 	const payment = await prisma.payment.findUnique({ where: { id: paymentId } });
 
 	if (!payment) {
@@ -90,6 +95,10 @@ export async function reversePayment(paymentId: string) {
 				totalPayments: { decrement: payment.amount },
 			},
 		});
+        if (auditUserId) await tx.auditLog.create({ data: {
+            userId: auditUserId, action: "PAYMENT_REVERSED", tableName: "payments", recordId: paymentId,
+            changes: JSON.stringify({ customerProfileId: payment.customerProfileId, amount: payment.amount }),
+        } });
 	});
 
 	return payment;

@@ -3,15 +3,28 @@ import * as React from "react";
 const Table = React.forwardRef<
 	HTMLTableElement,
 	React.HTMLAttributes<HTMLTableElement>
->(({ className = "", ...props }, ref) => (
-	<div className="relative w-full overflow-auto">
-		<table
-			ref={ref}
-			className={`w-full caption-bottom text-sm ${className}`}
-			{...props}
-		/>
-	</div>
-));
+>(({ className = "", children, ...props }, ref) => {
+    type Child = React.ReactElement<{ children?: React.ReactNode; "data-label"?: string }>;
+    const contentText = (node: React.ReactNode): string => React.Children.toArray(node).map(item =>
+        React.isValidElement(item) ? contentText((item as Child).props.children) : typeof item === "string" || typeof item === "number" ? String(item) : ""
+    ).join(" ").trim();
+    const header = React.Children.toArray(children).find(item => React.isValidElement(item) && item.type === TableHeader) as Child | undefined;
+    const labels = header ? React.Children.toArray(header.props.children).flatMap(row =>
+        React.isValidElement(row) ? React.Children.toArray((row as Child).props.children).map(cell => contentText(cell)) : []
+    ) : [];
+    const labelled = React.Children.map(children, item => {
+        if (!React.isValidElement(item) || item.type !== TableBody) return item;
+        return React.cloneElement(item as Child, {}, React.Children.map((item as Child).props.children, row => {
+            if (!React.isValidElement(row) || row.type !== TableRow) return row;
+            return React.cloneElement(row as Child, {}, React.Children.map((row as Child).props.children, (cell, index) =>
+                React.isValidElement(cell) ? React.cloneElement(cell as Child, { "data-label": labels[index] }) : cell
+            ));
+        }));
+    });
+    return <div className="relative min-w-0 w-full overflow-x-auto">
+        <table ref={ref} role="table" className={`responsive-table w-full caption-bottom text-sm ${className}`} {...props}>{labelled}</table>
+    </div>;
+});
 Table.displayName = "Table";
 
 const TableHeader = React.forwardRef<
@@ -71,14 +84,12 @@ const TableHead = React.forwardRef<
 TableHead.displayName = "TableHead";
 
 const TableCell = React.forwardRef<
-	HTMLTableCellElement,
-	React.TdHTMLAttributes<HTMLTableCellElement>
->(({ className = "", ...props }, ref) => (
-	<td
-		ref={ref}
-		className={`p-4 align-middle [&:has([role=checkbox])]:pr-0 ${className}`}
-		{...props}
-	/>
+  HTMLTableCellElement,
+  React.TdHTMLAttributes<HTMLTableCellElement>
+>(({ className = "", children, ...props }, ref) => (
+  <td ref={ref} className={`p-4 align-middle [&:has([role=checkbox])]:pr-0 ${className}`} {...props}>
+    <div className="min-w-0">{children}</div>
+  </td>
 ));
 TableCell.displayName = "TableCell";
 

@@ -1,0 +1,847 @@
+/* Company Information Ã¢ÂÂ tabs + modern blue/white (scoped) */
+
+/* Soft blue page bg so white cards/fields stand out */
+.company-info-page.right-side,
+.company-info-page .content,
+.company-info-page ~ .content-wrapper,
+.content-wrapper:has(.company-info-page),
+aside.company-info-page {
+    background: #e3e9f7 !important;
+}
+
+.company-info-page .content-header {
+    padding: 16px 20px 4px;
+    background: transparent !important;
+}
+
+.company-info-page .breadcrumb {
+    background: none !important;
+    margin: 0;
+    padding: 0;
+    font-size: 12px;
+}
+
+.company-info-page .ci-page-title {
+    margin: 6px 0 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a237e;
+}
+
+.company-info-page .ci-page-sub {
+    margin: 4px 0 12px;
+    font-size: 13px;
+    color: #5c6b8a;
+}
+
+.company-info-page .box {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.company-info-page .box-body {
+    padding: 8px 16px 24px;
+    background: transparent !important;
+}
+
+.company-info-page .ci-alert {
+    border-radius: 12px;
+    border: 1px solid #d4efe3;
+    background: #eefaf3;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+}
+
+/* Wrapper */
+.company-info-modern.information-grids,
+aside.right-side .company-info-modern.information-grids {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    overflow: visible !important;
+}
+
+/* Tabs */
+.company-info-modern .ci-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    border: none;
+    margin: 0 0 14px;
+    padding: 0;
+    background: transparent;
+}
+
+.company-info-modern .ci-tabs > li {
+    float: none;
+    margin: 0;
+}
+
+.company-info-modern .ci-tabs > li > a {
+    margin: 0;
+    padding: 10px 16px;
+    border: 1px solid #dce3f5 !important;
+    border-radius: 999px !important;
+    background: #ffffff;
+    color: #5c6b8a;
+    font-size: 13px;
+    font-weight: 650;
+    line-height: 1.2;
+    box-shadow: 0 2px 8px rgba(26, 35, 126, 0.05);
+}
+
+.company-info-modern .ci-tabs > li > a:hover {
+    background: #eef1ff;
+    color: #1a237e;
+    border-color: #c5cae9 !important;
+}
+
+.company-info-modern .ci-tabs > li.active > a,
+.company-info-modern .ci-tabs > li.active > a:hover,
+.company-info-modern .ci-tabs > li.active > a:focus {
+    background: #1a237e !important;
+    color: #ffffff !important;
+    border-color: #1a237e !important;
+    box-shadow: 0 6px 16px rgba(26, 35, 126, 0.25);
+}
+
+.company-info-modern .ci-tab-content {
+    background: #ffffff;
+    border: 1px solid #c5cee8;
+    border-radius: 16px;
+    box-shadow:
+        0 4px 12px rgba(26, 35, 126, 0.08),
+        0 12px 28px rgba(26, 35, 126, 0.08);
+    padding: 18px 16px 20px;
+    min-height: 320px;
+}
+
+.company-info-modern .ci-tab-pane-title {
+    margin: 0 0 14px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a237e;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e0e6ff;
+}
+
+/* Company Details Ã¢ÂÂ responsive field rows (3 / 2 / 1) */
+.company-info-modern #tab-company .ci-fields-grid,
+.company-info-modern .ci-fields-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px 16px;
+    max-width: none !important;
+    width: 100% !important;
+    align-items: start;
+}
+
+/* Hide spacer-only clearfix rows Ã¢ÂÂ NOT field rows that also use clear-sm */
+.company-info-modern .ci-fields-grid > .clearfix:not(.mt-15):not(.width50per):not(.ci-currency-field),
+.company-info-modern .ci-fields-grid > .clear-sm:not(.mt-15):not(.width50per):not(.ci-currency-field) {
+    display: none !important;
+}
+
+.company-info-modern .ci-fields-grid > .mt-15.clear-sm.width50per,
+.company-info-modern .ci-fields-grid > .ci-currency-field {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.company-info-modern .ci-fields-grid > .mt-15.width50per,
+.company-info-modern .ci-fields-grid > .mt-15.width50-bgn,
+.company-info-modern .ci-fields-grid > .mt-15.width50per.clearfix-sm,
+.company-info-modern .ci-fields-grid > .mt-15.clear-sm.width50per {
+    max-width: none !important;
+    width: 100% !important;
+    margin-top: 0 !important;
+    min-width: 0;
+}
+
+.company-info-modern .ci-fields-grid .col-md-3,
+.company-info-modern .ci-fields-grid .col-md-8 {
+    width: 100% !important;
+    float: none !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+.company-info-modern .ci-fields-grid .form-control,
+.company-info-modern .ci-fields-grid .form-control.input-sm,
+.company-info-modern .ci-fields-grid textarea.form-control {
+    max-width: 100% !important;
+    width: 100% !important;
+}
+
+.company-info-modern .ci-fields-grid > .ci-field-full {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 991px) {
+    .company-info-modern #tab-company .ci-fields-grid,
+    .company-info-modern .ci-fields-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 575px) {
+    .company-info-modern #tab-company .ci-fields-grid,
+    .company-info-modern .ci-fields-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 12px 10px !important;
+    }
+}
+
+/* Panels / fields */
+.company-info-modern .new-left,
+aside.right-side .company-info-modern .new-left {
+    background: #eef2fb !important;
+    max-width: 520px !important;
+    margin: 0 !important;
+    padding: 16px 14px !important;
+    border: 1px solid #c8d0ea;
+    border-radius: 14px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.company-info-modern #tab-company .new-left.ci-fields-grid,
+.company-info-modern #tab-branding .new-left.ci-fields-grid,
+.company-info-modern #tab-business .new-left.ci-fields-grid {
+    max-width: none !important;
+}
+
+/* Logo cards in branding tab */
+.company-info-modern .ci-fields-grid > .printlogos.ci-field-full,
+.company-info-modern .printlogos.ci-field-full {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 0;
+    width: 100%;
+}
+
+.company-info-modern .printlogos .org-logo {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    height: 100%;
+}
+
+.company-info-modern .ci-fields-grid > .ci-tab-pane-title.ci-field-full {
+    margin: 8px 0 0;
+    padding-bottom: 8px;
+}
+
+.company-info-modern .ci-fields-grid .ts-wrapper,
+.company-info-modern .ci-fields-grid select.tom,
+.company-info-modern .ci-fields-grid .ts-control {
+    max-width: 100% !important;
+    width: 100% !important;
+}
+
+/* Number Format Ã¢ÂÂ keep same width as other fields, never full screen */
+.company-info-modern .ci-fields-grid > .ci-num-fmt-field {
+    grid-column: auto;
+    max-width: 420px !important;
+    width: 100% !important;
+}
+
+.company-info-modern .ci-num-fmt-field .ts-wrapper,
+.company-info-modern .ci-num-fmt-field select.tom,
+.company-info-modern .ci-num-fmt-field .ts-control,
+.company-info-modern #num_fmt + .ts-wrapper,
+.company-info-modern .ci-num-fmt-field .ts-wrapper.single {
+    max-width: 360px !important;
+    width: 100% !important;
+}
+
+.company-info-modern .ci-fields-grid .insurance-buttons .col-md-7,
+.company-info-modern .ci-fields-grid .insurance-buttons .col-md-4 {
+    width: auto !important;
+    float: none !important;
+    display: inline-block;
+    padding: 0;
+    vertical-align: middle;
+}
+
+.company-info-modern .ci-fields-grid > .ci-currency-field,
+.company-info-modern .ci-currency-field {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    background: #ffffff;
+    border: 1px solid #c5cee8;
+    border-radius: 12px;
+    padding: 12px !important;
+    box-shadow: 0 2px 8px rgba(26, 35, 126, 0.06);
+    max-width: none !important;
+    width: 100% !important;
+    margin-top: 0 !important;
+    min-width: 0;
+}
+
+.company-info-modern .ci-currency-field label {
+    color: #1a237e !important;
+    font-weight: 700 !important;
+}
+
+@media (max-width: 991px) {
+    .company-info-modern .printlogos.ci-field-full {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 575px) {
+    .company-info-modern .printlogos.ci-field-full {
+        grid-template-columns: 1fr;
+    }
+}
+
+.company-info-modern .ci-tab-content .col-md-4.newgap1,
+.company-info-modern .ci-tab-content .col-md-6,
+.company-info-modern .ci-tab-content .col-md-12 {
+    width: 100%;
+    float: none;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.company-info-modern label,
+aside.right-side .company-info-modern label {
+    color: #5c6b8a !important;
+    font-weight: 600 !important;
+    font-size: 12px !important;
+}
+
+.company-info-modern .form-control,
+.company-info-modern .form-control.input-sm,
+.company-info-modern textarea.form-control {
+    border: 1.5px solid #aeb9d8 !important;
+    border-radius: 10px !important;
+    background: #ffffff !important;
+    color: #1a2a4a !important;
+    max-width: 360px !important;
+    width: 100% !important;
+    box-shadow: 0 1px 2px rgba(26, 35, 126, 0.06) !important;
+    height: 38px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.company-info-modern textarea.form-control {
+    max-width: 420px !important;
+    min-height: 72px;
+    height: auto;
+}
+
+.company-info-modern .form-control:hover {
+    border-color: #7c8fc4 !important;
+}
+
+.company-info-modern .form-control:focus {
+    border-color: #4f6bf5 !important;
+    background: #ffffff !important;
+    box-shadow: 0 0 0 3px rgba(79, 107, 245, 0.22) !important;
+}
+
+.company-info-modern .mt-15.width50per,
+.company-info-modern .mt-15.width50-bgn,
+.company-info-modern .mt-15.width50per.clearfix-sm,
+.company-info-modern .mt-15.clear-sm.width50per {
+    max-width: 420px;
+}
+
+.company-info-modern .new-left {
+    max-width: 520px !important;
+}
+
+.company-info-modern select.tom,
+.company-info-modern .ts-wrapper,
+.company-info-modern .ts-control {
+    max-width: 360px !important;
+}
+
+.company-info-modern .ts-control {
+    border: 1.5px solid #aeb9d8 !important;
+    border-radius: 10px !important;
+    background: #fff !important;
+    box-shadow: 0 1px 2px rgba(26, 35, 126, 0.06) !important;
+}
+
+.company-info-modern .ts-wrapper.focus .ts-control {
+    border-color: #4f6bf5 !important;
+    box-shadow: 0 0 0 3px rgba(79, 107, 245, 0.22) !important;
+}
+
+.company-info-modern .form-control:focus {
+    border-color: #4f6bf5 !important;
+    box-shadow: 0 0 0 3px rgba(79, 107, 245, 0.15) !important;
+}
+
+.company-info-modern .mt-15.width50per .col-md-3,
+.company-info-modern .mt-15.width50per .col-md-8,
+.company-info-modern .mt-15.width50-bgn .col-md-3,
+.company-info-modern .mt-15.width50-bgn .col-md-8,
+.company-info-modern .mt-15.width50per.clearfix-sm .col-md-3,
+.company-info-modern .mt-15.width50per.clearfix-sm .col-md-8 {
+    width: 100% !important;
+    float: none;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.company-info-modern span.help-block,
+aside.right-side .company-info-modern span.help-block {
+    color: #7a8699 !important;
+}
+
+.company-info-modern span.help-block strong {
+    color: #1a237e !important;
+}
+
+.company-info-modern .ci-credit-line {
+    font-weight: 700;
+    color: #1a2a4a !important;
+}
+
+.company-info-modern .sms_cls {
+    color: #1a237e !important;
+    border: 1px solid #c5cae9;
+    background: #e8eaf6;
+    border-radius: 8px;
+    padding: 2px 10px;
+    font-weight: 700;
+}
+
+.company-info-modern .org-logo,
+aside.right-side .company-info-modern .org-logo {
+    background: #ffffff !important;
+    border: 1px solid #c5cee8 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 14px rgba(26, 35, 126, 0.08) !important;
+    padding: 12px 14px !important;
+    position: relative;
+    z-index: auto;
+}
+
+.company-info-modern .org-logo .text-white {
+    color: #1a237e !important;
+    font-weight: 700 !important;
+}
+
+.company-info-modern span.btn.btn-newupload {
+    background: #1a237e !important;
+    color: #fff !important;
+    border-radius: 8px !important;
+}
+
+/* File browse row â avoid pure-white flash over modal backdrop */
+.company-info-modern .org-logo .input-group {
+    display: table;
+    width: 100%;
+    max-width: 360px;
+    margin: 10px 0;
+    border: 1.5px solid #aeb9d8;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #eef2fb !important;
+    box-shadow: none !important;
+}
+
+.company-info-modern .org-logo .input-group .input-group-btn,
+.company-info-modern .org-logo .input-group .input-group-btn:first-child > .btn {
+    vertical-align: middle;
+}
+
+.company-info-modern .org-logo .input-group .form-control,
+.company-info-modern .org-logo .input-group .form-control:hover,
+.company-info-modern .org-logo .input-group .form-control:focus,
+.company-info-modern .org-logo .input-group .form-control:active,
+.company-info-modern .org-logo .input-group .form-control[readonly] {
+    background: #eef2fb !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+    max-width: none !important;
+    width: 100% !important;
+    height: 38px;
+    color: #5c6b8a !important;
+}
+
+.company-info-modern .org-logo span.btn.btn-newupload {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    height: 38px;
+    line-height: 38px;
+    padding: 0 14px;
+}
+
+/*
+ * App-wide stylesnew.css sets .modal-backdrop { z-index: 1 }, so white
+ * form fields paint above the dim overlay when viewpic modals open.
+ * Keep company-info logo modals above page content, backdrop under dialog.
+ */
+body.modal-open.ci-logo-modal-open .modal-backdrop {
+    z-index: 1040 !important;
+}
+
+body.modal-open.ci-logo-modal-open .modal {
+    z-index: 1050 !important;
+}
+
+.company-info-modern .from-filler,
+aside.right-side .company-info-modern .from-filler {
+    border: 1px solid #e8eef8 !important;
+    box-shadow: 0 4px 14px rgba(26, 35, 126, 0.05) !important;
+    border-radius: 12px;
+    background: #fff;
+}
+
+/* Software Subscription card */
+.company-info-modern .ci-subscription-wrap {
+    margin-top: 8px;
+}
+
+.company-info-modern .ci-subscription-card,
+aside.right-side .company-info-modern .ci-subscription-card {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.company-info-modern .ci-sub-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 16px;
+    background:
+        linear-gradient(135deg, #ffffff 0%, #f3f6ff 55%, #eaf0ff 100%);
+    border: 1px solid #c5cee8;
+    box-shadow:
+        0 10px 28px rgba(26, 35, 126, 0.10),
+        0 1px 0 rgba(255, 255, 255, 0.8) inset;
+    padding: 0;
+}
+
+.company-info-modern .ci-sub-card::before {
+    content: "";
+    position: absolute;
+    top: -40px;
+    right: -30px;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(79, 107, 245, 0.18) 0%, rgba(79, 107, 245, 0) 70%);
+    pointer-events: none;
+}
+
+.company-info-modern .ci-sub-card__header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid rgba(197, 206, 232, 0.7);
+    position: relative;
+    z-index: 1;
+}
+
+.company-info-modern .ci-sub-card__icon {
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: linear-gradient(145deg, #3949ab 0%, #1a237e 100%);
+    box-shadow: 0 6px 14px rgba(26, 35, 126, 0.28);
+}
+
+.company-info-modern .ci-sub-card__titles {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.company-info-modern .ci-sub-card__legend {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    width: auto;
+    float: none;
+}
+
+.company-info-modern .ci-sub-card__title,
+.company-info-modern label.ci-sub-card__title {
+    display: block;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700 !important;
+    color: #1a237e !important;
+    letter-spacing: 0.01em;
+}
+
+.company-info-modern .ci-sub-card__subtitle {
+    margin: 3px 0 0;
+    font-size: 12px;
+    color: #6b7694;
+    line-height: 1.35;
+}
+
+.company-info-modern .ci-sub-card__badge {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #0f7a3e;
+    background: #e6f7ed;
+    border: 1px solid #b7e4c7;
+}
+
+.company-info-modern .ci-sub-card__body {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 12px;
+    align-items: stretch;
+    padding: 16px 20px 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.company-info-modern .ci-sub-date {
+    background: #ffffff;
+    border: 1px solid #d5dcf0;
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: 0 2px 8px rgba(26, 35, 126, 0.05);
+    min-width: 0;
+}
+
+.company-info-modern .ci-sub-date__label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #6b7694;
+    margin-bottom: 8px;
+}
+
+.company-info-modern .ci-sub-date__value {
+    display: block;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a237e;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+}
+
+.company-info-modern .ci-sub-date__field {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    margin: -1px !important;
+    padding: 0 !important;
+    border: 0 !important;
+}
+
+.company-info-modern .ci-sub-date__divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+}
+
+.company-info-modern .ci-sub-date__divider span {
+    display: block;
+    width: 28px;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #aeb9d8 0%, #4f6bf5 50%, #aeb9d8 100%);
+}
+
+.company-info-modern .ci-sub-card--empty .ci-sub-card__header {
+    border-bottom: none;
+    padding-bottom: 18px;
+}
+
+@media (max-width: 575px) {
+    .company-info-modern .ci-sub-card__header {
+        flex-wrap: wrap;
+    }
+
+    .company-info-modern .ci-sub-card__body {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .company-info-modern .ci-sub-date__divider {
+        width: 100%;
+        height: 18px;
+    }
+
+    .company-info-modern .ci-sub-date__divider span {
+        width: 2px;
+        height: 18px;
+        background: linear-gradient(180deg, #aeb9d8 0%, #4f6bf5 50%, #aeb9d8 100%);
+    }
+
+    .company-info-modern .ci-sub-date__value {
+        font-size: 18px;
+    }
+}
+
+/* Neo toggles */
+.company-info-modern .insurance-buttons ul.ci-radio-source {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    margin: -1px !important;
+    padding: 0 !important;
+    border: 0 !important;
+}
+
+.company-info-modern .ci-neo-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin: 4px 0 8px;
+}
+
+.company-info-modern .ci-neo-toggle {
+    position: relative;
+    width: 64px;
+    height: 34px;
+    border-radius: 999px;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    background: #c9d4f0;
+    box-shadow:
+        inset 4px 4px 8px rgba(38, 49, 114, 0.18),
+        inset -3px -3px 7px rgba(255, 255, 255, 0.85);
+    transition: background 0.25s ease;
+}
+
+.company-info-modern .ci-neo-toggle::after {
+    content: "";
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #f7f9ff;
+    box-shadow: 2px 3px 6px rgba(38, 49, 114, 0.22);
+    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.company-info-modern .ci-neo-toggle.is-on {
+    background: #9eb0f9;
+}
+
+.company-info-modern .ci-neo-toggle.is-on::after {
+    transform: translateX(30px);
+    background: #fff;
+}
+
+.company-info-modern .ci-neo-state {
+    font-size: 12px;
+    font-weight: 700;
+    color: #7a8699;
+    min-width: 58px;
+}
+
+.company-info-modern .ci-neo-toggle.is-on + .ci-neo-state {
+    color: #1a237e;
+}
+
+/* Feature toggle cards */
+.company-info-modern .more-settings {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+    padding: 0 !important;
+    float: none !important;
+    width: 100% !important;
+}
+
+.company-info-modern .config-shadow-box,
+.company-info-modern .mt-15.config-shadow-box,
+aside.right-side .company-info-modern .config-shadow-box {
+    background: #f5f7ff !important;
+    color: #1a2a4a !important;
+    border: 1px solid #c5cee8 !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 14px rgba(26, 35, 126, 0.08) !important;
+    padding: 14px 16px !important;
+    margin: 0 !important;
+    width: auto !important;
+}
+
+.company-info-modern .config-shadow-box > .col-md-4,
+.company-info-modern .config-shadow-box > .col-md-8 {
+    width: 100% !important;
+    float: none !important;
+    padding: 0 !important;
+}
+
+.company-info-modern .config-shadow-box label {
+    color: #1a237e !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+}
+
+.company-info-modern .config-shadow-box label[style*="color:white"],
+.company-info-modern .config-shadow-box label[style*="color: white"] {
+    color: #3949ab !important;
+}
+
+.company-info-modern .insurance-buttons ul li label {
+    color: #5c6b8a !important;
+}
+
+.company-info-modern .ci-submit-bar {
+    position: sticky;
+    bottom: 8px;
+    z-index: 20;
+    text-align: center;
+    margin-top: 16px;
+    padding: 14px 12px;
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid #e8eef8;
+    border-radius: 12px;
+    box-shadow: 0 -4px 18px rgba(26, 35, 126, 0.06);
+}
+
+.company-info-modern .pic-button,
+.company-info-modern button.btn.btn-primary.pic-button {
+    background: linear-gradient(135deg, #1a237e, #3949ab) !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 10px 28px !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+    min-width: 170px;
+    box-shadow: 0 8px 20px rgba(26, 35, 126, 0.22) !important;
+}
+
+@media (max-width: 767px) {
+    .company-info-modern .ci-tabs > li > a {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+}

@@ -1,0 +1,19 @@
+name: petrosoft-local
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: petrosoft
+      POSTGRES_PASSWORD: petrosoft-local-development
+      POSTGRES_DB: petrosoft
+    ports:
+      - "127.0.0.1:54330:5432"
+    volumes:
+      - petrosoft-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U petrosoft -d petrosoft"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+volumes:
+  petrosoft-data:

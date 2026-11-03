@@ -1,159 +1,87 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import {
-	authenticate,
-	requireRole,
-	successResponse,
-	errorResponse,
-} from "@/lib/auth";
-import { CreateOrderSchema } from "@/lib/validation";
+import { authenticate, requireRole, successResponse, errorResponse } from "@/lib/auth";
+import { CreateOrderSchema, OrderFilterSchema } from "@/lib/validation";
 
-/**
- * POST /api/orders
- * Create a new order (customers only)
- */
 export async function POST(request: NextRequest) {
-	try {
-		const authResult = await authenticate(request);
-		if (authResult instanceof NextResponse) return authResult;
-
-		const authRequest = authResult as any;
-		const roleCheck = requireRole("CUSTOMER")(authRequest);
-		if (roleCheck) return roleCheck;
-
-		const body = await request.json();
-		const validatedData = CreateOrderSchema.parse(body);
-
-		const customerId = authRequest.user.id;
-
-		// We need to fetch the customer profile to verify indent availability and update it atomically.
-		const orderResult = await prisma.$transaction(async (tx) => {
-			const profile = await tx.customerProfile.findUnique({
-				where: { userId: customerId },
-				select: { id: true, indentStart: true, indentEnd: true, currentIndent: true },
-			});
-
-			// If no profile or no indent configured, we might either block them or let them order without an indent.
-			// Given the requirements, indent is expected. But for safety, if not configured, we'll just not assign one, or we can enforce it.
-			// Let's enforce it as requested: "they will get 1 indent number from this range"
-			if (!profile || profile.currentIndent == null || profile.indentEnd == null) {
-				throw new Error("INDENT_NOT_CONFIGURED");
-			}
-
-			if (profile.currentIndent > profile.indentEnd) {
-				throw new Error("INDENT_EXHAUSTED");
-			}
-
-			const assignedIndent = profile.currentIndent;
-
-			// Increment the indent for the next order
-			await tx.customerProfile.update({
-				where: { id: profile.id },
-				data: { currentIndent: assignedIndent + 1 },
-			});
-
-			// Create the order
-			const order = await tx.order.create({
-				data: {
-					customerId: customerId,
-					vehicleNumber: validatedData.vehicleNumber,
-					indentNumber: assignedIndent,
-					fuelType: validatedData.fuelType,
-					amountRequested: validatedData.amountRequested,
-					quantityRequested: validatedData.quantityRequested,
-					cash: validatedData.cash,
-					status: "PENDING",
-				},
-				include: {
-					customer: {
-						select: {
-							id: true,
-							fullName: true,
-							email: true,
-						},
-					},
-				},
-			});
-
-			return order;
-		});
-
-		return successResponse(
-			{
-				message: "Order created successfully",
-				order: orderResult,
-			},
-			201,
-		);
-	} catch (error: any) {
-		console.error("Order creation error:", error);
-		if (error.message === "INDENT_NOT_CONFIGURED") {
-			return errorResponse("Customer indent range not configured by admin.", 400);
-		}
-		if (error.message === "INDENT_EXHAUSTED") {
-			return errorResponse("Customer indent range exhausted. Please contact admin.", 400);
-		}
-		if (error.name === "ZodError") {
-			return errorResponse("Validation error", 400, error.errors);
-		}
-		return errorResponse("Failed to create order", 500);
-	}
+  try {
+    const auth = await authenticate(request);
+    if (auth instanceof NextResponse) return auth;
+    const roleError = requireRole("CUSTOMER", "ADMIN")(auth);
+    if (roleError) return roleError;
+    const input = CreateOrderSchema.parse(await request.json());
+    if (auth.user!.role === "CUSTOMER" && input.customerId && input.customerId !== auth.user!.id) {
+      return errorResponse("You can only place orders for your own account", 403);
+    }
+    const customerId = auth.user!.role === "ADMIN" ? input.customerId : auth.user!.id;
+    if (!customerId) return errorResponse("Choose a customer", 400);
+    const customer = await prisma.user.findUnique({ where: { id: customerId } });
+    if (!customer || customer.role !== "CUSTOMER") return errorResponse("Customer not found", 404);
+    const order = await prisma.$transaction(async (tx) => {
+      // A row lock serializes allocation. Two requests cannot consume the same indent.
+      const profiles = await tx.$queryRaw<{ id: string; current_indent: number | null; indent_end: number | null }[]>`
+        SELECT id, current_indent, indent_end FROM customer_profiles WHERE user_id = ${customerId} FOR UPDATE
+      `;
+      const profile = profiles[0];
+      const account = await tx.user.findUnique({ where: { id: customerId }, select: { role: true } });
+      if (!account || account.role !== "CUSTOMER") throw new Error("CUSTOMER_NOT_FOUND");
+      if (!profile || profile.current_indent == null || profile.indent_end == null) throw new Error("INDENT_NOT_CONFIGURED");
+      if (profile.current_indent > profile.indent_end) throw new Error("INDENT_EXHAUSTED");
+      await tx.customerProfile.update({ where: { id: profile.id }, data: { currentIndent: { increment: 1 } } });
+      const result = await tx.order.create({
+        data: { customerId, vehicleNumber: input.vehicleNumber.trim().toUpperCase(),
+          indentNumber: profile.current_indent, fuelType: input.fuelType,
+          amountRequested: input.amountRequested, quantityRequested: input.quantityRequested, cash: input.cash },
+        include: { customer: { select: { id: true, fullName: true, email: true, phone: true } } },
+      });
+      await tx.auditLog.create({ data: { userId: auth.user!.id, action: "ORDER_CREATED", tableName: "orders", recordId: result.id,
+        changes: JSON.stringify({ customerId, indentNumber: result.indentNumber }) } });
+      return result;
+    }, { maxWait: 15000, timeout: 15000 });
+    return successResponse({ message: "Order placed successfully", order }, 201);
+  } catch (error: any) {
+    if (error.message === "CUSTOMER_NOT_FOUND") return errorResponse("Customer not found", 404);
+    if (error.message === "INDENT_NOT_CONFIGURED") return errorResponse("Ask an administrator to configure your indent range before ordering.", 400);
+    if (error.message === "INDENT_EXHAUSTED") return errorResponse("Your indent range is exhausted. Ask an administrator for a new range.", 409);
+    if (error.name === "ZodError") return errorResponse("Validation error", 400, error.errors);
+    if (error instanceof SyntaxError) return errorResponse("Invalid JSON", 400);
+    console.error("Order creation failed:", error);
+    return errorResponse("Could not place order", 500);
+  }
 }
 
-/**
- * GET /api/orders
- * List customer's orders
- */
 export async function GET(request: NextRequest) {
-	try {
-		const authResult = await authenticate(request);
-		if (authResult instanceof NextResponse) return authResult;
-
-		const authRequest = authResult as any;
-
-		// Get pagination params
-		const { searchParams } = new URL(request.url);
-		const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 100);
-		const offset = parseInt(searchParams.get("offset") || "0");
-
-		// Customers see only their orders, employees and admins see all
-		let whereClause: any = {};
-		if (authRequest.user.role === "CUSTOMER") {
-			whereClause = { customerId: authRequest.user.id };
-		}
-
-		const [orders, total] = await Promise.all([
-			prisma.order.findMany({
-				where: whereClause,
-				include: {
-					customer: {
-						select: {
-							id: true,
-							fullName: true,
-							email: true,
-							phone: true,
-						},
-					},
-				},
-				orderBy: { createdAt: "desc" },
-				take: limit,
-				skip: offset,
-			}),
-			prisma.order.count({ where: whereClause }),
-		]);
-
-		return successResponse({
-			orders,
-			pagination: {
-				total,
-				limit,
-				offset,
-				page: Math.floor(offset / limit) + 1,
-				pages: Math.ceil(total / limit),
-			},
-		});
-	} catch (error: any) {
-		console.error("Order fetch error:", error);
-		return errorResponse("Failed to fetch orders", 500);
-	}
+  try {
+    const auth = await authenticate(request);
+    if (auth instanceof NextResponse) return auth;
+    const params = request.nextUrl.searchParams;
+    const filter = OrderFilterSchema.parse({
+      status: params.get("status") || undefined, fuelType: params.get("fuelType") || undefined,
+      customerId: params.get("customerId") || undefined,
+      limit: Number(params.get("limit") || 20), offset: Number(params.get("offset") || 0),
+    });
+    if (auth.user!.role === "CUSTOMER" && filter.customerId && filter.customerId !== auth.user!.id) return errorResponse("Unauthorized", 403);
+    const where: Prisma.OrderWhereInput = {
+      ...(auth.user!.role === "CUSTOMER" ? { customerId: auth.user!.id } : filter.customerId ? { customerId: filter.customerId } : {}),
+      ...(filter.status && { status: filter.status }), ...(filter.fuelType && { fuelType: filter.fuelType }),
+    };
+    if (params.get("fulfilledBy") === "me") where.fulfilledById = auth.user!.id;
+    const search = params.get("search")?.trim();
+    if (search) where.OR = [
+      { id: { contains: search, mode: "insensitive" } }, { vehicleNumber: { contains: search, mode: "insensitive" } },
+      { customer: { fullName: { contains: search, mode: "insensitive" } } },
+      ...(/^\d+$/.test(search) ? [{ indentNumber: Number(search) }] : []),
+    ];
+    const [orders, total] = await Promise.all([
+      prisma.order.findMany({ where, include: { customer: { select: { id: true, fullName: true, email: true, phone: true } },
+        fulfilledBy: { select: { fullName: true } } }, orderBy: { createdAt: "desc" }, take: filter.limit, skip: filter.offset }),
+      prisma.order.count({ where }),
+    ]);
+    return successResponse({ orders, pagination: { total, limit: filter.limit, offset: filter.offset } });
+  } catch (error: any) {
+    if (error.name === "ZodError") return errorResponse("Invalid order filters", 400, error.errors);
+    console.error("Order list failed:", error);
+    return errorResponse("Could not load orders", 500);
+  }
 }

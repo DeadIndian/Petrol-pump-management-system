@@ -1,210 +1,47 @@
 "use client";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import type { WebUser } from "@/lib/web-types";
+import { api } from "@/lib/api-client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
-import {
-	BarChart,
-	Bar,
-	LineChart,
-	Line,
-	PieChart,
-	Pie,
-	Cell,
-	XAxis,
-	YAxis,
-	CartesianGrid,
-	Tooltip,
-	Legend,
-	ResponsiveContainer,
-} from "recharts";
+import { Button } from "@/components/ui/button";
 import OrdersSection from "./sections/orders-section";
 import PriceManagementSection from "./sections/price-management-section";
 import BillingSection from "./sections/billing-section";
 import EmployeeActivitySection from "./sections/employee-activity-section";
 import UsersSection from "./sections/users-section";
-import DashboardStats from "./components/dashboard-stats";
+import AccountSection from "./sections/account-section";
+import FuelPricesSection from "./sections/fuel-prices-section";
+import Overview from "./components/overview";
 
-export default function DashboardClient() {
-	const [activeTab, setActiveTab] = useState("overview");
-	const router = useRouter();
-
-	const handleLogout = () => {
-		// Clear cookies
-		document.cookie = "auth_token=; path=/; max-age=0";
-		document.cookie = "user_role=; path=/; max-age=0";
-		// Redirect to login
-		router.push("/admin/login");
-	};
-
-	return (
-		<div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
-			<div className="max-w-7xl mx-auto">
-				{/* Header */}
-				<div className="mb-8 flex justify-between items-center">
-					<div>
-						<h1 className="text-4xl font-bold text-slate-900">
-							Admin Dashboard
-						</h1>
-						<p className="text-slate-600 mt-2">
-							Manage orders, billing, set prices, and monitor operations
-						</p>
-					</div>
-					<button
-						onClick={handleLogout}
-						className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
-						Logout
-					</button>
-				</div>
-
-				{/* Tabs */}
-				<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-					<TabsList className="grid w-full grid-cols-6 mb-8">
-						<TabsTrigger value="overview">Overview</TabsTrigger>
-						<TabsTrigger value="orders">Orders</TabsTrigger>
-						<TabsTrigger value="prices">Prices</TabsTrigger>
-						<TabsTrigger value="billing">Billing</TabsTrigger>
-						<TabsTrigger value="employees">Employees</TabsTrigger>
-						<TabsTrigger value="users">Users</TabsTrigger>
-					</TabsList>
-
-					{/* Overview Tab */}
-					<TabsContent value="overview" className="space-y-6">
-						<DashboardStats />
-
-						{/* Quick Charts */}
-						<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-							{/* Orders Trend */}
-							<Card>
-								<CardHeader>
-									<CardTitle>Orders Trend (Last 7 Days)</CardTitle>
-									<CardDescription>Daily order volume</CardDescription>
-								</CardHeader>
-								<CardContent>
-									<ResponsiveContainer width="100%" height={300}>
-										<LineChart
-											data={[
-												{ date: "Mon", orders: 24, delivered: 18 },
-												{ date: "Tue", orders: 32, delivered: 28 },
-												{ date: "Wed", orders: 28, delivered: 24 },
-												{ date: "Thu", orders: 35, delivered: 31 },
-												{ date: "Fri", orders: 42, delivered: 38 },
-												{ date: "Sat", orders: 38, delivered: 34 },
-												{ date: "Sun", orders: 30, delivered: 26 },
-											]}>
-											<CartesianGrid strokeDasharray="3 3" />
-											<XAxis dataKey="date" />
-											<YAxis />
-											<Tooltip />
-											<Legend />
-											<Line type="monotone" dataKey="orders" stroke="#3b82f6" />
-											<Line
-												type="monotone"
-												dataKey="delivered"
-												stroke="#10b981"
-											/>
-										</LineChart>
-									</ResponsiveContainer>
-								</CardContent>
-							</Card>
-
-							{/* Order Status Distribution */}
-							<Card>
-								<CardHeader>
-									<CardTitle>Order Status</CardTitle>
-									<CardDescription>Current distribution</CardDescription>
-								</CardHeader>
-								<CardContent>
-									<ResponsiveContainer width="100%" height={300}>
-										<PieChart>
-											<Pie
-												data={[
-													{ name: "Pending", value: 15 },
-													{ name: "Delivered", value: 85 },
-												]}
-												cx="50%"
-												cy="50%"
-												labelLine={false}
-												label={({ name, value }) => `${name}: ${value}`}
-												outerRadius={100}
-												fill="#8884d8"
-												dataKey="value">
-												<Cell fill="#f59e0b" />
-												<Cell fill="#10b981" />
-											</Pie>
-											<Tooltip />
-										</PieChart>
-									</ResponsiveContainer>
-								</CardContent>
-							</Card>
-						</div>
-
-						{/* Revenue and Cash Flow */}
-						<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-							{/* Revenue Chart */}
-							<Card>
-								<CardHeader>
-									<CardTitle>Revenue Trend</CardTitle>
-									<CardDescription>Last 30 days revenue</CardDescription>
-								</CardHeader>
-								<CardContent>
-									<ResponsiveContainer width="100%" height={300}>
-										<BarChart
-											data={[
-												{ week: "Week 1", revenue: 12400 },
-												{ week: "Week 2", revenue: 15300 },
-												{ week: "Week 3", revenue: 18200 },
-												{ week: "Week 4", revenue: 16800 },
-											]}>
-											<CartesianGrid strokeDasharray="3 3" />
-											<XAxis dataKey="week" />
-											<YAxis />
-											<Tooltip
-												formatter={(value) =>
-													`₹${Number(value ?? 0).toLocaleString()}`
-												}
-											/>
-											<Bar dataKey="revenue" fill="#3b82f6" />
-										</BarChart>
-									</ResponsiveContainer>
-								</CardContent>
-							</Card>
-						</div>
-					</TabsContent>
-
-					{/* Orders Tab */}
-					<TabsContent value="orders">
-						<OrdersSection />
-					</TabsContent>
-
-					{/* Price Management Tab */}
-					<TabsContent value="prices">
-						<PriceManagementSection />
-					</TabsContent>
-
-					{/* Billing Tab */}
-					<TabsContent value="billing">
-						<BillingSection />
-					</TabsContent>
-
-					{/* Employee Activity Tab */}
-					<TabsContent value="employees">
-						<EmployeeActivitySection />
-					</TabsContent>
-
-					{/* Users Tab */}
-					<TabsContent value="users">
-						<UsersSection />
-					</TabsContent>
-				</Tabs>
-			</div>
-		</div>
-	);
+export default function DashboardClient({ user, initialTab }: { user: WebUser; initialTab?: string }) {
+  const router = useRouter();
+  const isAdmin = user.role === "ADMIN";
+  const navigation = isAdmin ? [["overview", "Overview"], ["orders", "Orders"], ["prices", "Prices"], ["billing", "Billing"], ["employees", "Employees"], ["users", "Users"]] : [["orders", "Orders"], ["prices", "Prices"], ["account", "My account"]];
+  const [activeTab, setActiveTab] = useState(navigation.some(([value]) => value === initialTab) ? initialTab! : navigation[0][0]);
+  const [signingOut, setSigningOut] = useState(false);
+  const [error, setError] = useState("");
+  async function logout() {
+    setSigningOut(true); setError("");
+    try { await api.post("/api/auth/logout"); router.push("/login"); router.refresh(); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : "Could not sign out"); }
+    finally { setSigningOut(false); }
+  }
+  return <main className="min-h-dvh bg-slate-50 px-4 py-5 sm:p-8" style={{ paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))" }}>
+    <div className="mx-auto min-w-0 max-w-7xl"><header className="mb-6 flex flex-wrap items-start justify-between gap-4"><div className="min-w-0"><h1 className="text-2xl font-semibold sm:text-3xl">{isAdmin ? "Admin Dashboard" : user.role === "EMPLOYEE" ? "Delivery Dashboard" : "Customer Dashboard"}</h1><p className="mt-2 break-words text-slate-600">{user.fullName} · Petrol Pump Management</p></div><Button variant="outline" disabled={signingOut} onClick={() => void logout()}>{signingOut ? "Signing out…" : "Sign out"}</Button></header>
+      {error && <p role="alert" className="mb-5 rounded-lg bg-red-50 p-3 text-red-800">{error}</p>}
+      <Tabs value={activeTab} onValueChange={value => {
+        setActiveTab(value);
+        // Tabs load their own data. Keep the URL without racing a server
+        // navigation against the shared browser session refresh.
+        window.history.replaceState(null, "", `/dashboard?tab=${value}`);
+      }} className="min-w-0">
+        <div className="mb-6 overflow-x-auto"><TabsList aria-label="Dashboard sections" className="h-auto min-w-full justify-start gap-1 bg-white p-1">{navigation.map(([value, label]) => <TabsTrigger key={value} value={value} className="min-h-11 shrink-0 px-4">{label}</TabsTrigger>)}</TabsList></div>
+        {isAdmin && <TabsContent value="overview"><Overview /></TabsContent>}
+        <TabsContent value="orders"><OrdersSection user={user} /></TabsContent>
+        <TabsContent value="prices">{isAdmin ? <PriceManagementSection /> : <FuelPricesSection />}</TabsContent>
+        {isAdmin ? <><TabsContent value="billing"><BillingSection /></TabsContent><TabsContent value="employees"><EmployeeActivitySection /></TabsContent><TabsContent value="users"><UsersSection /></TabsContent></> : <TabsContent value="account"><AccountSection /></TabsContent>}
+      </Tabs>
+    </div>
+  </main>;
 }

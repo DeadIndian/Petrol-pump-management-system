@@ -1,0 +1,139 @@
+<div class="content-wrapper">
+	<style>
+		.sidebar {
+			background: url('https://petrosoft.ymtsindia.in/assets/images/navbg.png');
+			background-color: #222d32;
+		}
+
+		.sidebar-fixed .sidebar-content {
+			/* background-color: #001a2de3; */
+			background-color: #222d32;
+		}
+
+		.navbar-inverse {
+			z-index: 9999;
+			border-color: #162e3f !important;
+		}
+
+		/* Day Entry — always highlighted at bottom of sidebar */
+		.sidebar .navigation > li.day-entry-nav {
+			margin: 10px 8px 14px;
+			border-radius: 8px;
+			overflow: hidden;
+			box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35), 0 4px 14px rgba(0, 0, 0, 0.25);
+		}
+		.sidebar .navigation > li.day-entry-nav > a {
+			background: linear-gradient(90deg, #2d52b3 0%, #4a76e0 50%, #2d52b3 100%) !important;
+			color: #fff !important;
+			font-weight: 700 !important;
+			letter-spacing: 0.02em;
+			padding-top: 12px !important;
+			padding-bottom: 12px !important;
+		}
+		.sidebar .navigation > li.day-entry-nav > a i,
+		.sidebar .navigation > li.day-entry-nav > a .title {
+			color: #fff !important;
+		}
+		.sidebar .navigation > li.day-entry-nav.active > a,
+		.sidebar .navigation > li.day-entry-nav > a:hover {
+			background: linear-gradient(90deg, #3b66d1 0%, #6a92ec 50%, #3b66d1 100%) !important;
+			color: #fff !important;
+		}
+
+	</style>
+
+
+	        <style>
+            @media (max-width: 991px) {
+
+                .form-group select,
+                .form-group input {
+                    max-width: 400px;
+                    width: 100% !important;
+                }
+            }
+
+            .btn-default {
+                color: #fff;
+                border-color: #fff;
+            }
+            .kgn-details-grids{
+                width: 450px;
+                margin: auto;
+                padding: 2em 4em;
+                max-width:100%;
+            }
+            #accordion-control-right{
+                justify-content: space-between;
+                display: flex;
+                flex-wrap: wrap;
+            }
+        </style>
+        
+        <aside class="right-side">
+            
+            <section class="content-header">
+                <ol class="breadcrumb">
+                    <li><a href="/petrosoft/app/dashboard"><i class="fa fa-home"></i> Dashboard</a></li>
+                    <li><a href="/petrosoft/app/roles">User Roles</a></li>
+                    <li class="active">Add Role</li>
+                </ol>
+            </section>
+
+            
+            <section class="content">
+
+
+                <div class="row">
+                    <div class="col-md-12">
+
+                        <div class="box">
+
+                            <div class="box-header">
+                                <h3 class="box-title"></h3>
+
+                            </div>
+                            <div class="box-body table-responsive kgn-details-grids">
+                                <form action="/petrosoft/app/roles/save" autocomplete="off" data-ps-onsubmit="return form_submit();" method="post" role="form">
+
+                                                                        <div class="form-group col-lg-12">
+                                        <label for="exampleInputEmail1">Access Module</label>
+                                        <select class="form-control input-sm" id="module" name="module" required="" style="width: 350px;">
+                                            <option value=""> - Access Module - </option>
+                                            <option value="Administration">Administrator Module</option>
+
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group col-lg-12 mt-15">
+                                        <label for="exampleInputEmail1">Role Name</label>
+                                        <input class="form-control input-sm" data-ps-onblur="role_validation()" id="role_name" name="role_name" placeholder="Role Name" required="" style="width: 350px;" type="text" value=""/>
+                                        <input id="user_list" type="hidden" value=""/>
+                                        <div 10px;="" id="showlistdiv" padding:0="" style="color: #f0fd25;position: absolute;background-color: #325d51f2;z-index: 9;width: 33%;max-height: 26px;overflow-y: auto; font-weight: 400;"></div>
+                                    </div>
+
+                                    <div class="form-group col-lg-12 mt-15">
+                                        <label for="exampleInputEmail1">Role Description</label>
+                                        <input class="form-control input-sm" id="role_description" name="role_description" placeholder="Role Description" required="" style="width: 350px;" type="text" value=""/>
+                                    </div>
+                                    <div class="form-group col-lg-12 mt-15" style="display: none">
+                                        <label for="exampleInputEmail1"> PERMITTED DAYS</label>
+
+                                        <input class="form-control input-sm" id="role_description" name="role_permitted" placeholder="create/update/delete" style="width: 350px;" type="text" value=""/>
+                                    </div>
+                                    <div class="form-group col-lg-12 mt-15 text-center">
+                                        <a class="btn btn-default" href="/petrosoft/app/roles">Cancel</a>  
+                                        <button class="btn btn-primary pic-button" data-ps-onclick="checkrole_name()" id="btnSubmit" name="btnSubmit" type="submit"><i class="fa fa-save"></i> Save</button>
+                                    </div>
+
+                                </form>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+            </section>
+        </aside>
+        </div>

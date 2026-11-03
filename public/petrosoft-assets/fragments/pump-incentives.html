@@ -1,0 +1,142 @@
+<div class="content-wrapper">
+	<style>
+		.sidebar {
+			background: url('https://petrosoft.ymtsindia.in/assets/images/navbg.png');
+			background-color: #222d32;
+		}
+
+		.sidebar-fixed .sidebar-content {
+			/* background-color: #001a2de3; */
+			background-color: #222d32;
+		}
+
+		.navbar-inverse {
+			z-index: 9999;
+			border-color: #162e3f !important;
+		}
+
+		/* Day Entry — always highlighted at bottom of sidebar */
+		.sidebar .navigation > li.day-entry-nav {
+			margin: 10px 8px 14px;
+			border-radius: 8px;
+			overflow: hidden;
+			box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35), 0 4px 14px rgba(0, 0, 0, 0.25);
+		}
+		.sidebar .navigation > li.day-entry-nav > a {
+			background: linear-gradient(90deg, #2d52b3 0%, #4a76e0 50%, #2d52b3 100%) !important;
+			color: #fff !important;
+			font-weight: 700 !important;
+			letter-spacing: 0.02em;
+			padding-top: 12px !important;
+			padding-bottom: 12px !important;
+		}
+		.sidebar .navigation > li.day-entry-nav > a i,
+		.sidebar .navigation > li.day-entry-nav > a .title {
+			color: #fff !important;
+		}
+		.sidebar .navigation > li.day-entry-nav.active > a,
+		.sidebar .navigation > li.day-entry-nav > a:hover {
+			background: linear-gradient(90deg, #3b66d1 0%, #6a92ec 50%, #3b66d1 100%) !important;
+			color: #fff !important;
+		}
+
+	</style>
+
+
+	<style>
+    @media (max-width: 768px) {
+        .form-group div[class*=col-sm-]:not(.control-label)+div[class*=col-sm-] {
+            margin-top: 0px;
+        }
+    }
+
+    @media (max-width: 991px) {
+        .kgn-details-grids {
+            text-align: left;
+        }
+    }
+</style>
+
+<aside class="right-side">
+    
+    <section class="content-header">
+        <ol class="breadcrumb">
+            <li><a href="/petrosoft/app/dashboard"><i class="fa fa-home"></i> Dashboard</a></li>
+            <li><a href="/petrosoft/app/pump/add">Pump Nozzels</a></li>
+            <li class="active">Add Incentives</li>
+        </ol>
+    </section>
+
+    
+    <section class="content">
+                 <div class="row">
+            <div class="col-md-12">
+                <div class="op-bill-cancel">
+                    <div class="kgn-details-grids">
+                        <form action="/petrosoft/app/pump/incent_save/" class="form-horizontal" data-ps-onsubmit="return confirm('Are you sure you want to save?');" method="post" role="form">
+                            <div class="tank_info">
+                                <div class="m_10">
+                                    <div class="nozzel_grid">
+                                        <div class="form-group benchmark-row" style="display:flex; align-items:center; gap:10px;">
+                                            <div class="col-lg-1 col-md-6 col-sm-6 kgn-details-info op-bill-left top-space sm-100" style="width:190px; margin-left:20px;">
+                                                <div class="m_10 float-container">
+                                                    <input autocomplete="off" class="form-control input-sm products_name float-input" data-ps-oninput="this.value=this.value.replace(/[^0-9.]/g,'').replace(/(\..*)\./g,'$1')" id="benchmark1" name="benchmark[]" pattern="[0-9]*\.?[0-9]+" placeholder=" " required="" type="text" value=""/>
+                                                    <input name="benchmark_name[]" type="hidden" value=""/>
+                                                    <label class="m_10 op-text-grid1 float-label" for="benchmark1">Benchmark</label>
+                                                </div>
+                                            </div>
+                                            <input id="pump_id" name="pump_id" type="hidden" value=""/>
+
+                                            <div class="col-lg-1 col-md-6 col-sm-6 kgn-details-info op-bill-left top-space sm-100" style="width:190px;">
+                                                <div class="m_10 float-container">
+                                                    <input autocomplete="off" class="form-control input-sm products_name float-input" data-ps-oninput="this.value=this.value.replace(/[^0-9.]/g,'').replace(/(\..*)\./g,'$1')" id="rate1" name="rate[]" pattern="[0-9]*\.?[0-9]+" placeholder=" " required="" type="text" value=""/>
+                                                    <label class="m_10 op-text-grid1 float-label" for="rate1">Rate</label>
+                                                </div>
+                                            </div>
+
+                                            <div style="margin-left:10px;">
+                                                <button class="nozz_add_field" style="background:none; border:none;">
+                                                    <img height="20" src="/petrosoft-assets/assets/img/add.png" width="20"/>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                    </div>
+                                </div>
+                                                                <div class="m_10 text-center" style="margin-top: 15px;">
+                                
+                                        <button class="btn btn-primary pic-button" id="btnSubmit" name="btnSubmit" type="submit">
+                                            <i class="fa fa-save"></i> Save
+                                        </button>
+
+                                    
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="clearfix"> </div>
+            <div class="table-info">
+                <div class="m_10">
+                    <div class="ward-table-grid ip-serv-canc-table">
+                        <table cellspacing="0" class="display nowrap" id="example" width="100%">
+                            <thead>
+                                <tr>
+                                    <th>S.No</th>
+                                    <th>Benchmarks</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                                                                            <th>User Log Details</th>
+                                                                                                    </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</aside>
+
+</div>

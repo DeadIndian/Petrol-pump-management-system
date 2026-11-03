@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, Package, DollarSign, Users, Loader2 } from "lucide-react";
-import { api } from "@/lib/api-client";
 
 interface StatCardProps {
 	title: string;
@@ -45,7 +43,7 @@ function StatCard({
 	);
 }
 
-interface AdminStats {
+export interface AdminStats {
 	totalOrders: number;
 	pendingOrders: number;
 	totalRevenue: number;
@@ -53,18 +51,7 @@ interface AdminStats {
 	employeeCount: number;
 }
 
-export default function DashboardStats() {
-	const [stats, setStats] = useState<AdminStats | null>(null);
-	const [loading, setLoading] = useState(true);
-
-	useEffect(() => {
-		api
-			.get<{ stats: AdminStats }>("/api/admin/stats")
-			.then((data) => setStats(data.stats))
-			.catch(console.error)
-			.finally(() => setLoading(false));
-	}, []);
-
+export default function DashboardStats({ stats, loading }: { stats: AdminStats | null; loading: boolean }) {
 	return (
 		<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 			<StatCard
@@ -80,7 +67,7 @@ export default function DashboardStats() {
 				icon={<TrendingUp className="h-4 w-4 text-orange-600" />}
 			/>
 			<StatCard
-				title="Total Revenue"
+				title="Total Order Value"
 				value={stats ? `₹${stats.totalRevenue.toLocaleString("en-IN")}` : "—"}
 				trend={
 					stats?.revenueTrendPercent != null

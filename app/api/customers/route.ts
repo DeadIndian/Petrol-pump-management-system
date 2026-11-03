@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { PaginationSchema } from "@/lib/validation";
 import {
 	authenticate,
 	requireRole,
@@ -24,6 +25,7 @@ export async function GET(request: NextRequest) {
 		const search = searchParams.get("search") || "";
 		const limit = parseInt(searchParams.get("limit") || "50");
 		const offset = parseInt(searchParams.get("offset") || "0");
+        PaginationSchema.parse({ limit, offset });
 
 		// Build where clause for search
 		const where: any = {
@@ -39,7 +41,7 @@ export async function GET(request: NextRequest) {
 		}
 
 		// Get customers with their profiles
-		const [customers, total] = await Promise.all([
+		const [customers, total, totalCustomers] = await Promise.all([
 			prisma.user.findMany({
 				where,
 				include: {
@@ -55,6 +57,7 @@ export async function GET(request: NextRequest) {
 				skip: offset,
 			}),
 			prisma.user.count({ where }),
+      prisma.user.count({ where: { role: "CUSTOMER" } }),
 		]);
 
 		// Calculate summary statistics
@@ -84,13 +87,14 @@ export async function GET(request: NextRequest) {
 				hasMore: offset + limit < total,
 			},
 			summary: {
-				totalCustomers: total,
+				totalCustomers,
 				totalOutstanding: Math.abs(totalOwed._sum.currentBalance || 0),
 				totalBalance: totalBalance._sum.currentBalance || 0,
 			},
 		});
 	} catch (error: any) {
-		console.error("Error fetching customers:", error);
+		if (error.name === "ZodError") return errorResponse("Invalid customer filters", 400);
+        console.error("Error fetching customers:", error);
 		return errorResponse(error.message || "Failed to fetch customers", 500);
 	}
 }

@@ -6,8 +6,9 @@ import {
 	successResponse,
 	errorResponse,
 } from "@/lib/auth";
-import { createAuditLog } from "@/lib/db-utils";
+import { recordPayment } from "@/lib/billing-utils";
 import { z } from "zod";
+import { PaginationSchema } from "@/lib/validation";
 
 const AddPaymentSchema = z.object({
 	amount: z.number().positive("Amount must be positive"),
@@ -17,7 +18,7 @@ const AddPaymentSchema = z.object({
 	paymentMethodNote: z.string().optional(),
 	reference: z.string().optional(),
 	notes: z.string().optional(),
-	paymentDate: z.string().optional(),
+	paymentDate: z.string().refine((value) => !Number.isNaN(Date.parse(value)), "Invalid payment date").optional(),
 });
 
 /**
@@ -26,8 +27,9 @@ const AddPaymentSchema = z.object({
  */
 export async function POST(
 	request: NextRequest,
-	{ params }: { params: { id: string } },
+	{ params }: { params: Promise<{ id: string }> },
 ) {
+    const routeParams = await params;
 	try {
 		const authResult = await authenticate(request);
 		if (authResult instanceof NextResponse) return authResult;
@@ -41,7 +43,7 @@ export async function POST(
 
 		// Get customer and their profile
 		const customer = await prisma.user.findUnique({
-			where: { id: params.id },
+			where: { id: routeParams.id },
 			include: {
 				customerProfile: true,
 			},
@@ -59,62 +61,22 @@ export async function POST(
 			return errorResponse("Customer profile not found", 404);
 		}
 
-		// Create payment and update customer profile in a transaction
-		const result = await prisma.$transaction(async (tx) => {
-			// Create payment
-			const payment = await tx.payment.create({
-				data: {
-					customerProfileId: customer.customerProfile!.id,
-					amount: validatedData.amount,
-					paymentMethod: validatedData.paymentMethod,
-					paymentMethodNote: validatedData.paymentMethodNote,
-					reference: validatedData.reference,
-					notes: validatedData.notes,
-					paymentDate: validatedData.paymentDate
-						? new Date(validatedData.paymentDate)
-						: new Date(),
-				},
-			});
-
-			// Update customer profile balance
-			const updatedProfile = await tx.customerProfile.update({
-				where: { id: customer.customerProfile!.id },
-				data: {
-					currentBalance: {
-						increment: validatedData.amount,
-					},
-					totalPayments: {
-						increment: validatedData.amount,
-					},
-				},
-			});
-
-			return { payment, profile: updatedProfile };
-		});
-
-		// Log this action
-		await createAuditLog(
-			authRequest.user.id,
-			"PAYMENT_ADDED",
-			"payments",
-			result.payment.id,
-			{
-				customerId: params.id,
-				amount: validatedData.amount,
-				paymentMethod: validatedData.paymentMethod,
-				newBalance: result.profile.currentBalance,
-				timestamp: new Date().toISOString(),
-			},
-		);
+        const payment = await recordPayment(customer.customerProfile.id, validatedData.amount, validatedData.paymentMethod, {
+            auditUserId: authRequest.user.id, paymentMethodNote: validatedData.paymentMethodNote,
+            reference: validatedData.reference, notes: validatedData.notes,
+            paymentDate: validatedData.paymentDate ? new Date(validatedData.paymentDate) : undefined,
+        });
+        const profile = await prisma.customerProfile.findUniqueOrThrow({ where: { id: customer.customerProfile.id } });
 
 		return successResponse({
 			message: "Payment added successfully",
-			payment: result.payment,
-			newBalance: result.profile.currentBalance,
+			payment,
+			newBalance: profile.currentBalance,
 		});
 	} catch (error: any) {
 		console.error("Error adding payment:", error);
-		return errorResponse(error.message || "Failed to add payment", 500);
+		if (error.name === "ZodError") return errorResponse("Validation error", 400, error.issues);
+        return errorResponse("Could not record payment", 500);
 	}
 }
 
@@ -124,8 +86,9 @@ export async function POST(
  */
 export async function GET(
 	request: NextRequest,
-	{ params }: { params: { id: string } },
+	{ params }: { params: Promise<{ id: string }> },
 ) {
+    const routeParams = await params;
 	try {
 		const authResult = await authenticate(request);
 		if (authResult instanceof NextResponse) return authResult;
@@ -137,10 +100,11 @@ export async function GET(
 		const { searchParams } = new URL(request.url);
 		const limit = parseInt(searchParams.get("limit") || "50");
 		const offset = parseInt(searchParams.get("offset") || "0");
+        PaginationSchema.parse({ limit, offset });
 
 		// Get customer profile
 		const customer = await prisma.user.findUnique({
-			where: { id: params.id },
+			where: { id: routeParams.id },
 			include: {
 				customerProfile: true,
 			},
@@ -177,7 +141,8 @@ export async function GET(
 			},
 		});
 	} catch (error: any) {
-		console.error("Error fetching payments:", error);
+		if (error.name === "ZodError") return errorResponse("Invalid payment filters", 400);
+        console.error("Error fetching payments:", error);
 		return errorResponse(error.message || "Failed to fetch payments", 500);
 	}
 }

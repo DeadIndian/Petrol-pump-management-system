@@ -1,262 +1,76 @@
 "use client";
-
-import { useState, useEffect, useCallback } from "react";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { Search, RefreshCw, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api-client";
+import type { WebUser, WebOrder } from "@/lib/web-types";
+import { money } from "@/lib/web-types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import OrderForm from "../components/order-form";
 
-type OrderStatus = "PENDING" | "DELIVERED" | "COMPLETED";
-
-interface Order {
-	id: string;
-	fuelType: "PETROL" | "DIESEL";
-	quantityRequested: number | null;
-	amountRequested: number | null;
-	cash: number;
-	status: OrderStatus;
-	createdAt: string;
-	deliveredAt: string | null;
-	customer: {
-		id: string;
-		fullName: string;
-		email: string;
-		phone: string | null;
-	};
-}
-
-const STATUS_COLORS: Record<OrderStatus, string> = {
-	PENDING: "bg-yellow-100 text-yellow-800",
-	DELIVERED: "bg-blue-100 text-blue-800",
-	COMPLETED: "bg-green-100 text-green-800",
-};
-
-export default function OrdersSection() {
-	const [orders, setOrders] = useState<Order[]>([]);
-	const [total, setTotal] = useState(0);
-	const [loading, setLoading] = useState(true);
-	const [searchTerm, setSearchTerm] = useState("");
-	const [filterStatus, setFilterStatus] = useState("all");
-
-	const fetchOrders = useCallback(async () => {
-		setLoading(true);
-		try {
-			const params = new URLSearchParams({ limit: "50" });
-			if (filterStatus !== "all") params.set("status", filterStatus);
-			const data = await api.get<{
-				orders: Order[];
-				pagination: { total: number };
-			}>(`/api/orders?${params}`);
-			setOrders(data.orders);
-			setTotal(data.pagination.total);
-		} catch (err) {
-			console.error("Failed to fetch orders:", err);
-		} finally {
-			setLoading(false);
-		}
-	}, [filterStatus]);
-
-	useEffect(() => {
-		fetchOrders();
-	}, [fetchOrders]);
-
-	const filteredOrders = orders.filter((order) => {
-		if (!searchTerm) return true;
-		const q = searchTerm.toLowerCase();
-		return (
-			order.id.toLowerCase().includes(q) ||
-			order.customer.fullName.toLowerCase().includes(q)
-		);
-	});
-
-	const pendingCount = orders.filter((o) => o.status === "PENDING").length;
-	const fulfilledCount = orders.filter((o) => o.status !== "PENDING").length;
-	const fulfillmentRate =
-		orders.length > 0 ? Math.round((fulfilledCount / orders.length) * 100) : 0;
-
-	return (
-		<div className="space-y-6">
-			{/* Order Stats */}
-			<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-				<Card>
-					<CardHeader>
-						<CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="text-3xl font-bold">{total}</div>
-						<p className="text-xs text-gray-600 mt-2">All time</p>
-					</CardContent>
-				</Card>
-				<Card>
-					<CardHeader>
-						<CardTitle className="text-sm font-medium">
-							Pending Fulfillment
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="text-3xl font-bold text-orange-600">
-							{pendingCount}
-						</div>
-						<p className="text-xs text-gray-600 mt-2">Awaiting delivery</p>
-					</CardContent>
-				</Card>
-				<Card>
-					<CardHeader>
-						<CardTitle className="text-sm font-medium">
-							Fulfillment Rate
-						</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<div className="text-3xl font-bold text-green-600">
-							{fulfillmentRate}%
-						</div>
-						<p className="text-xs text-gray-600 mt-2">Loaded orders</p>
-					</CardContent>
-				</Card>
-			</div>
-
-			{/* Orders Table */}
-			<Card>
-				<CardHeader className="flex flex-row items-center justify-between">
-					<div>
-						<CardTitle>All Orders</CardTitle>
-						<CardDescription>Manage and track all fuel orders</CardDescription>
-					</div>
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={fetchOrders}
-						disabled={loading}>
-						<RefreshCw
-							className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
-						/>
-						Refresh
-					</Button>
-				</CardHeader>
-				<CardContent>
-					<div className="flex gap-4 mb-6">
-						<div className="flex-1 relative">
-							<Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-							<Input
-								placeholder="Search by order ID or customer name..."
-								value={searchTerm}
-								onChange={(e) => setSearchTerm(e.target.value)}
-								className="pl-10"
-							/>
-						</div>
-						<Select value={filterStatus} onValueChange={setFilterStatus}>
-							<SelectTrigger className="w-44">
-								<SelectValue placeholder="Filter by status" />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="all">All Status</SelectItem>
-								<SelectItem value="PENDING">Pending</SelectItem>
-								<SelectItem value="DELIVERED">Delivered</SelectItem>
-								<SelectItem value="COMPLETED">Completed</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
-
-					{loading ? (
-						<div className="flex items-center justify-center py-12">
-							<Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-						</div>
-					) : (
-						<div className="overflow-x-auto">
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>Order ID</TableHead>
-										<TableHead>Customer</TableHead>
-										<TableHead>Fuel Type</TableHead>
-										<TableHead className="text-right">Qty / Amt</TableHead>
-										<TableHead className="text-right">
-											Cash Advance (₹)
-										</TableHead>
-										<TableHead>Status</TableHead>
-										<TableHead>Created At</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{filteredOrders.map((order) => (
-										<TableRow key={order.id}>
-											<TableCell className="font-medium font-mono text-xs">
-												{order.id.slice(0, 8)}…
-											</TableCell>
-											<TableCell>
-												<div>
-													<p className="font-medium">
-														{order.customer.fullName}
-													</p>
-													<p className="text-xs text-gray-500">
-														{order.customer.email}
-													</p>
-												</div>
-											</TableCell>
-											<TableCell>
-												<Badge
-													className={
-														order.fuelType === "PETROL"
-															? "bg-orange-100 text-orange-800"
-															: "bg-gray-100 text-gray-800"
-													}>
-													{order.fuelType}
-												</Badge>
-											</TableCell>
-											<TableCell className="text-right">
-												{order.quantityRequested != null
-													? `${order.quantityRequested} L`
-													: order.amountRequested != null
-														? `₹${order.amountRequested.toLocaleString()}`
-														: "—"}
-											</TableCell>
-											<TableCell className="text-right">
-												₹{(order.cash ?? 0).toLocaleString()}
-											</TableCell>
-											<TableCell>
-												<Badge className={STATUS_COLORS[order.status]}>
-													{order.status}
-												</Badge>
-											</TableCell>
-											<TableCell className="text-sm text-gray-600">
-												{new Date(order.createdAt).toLocaleString("en-IN")}
-											</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-							{filteredOrders.length === 0 && (
-								<div className="text-center py-8 text-gray-500">
-									No orders found
-								</div>
-							)}
-						</div>
-					)}
-				</CardContent>
-			</Card>
-		</div>
-	);
+export default function OrdersSection({ user }: { user: WebUser }) {
+  const [orders, setOrders] = useState<WebOrder[]>([]);
+  const [total, setTotal] = useState(0);
+  const [offset, setOffset] = useState(0);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState(user.role === "EMPLOYEE" ? "PENDING" : "all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [selected, setSelected] = useState<WebOrder | null>(null);
+  const [quantity, setQuantity] = useState("");
+  const [completing, setCompleting] = useState(false);
+  const [deliveryError, setDeliveryError] = useState("");
+  const load = useCallback((signal?: AbortSignal) => {
+    const query = new URLSearchParams({ limit: "20", offset: String(offset), search });
+    if (status !== "all") query.set("status", status);
+    return api.get<{ orders: WebOrder[]; pagination: { total: number } }>(`/api/orders?${query}`, { signal })
+      .then(data => { if (!signal?.aborted) { setOrders(data.orders); setTotal(data.pagination.total); setError(""); } })
+      .catch(cause => { if (!signal?.aborted) setError(cause instanceof Error ? cause.message : "Could not load orders"); })
+      .finally(() => { if (!signal?.aborted) setLoading(false); });
+  }, [offset, search, status]);
+  useEffect(() => {
+    const controller = new AbortController();
+    void load(controller.signal);
+    const timer = setInterval(() => void load(controller.signal), 30000);
+    return () => { clearInterval(timer); controller.abort(); };
+  }, [load]);
+  async function complete(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault(); if (!selected) return; setCompleting(true); setDeliveryError("");
+    try {
+      await api.patch(`/api/orders/${selected.id}`, { quantityDelivered: Number(quantity) });
+      setSelected(null); setNotice("Delivery completed. The customer balance has been updated."); await load();
+    } catch (cause) { setDeliveryError(cause instanceof Error ? cause.message : "Could not complete delivery"); }
+    finally { setCompleting(false); }
+  }
+  const canCreate = user.role !== "EMPLOYEE";
+  return <section className="space-y-5" aria-labelledby="orders-title">
+    <div className="flex flex-wrap items-center justify-between gap-3"><h2 id="orders-title" className="text-xl font-semibold">{user.role === "CUSTOMER" ? "My orders" : "Fuel orders"}</h2>
+      <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => { setLoading(true); void load(); }} disabled={loading}>Refresh orders</Button>{canCreate && <Button onClick={() => setCreating(true)}>New order</Button>}</div></div>
+    {notice && <p role="status" className="rounded-lg bg-green-50 p-3 text-green-800">{notice}</p>}
+    {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-red-800">{error}</p>}
+    <div className="grid gap-3 sm:grid-cols-[1fr_12rem]"><div className="space-y-1"><Label htmlFor="order-search">Search orders</Label><Input id="order-search" placeholder="Vehicle, indent, order ID or customer" value={search} onChange={event => { setSearch(event.target.value); setOffset(0); setLoading(true); }} /></div>
+      <div className="space-y-1"><Label htmlFor="order-status">Order status</Label><select id="order-status" className="native-select" value={status} onChange={event => { setStatus(event.target.value); setOffset(0); setLoading(true); }}><option value="all">All statuses</option><option value="PENDING">Pending</option><option value="DELIVERED">Delivered</option><option value="COMPLETED">Completed</option></select></div></div>
+    <Card><CardHeader><CardTitle className="text-base">{total} matching {total === 1 ? "order" : "orders"}</CardTitle></CardHeader><CardContent>
+      {loading && orders.length === 0 ? <p role="status" className="py-8 text-slate-600">Loading orders…</p> : orders.length === 0 ? <p className="py-8 text-slate-600">{canCreate ? "No orders match. Place an order or adjust your filters." : "No pending deliveries. Refresh to check for new orders."}</p> : <Table>
+        <TableHeader><TableRow><TableHead>Vehicle / indent</TableHead><TableHead>Customer</TableHead><TableHead>Fuel / request</TableHead><TableHead>Extra cash</TableHead><TableHead>Status / total</TableHead><TableHead>Action</TableHead></TableRow></TableHeader>
+        <TableBody>{orders.map(order => <TableRow key={order.id}><TableCell><p className="font-medium">{order.vehicleNumber}</p><p className="text-sm text-slate-600">Indent {order.indentNumber ?? "—"}</p></TableCell>
+          <TableCell>{order.customer.fullName}</TableCell><TableCell>{order.fuelType}<p>{order.quantityRequested != null ? `${order.quantityRequested} L` : money(order.amountRequested || 0)}</p></TableCell>
+          <TableCell>{money(order.cash)}</TableCell><TableCell><Badge className={order.status === "PENDING" ? "bg-amber-100 text-amber-900" : "bg-green-100 text-green-900"}>{order.status}</Badge>{order.totalAmount != null && <p className="mt-1 font-medium">{money(order.totalAmount)}</p>}</TableCell>
+          <TableCell><Button variant="outline" aria-label={`View order for ${order.vehicleNumber}`} onClick={() => { setSelected(order); setDeliveryError(""); setQuantity(order.quantityRequested?.toString() || ""); }}>View order</Button></TableCell></TableRow>)}</TableBody>
+      </Table>}
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-slate-600">Showing {total ? offset + 1 : 0}–{Math.min(offset + orders.length, total)} of {total}</p><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => { setLoading(true); setOffset(Math.max(0, offset - 20)); }} disabled={offset === 0 || loading}>Previous</Button><Button variant="outline" onClick={() => { setLoading(true); setOffset(offset + 20); }} disabled={offset + 20 >= total || loading}>Next</Button></div></div>
+    </CardContent></Card>
+    <Dialog open={creating} onOpenChange={setCreating}><DialogContent><DialogHeader><DialogTitle>Place a fuel order</DialogTitle><DialogDescription>Request fuel by quantity or amount, with any extra cash.</DialogDescription></DialogHeader><OrderForm user={user} onPlaced={() => { setCreating(false); setNotice("Order placed. Its indent number appears in your order list."); setOffset(0); setLoading(true); if (offset === 0) void load(); }} /></DialogContent></Dialog>
+    <Dialog open={Boolean(selected)} onOpenChange={open => { if (!open && !completing) setSelected(null); }}><DialogContent><DialogHeader><DialogTitle>Order {selected?.vehicleNumber}</DialogTitle><DialogDescription>Indent {selected?.indentNumber ?? "—"} · {selected?.status}</DialogDescription></DialogHeader>
+      {selected && <><dl className="detail-list"><div><dt>Customer</dt><dd>{selected.customer.fullName}</dd></div><div><dt>Fuel</dt><dd>{selected.fuelType}</dd></div><div><dt>Requested</dt><dd>{selected.quantityRequested != null ? `${selected.quantityRequested} L` : money(selected.amountRequested || 0)}</dd></div><div><dt>Extra cash</dt><dd>{money(selected.cash)}</dd></div><div><dt>Placed</dt><dd>{new Date(selected.createdAt).toLocaleString("en-IN")}</dd></div>
+        {selected.totalAmount != null && <><div><dt>Delivered</dt><dd>{selected.quantityDelivered} L</dd></div><div><dt>Delivery price</dt><dd>{money(selected.pricePerLiter || 0)} / L</dd></div><div><dt>Total charge</dt><dd>{money(selected.totalAmount)}</dd></div>{selected.fulfilledBy && <div><dt>Completed by</dt><dd>{selected.fulfilledBy.fullName}</dd></div>}</>}</dl>
+        {user.role !== "CUSTOMER" && selected.status === "PENDING" && <form onSubmit={complete} className="space-y-4 border-t pt-4">{deliveryError && <p role="alert" className="text-red-800">{deliveryError}</p>}<div className="space-y-2"><Label htmlFor="delivered-quantity">Quantity delivered (L)</Label><Input id="delivered-quantity" type="number" inputMode="decimal" min="0.001" step="0.001" value={quantity} onChange={event => setQuantity(event.target.value)} required /></div><p className="text-sm text-slate-600">Completing delivery charges the customer for the delivered fuel plus extra cash. This action can be completed once.</p><Button type="submit" className="w-full" disabled={completing}>{completing ? "Completing delivery…" : "Complete delivery"}</Button></form>}</>}
+    </DialogContent></Dialog>
+  </section>;
 }
