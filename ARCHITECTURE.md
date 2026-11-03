@@ -1,6 +1,20 @@
 # Current web architecture
 
-This document supersedes the older architecture description that claimed implemented realtime subscriptions, separate bill creation, tax/discount calculations, cash reconciliation, RLS verification, and production deployment. See [verification evidence](docs/VERIFICATION.md) for what was actually exercised.
+## Petrosoft station management
+
+`/petrosoft` serves the captured source layouts with local JavaScript controllers. Its HTTP endpoints under `/api/petrosoft` authenticate a station-scoped session and enforce role permissions independently of the screen. The application uses its own PostgreSQL connection and password/session records; it does not require Supabase Auth.
+
+Prisma stores stations, users, sessions, sequences, business entries, ledger postings, attachments, audit events, and retained source archives. Entries and ledger amounts use PostgreSQL Decimal columns. Business dates use Asia/Kolkata. Source snapshots and operational records are separate, so collecting a fresh source archive does not overwrite local transactions.
+
+The action service validates products, customers, employees, vendors, tanks, and payment accounts. Serializable transactions save each business entry with its related ledger postings and audit record; retries handle transaction conflicts. Fuel receipts post quantity to the selected tank. Meter sales reduce tank stock and assign collections to employees. Credit sales move the appropriate share of employee collections to customer receivables. Recoveries, expenses, employee collections, and bank handovers update the corresponding accounts. Edits replace prior postings and adjust affected dated snapshots; reversals undo linked movements.
+
+Generated invoices retain the source sales and protect them from further edits. Generating an invoice does not charge the customer again. Local statements, reports, and HTML/CSV/XLSX/PDF exports read these records. Messaging, biometric hardware, BPCL, and government document issuance need separately configured provider bridges.
+
+`npm run test:petrosoft` exercises database transactions in isolated test stations. With a local server running, `npm run test:petrosoft:browser` signs into an isolated station and uses the actual screens to save rates, receipts, sales, recoveries, expenses, employee collections, settlement, and billing. It verifies persisted closing balances, rate and receipt edits, legacy receipt allocations, invoice freezing, and PDF output. See [Petrosoft setup and verification](docs/PETROSOFT.md) for details and fidelity limits.
+
+## Earlier delivery application
+
+The remaining sections describe `/dashboard`. They supersede older claims about realtime subscriptions, separate bill creation, tax/discount calculations, cash reconciliation, RLS verification, and production deployment for that application. See [delivery verification evidence](docs/VERIFICATION.md) for what was actually exercised.
 
 ## Request and authentication flow
 
@@ -10,7 +24,7 @@ Server pages enforce authentication. Browser API calls share a session-refresh r
 
 ## Stored records
 
-Prisma models six tables: users, customer_profiles, orders, fuel_prices, payments, and audit_logs. Customer profiles track balances, aggregate purchases/payments, and configured indent ranges. Orders store the customer, vehicle, indent, requested fuel amount or litres, extra cash, actual delivery quantity, captured price, delivery actor, and timestamps.
+The delivery application uses six Prisma tables: users, customer_profiles, orders, fuel_prices, payments, and audit_logs. Customer profiles track balances, aggregate purchases/payments, and configured indent ranges. Orders store the customer, vehicle, indent, requested fuel amount or litres, extra cash, actual delivery quantity, captured price, delivery actor, and timestamps.
 
 ## Orders and billing
 

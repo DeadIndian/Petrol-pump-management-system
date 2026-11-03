@@ -1,6 +1,6 @@
 import { Prisma, type PetrosoftEntry } from "@prisma/client";
 import { fieldValue, jsonFields, type PetrosoftFields } from "./catalog";
-import { baseModule, CUSTOMER_KEYS, EMPLOYEE_KEYS, paymentAccount, PRODUCT_KEYS, referenceValue, VENDOR_KEYS } from "./rules";
+import { baseModule, BOWSER_KEYS, CUSTOMER_KEYS, EMPLOYEE_KEYS, paymentAccount, PRODUCT_KEYS, referenceValue, VENDOR_KEYS, positive } from "./rules";
 
 type Database = Prisma.TransactionClient;
 export async function referencedMaster(database: Database, workspaceId: string, module: string, offered: unknown, active = false) {
@@ -11,7 +11,25 @@ export async function referencedMaster(database: Database, workspaceId: string, 
 export async function validateMasterReferences(database: Database, workspaceId: string, module: string, fields: PetrosoftFields, previous?: PetrosoftFields) {
   const base = baseModule(module), guest = ["guest-sales", "gift-sales", "loyalty-transactions"].includes(base);
   const relations: [string, string[], boolean][] = [];
-  if (["meter-sales", "credit-sales", "guest-sales", "handling-loss", "fuel-purchases", "lubricant-purchases", "lubricant-sales", "lubricant-loss", "gift-purchases", "gift-sales", "other-purchases", "loyalty-points", "tanks"].includes(base)) {
+  if (module.startsWith("bowser-") && module !== "bowser-nozzles") relations.push(["bowsers", BOWSER_KEYS, true]);
+  if (module === "bowser-nozzles") relations.push(["bowsers", BOWSER_KEYS, true]);
+  if (module === "bowsers") {
+    relations.push(["fuel-products", PRODUCT_KEYS, true]);
+    fields.capacity = positive(fieldValue(fields, ["capacity", "b_capacity"], "0"), "Bowser capacity").toString();
+    fields.opening_stock = positive(fieldValue(fields, "opening_stock", "0"), "Opening bowser stock", true).toString();
+    if (previous && fieldValue(previous, "product") !== fieldValue(fields, "product")) {
+      const original = await referencedMaster(database, workspaceId, "bowsers", fieldValue(previous, ["b_name", "name"]));
+      const used = original && await database.petrosoftEntry.count({ where: { workspaceId, module: "bowser-sales", status: { not: "void" }, fields: { path: ["bowser"], equals: original.externalId || String(original.number) } } });
+      if (used) throw new Error("Keep the fuel product of a bowser with recorded sales.");
+    }
+  }
+  if (module === "bowser-nozzles") {
+    fields.open_read = positive(fieldValue(fields, ["open_read", "opening_reading"], "0"), "Opening meter reading", true).toString();
+    const original = previous && await referencedMaster(database, workspaceId, module, fieldValue(previous, ["nozzle_name", "name"]));
+    if (original && (fieldValue(previous, BOWSER_KEYS) !== fieldValue(fields, BOWSER_KEYS) || fieldValue(previous, "open_read", "0") !== fields.open_read) && await hasMasterReferences(database, original)) throw new Error("Keep the bowser and opening reading of a nozzle with recorded sales.");
+  }
+  if (module === "bowser-lubricant-sales" && /credit/i.test(fieldValue(fields, ["sale_type1", "sale_type"])) && !fieldValue(fields, "lubvehi_no").replace(/^0$/, "").trim()) throw new Error("Enter the vehicle number for a bowser lubricant credit sale.");
+  if (["daily-rates", "shift-sheet", "meter-sales", "credit-sales", "guest-sales", "handling-loss", "fuel-purchases", "lubricant-purchases", "lubricant-sales", "lubricant-loss", "gift-purchases", "gift-sales", "other-purchases", "loyalty-points", "tanks"].includes(base)) {
     const type = /lubricant/.test(base) || base === "other-purchases" ? "lubricants" : /gift/.test(base) ? "gifts" : "fuel-products";
     relations.push([type, PRODUCT_KEYS, true]);
   }
@@ -30,6 +48,7 @@ export async function validateMasterReferences(database: Database, workspaceId: 
     const unchanged = previous && referenceValue(previous, keys) === value;
     const master = await referencedMaster(database, workspaceId, type, value, !unchanged);
     if (!master) throw new Error(`Choose an active ${type.replace(/-/g, " ")} entry from this station.`);
+    if (type === "bowsers") fields.bowser = master.externalId || String(master.number);
   }
   const tank = referenceValue(fields, ["tank_no", "stock_tank"]);
   if (tank && ["meter-sales", "pump-settings", "nozzles", "sales-officer", "tanker-sales", "fuel-purchases"].includes(base)) {
@@ -74,6 +93,7 @@ export async function validateMasterReferences(database: Database, workspaceId: 
   if (fieldValue(fields, "payment_amnt") && fieldValue(fields, "payment_bank")) {
     const bank = await referencedMaster(database, workspaceId, "business-parties", fieldValue(fields, "payment_bank"), !previous);
     if (!bank || !/bank/i.test(fieldValue(jsonFields(bank.fields), "p_type"))) throw new Error("Choose a bank account from this station for the purchase payment.");
+    fields.payment_bank = bank.externalId || String(bank.number);
   }
 }
 
@@ -81,6 +101,7 @@ const references: Record<string, string[]> = {
   customers: [...CUSTOMER_KEYS, "customer_id"], vendors: VENDOR_KEYS, employees: [...EMPLOYEE_KEYS, "pay_emply", "user_empid"],
   "fuel-products": PRODUCT_KEYS, lubricants: PRODUCT_KEYS, gifts: ["gifts", "gift_id", "product"],
   tanks: ["tank_no", "stock_tank", "tank_id"], nozzles: ["noz", "nozzle", "nozzle_id", "nozzel_id"],
+  bowsers: BOWSER_KEYS, "bowser-nozzles": ["bow_nozzle", "nozzle_id"],
   "swipe-machines": ["swipe_bank", "swipe_name", "attach_swipe"], "business-parties": ["bank_id", "crd_id", "partytype", "Topartytype", "payment_bank", "bank", "attach_bank"],
   roles: ["role", "user_role"], "duty-shifts": ["emp_shift", "shift"], "business-shifts": ["shift"],
   "expiry-categories": ["cat_id"], "expiry-items": ["item_id"], "loyalty-tiers": ["tier_name", "tier_id"],
@@ -90,11 +111,15 @@ export async function hasMasterReferences(database: Database, entry: Pick<Petros
   if (!keys) return false;
   const identity = entry.externalId || String(entry.number), f = jsonFields(entry.fields);
   const values = [...new Set([identity, entry.id, ...(entry.module === "tanks" ? [fieldValue(f, "tank_no")] : []), ...(["roles", "duty-shifts", "business-shifts"].includes(entry.module) ? [entry.name] : [])])].filter(Boolean);
+  if (["nozzles", "bowser-nozzles"].includes(entry.module)) {
+    const used = await database.petrosoftEntry.findFirst({ where: { workspaceId: entry.workspaceId, module: "bowser-sales", status: { not: "void" }, fields: { path: [entry.module === "nozzles" ? "receipts" : "nozzle_sales"], array_contains: [{ nozzle_id: identity }] } } });
+    if (used) return true;
+  }
   // Relationships are scoped by module to avoid confusing the numeric ID of a
   // lubricant with the same ID in the fuel catalogue.
   const scope: Record<string, string[]> = {
-    "fuel-products": ["tanks", "nozzles", "pump-settings", "daily-rates", "meter-sales", "credit-sales", "guest-sales", "handling-loss", "opening-stock", "loyalty-points", "customer-discounts", "fuel-purchases"],
-    lubricants: ["lubricant-sales", "lubricant-purchases", "lubricant-loss", "day-assignments", "other-purchases"],
+    "fuel-products": ["tanks", "nozzles", "pump-settings", "daily-rates", "meter-sales", "credit-sales", "guest-sales", "handling-loss", "opening-stock", "loyalty-points", "customer-discounts", "fuel-purchases", "bowsers", "bowser-sales", "bowser-credit-sales"],
+    lubricants: ["lubricant-sales", "lubricant-purchases", "lubricant-loss", "day-assignments", "other-purchases", "bowser-lubricant-sales"],
     gifts: ["gift-purchases", "gift-sales"], "duty-shifts": ["attendance-details"], "business-shifts": ["meter-sales", "credit-sales", "expenses", "swipes", "recoveries", "settlements"],
     roles: ["users"],
   };

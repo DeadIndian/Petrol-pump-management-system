@@ -22,13 +22,23 @@
     const permissions = context.actor?.permissions || [], parent = context.parents?.[module];
     return permissions.includes("*") || permissions.includes(module) || permissions.includes(`${module}:${operation}`) || Boolean(parent && (permissions.includes(parent) || permissions.includes(`${parent}:${operation}`)));
   };
-  R.field = (area, name) => Array.from(area.querySelectorAll("[name]")).find(element => element.name === name || element.name === `${name}[]` || element.name.replace(/\[\]$/, "") === name);
-  R.fieldValue = (area, name, fallback = "") => R.field(area, name)?.value ?? fallback;
+  R.field = (area, name) => Array.from(area.querySelectorAll("input[name],select[name],textarea[name]")).find(element => element.name === name || element.name === `${name}[]` || element.name.replace(/\[\d*\]$/, "") === name);
+  R.fieldValue = (area, name, fallback = "") => {
+    const field = R.field(area, name);
+    if (field?.type === "radio") return Array.from(area.querySelectorAll('input[type="radio"]')).find(input => input.name === field.name && input.checked)?.value ?? fallback;
+    return field?.value ?? fallback;
+  };
+  R.optionValue = (select, value) => {
+    if (select.dataset.psOptionFormat !== "party") return value ?? "";
+    const id = String(value ?? "").split("|")[0];
+    return Array.from(select.options).find(option => option.value === String(value ?? "") || option.value.split("|")[0] === id)?.value ?? value ?? "";
+  };
   R.set = (area, name, value, notify = false) => {
-    for (const field of Array.from(area.querySelectorAll("[name]")).filter(element => element.name === name || element.name === `${name}[]`)) {
-      if (field.tomselect) field.tomselect.setValue(value ?? "", !notify);
+    for (const field of Array.from(area.querySelectorAll("input[name],select[name],textarea[name]")).filter(element => element.name === name || element.name === `${name}[]` || element.name.replace(/\[\d*\]$/, "") === name)) {
+      const offered = field.tagName === "SELECT" ? R.optionValue(field, value) : value;
+      if (field.tomselect) field.tomselect.setValue(offered ?? "", !notify);
       else if (field.type === "checkbox" || field.type === "radio") field.checked = Array.isArray(value) ? value.map(String).includes(field.value) : String(value) === field.value || value === true;
-      else field.value = value ?? "";
+      else field.value = offered ?? "";
       if (notify) field.dispatchEvent(new Event("change", { bubbles: true }));
     }
   };
@@ -83,13 +93,13 @@
       if (relation === "vehicles") { const row = select.closest("[data-ps-row]") || select.form; const customer = row && R.fieldValue(row, "organiz"); if (customer) records = records.filter(record => R.value(record.fields, ["customer_id", "cust_id"]) === customer); }
       select.innerHTML = placeholders || `<option value="">Choose ${esc(relation.replace(/-/g, " "))}</option>`;
       for (const record of records) {
-        if (record.status === "inactive" && ![].concat(selected).includes(record.externalId) && !select.closest('[data-ps-operation="filter"],[data-ps-operation="report"]')) continue;
+        if (record.status === "inactive" && ![].concat(selected).some(value => String(value).split("|")[0] === record.externalId) && !select.closest('[data-ps-operation="filter"],[data-ps-operation="report"]')) continue;
         let value = select.dataset.psOptionValue ? R.value(record.fields, select.dataset.psOptionValue, record.externalId) : record.externalId;
         if (select.dataset.psOptionFormat === "party") value = [record.externalId, R.value(record.fields, ["p_type", "partyType"], "Creditor"), R.value(record.fields, "subgrp_id", "3"), R.value(record.fields, "group_id", "3")].join("|");
         const option = new Option(record.name, value);
         select.add(option);
       }
-      if (select.multiple) { for (const option of select.options) option.selected = [].concat(selected).includes(option.value); } else select.value = selected;
+      if (select.multiple) { for (const option of select.options) option.selected = [].concat(selected).map(value => R.optionValue(select, value)).includes(option.value); } else select.value = R.optionValue(select, selected);
       if (!select.value && !select.multiple) select.selectedIndex = 0;
     }
   };

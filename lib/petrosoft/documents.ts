@@ -16,7 +16,7 @@ async function balance(database: Database, actor: PetrosoftActor, type: string, 
 export async function generateDocuments(database: Database, actor: PetrosoftActor, module: string, fields: PetrosoftFields, ids: string[], save: Save) {
   if (module === "sale-invoices") {
     if (!ids.length) throw new Error("Select sale transactions to include in the invoice.");
-    const selected = await database.petrosoftEntry.findMany({ where: { id: { in: ids }, workspaceId: actor.workspaceId, module: { in: ["credit-sales", "lubricant-sales", "guest-sales"] }, status: { not: "void" } }, orderBy: [{ date: "asc" }, { number: "asc" }] });
+    const selected = await database.petrosoftEntry.findMany({ where: { id: { in: ids }, workspaceId: actor.workspaceId, module: { in: ["credit-sales", "lubricant-sales", "guest-sales", "bowser-credit-sales", "bowser-lubricant-sales"] }, status: { not: "void" } }, orderBy: [{ date: "asc" }, { number: "asc" }] });
     if (selected.length !== ids.length) throw new Error("One or more selected sales are unavailable.");
     if (selected.some(entry => fieldValue(jsonFields(entry.fields), "invoice_id"))) throw new Error("A selected sale already belongs to an invoice. Open Generated Invoices.");
     const groups = new Map<string, PetrosoftEntry[]>();

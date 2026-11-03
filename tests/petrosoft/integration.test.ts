@@ -56,7 +56,7 @@ test("dated stock and cash snapshots carry backdated changes forward and reverse
 test("purchases aggregate dealer commission once, link vendor and bank rows, and reverse all postings", async () => {
   const s = await station();
   try {
-    const purchase = ids(await s.submit("fuel-purchases", { pur_date: "2026-03-01", invo_no: "INV-1", liq_vendor: "1", Payment: "yes", payment_amnt: "500", payment_bank: "1", roundingoff: "1", rows: [{ prod_code: "1", pro_qty: "10", purrate: "100", purvat: "200", purtcs: "12", lfr: "10", dealercomm: "20", othertxs: "0", tank_no: "T1" }] }))[0];
+    const purchase = ids(await s.submit("fuel-purchases", { pur_date: "2026-03-01", invo_no: "INV-1", liq_vendor: "1", Payment: "yes", payment_amnt: "500", payment_bank: "1|Bank|3|3", roundingoff: "1", rows: [{ prod_code: "1", pro_qty: "10", purrate: "100", purvat: "200", purtcs: "12", lfr: "10", dealercomm: "20", othertxs: "0", tank_no: "T1" }] }))[0];
     assert.equal((await s.entry(purchase)).amount.toString(), "1203");
     let balance = await s.balanceMap(s.workspace.id, new Date("2026-03-01"));
     assert.equal(balance.vendor["1"].balance, "-703");
@@ -98,6 +98,127 @@ test("generated invoices freeze their source sales and cancellation makes those 
     await s.action({ module: "generated-invoices", operation: "delete", id: result.documents[0].id });
     await s.submit("credit-sales", { qnty: "2" }, sale);
     assert.equal((await s.entry(sale)).amount.toString(), "200");
+  } finally { await s.cleanup(); }
+});
+
+test("purchase invoice aliases retain their identity and reject duplicates on creation and editing", async () => {
+  const s = await station();
+  try {
+    const fields = { pur_date: "2026-05-01", lub_vendor: "1", Payment: "no", rows: [{ pur_proname1: "1", pur_proqty: "10", pur_prorate: "100", pur_disc: "0", pur_igst: "180" }] };
+    const first = ids(await s.submit("lubricant-purchases", { ...fields, invoiceno: "SOURCE-LUB-1" }))[0];
+    assert.equal(jsonFields((await s.entry(first)).fields).invo_no, "SOURCE-LUB-1");
+    await assert.rejects(s.submit("lubricant-purchases", { ...fields, invoiceno: "SOURCE-LUB-1" }), /already recorded/);
+    const second = ids(await s.submit("lubricant-purchases", { ...fields, invoiceno: "SOURCE-LUB-2" }))[0];
+    await assert.rejects(s.submit("lubricant-purchases", { invoiceno: "SOURCE-LUB-1" }, second), /already recorded/);
+    assert.equal(jsonFields((await s.entry(second)).fields).invo_no, "SOURCE-LUB-2");
+    await s.seed("lubricant-purchases", 99, "Legacy invoice", { invoiceno: "LEGACY-LUB-1" });
+    await assert.rejects(s.submit("lubricant-purchases", { ...fields, invoiceno: "LEGACY-LUB-1" }), /already recorded/);
+    assert.equal((await s.balanceMap(s.workspace.id, new Date("2026-05-01"))).product["lub:1"].quantity, "20");
+  } finally { await s.cleanup(); }
+});
+
+test("editing sale-rate dates cannot create duplicate prices for the same product and day", async () => {
+  const s = await station();
+  try {
+    const fields = { product: "1", new_rate: "100", cls_rate: "100" };
+    await s.submit("daily-rates", { ...fields, insert_date: "2026-05-01" });
+    const second = ids(await s.submit("daily-rates", { ...fields, insert_date: "2026-05-02" }))[0];
+    await assert.rejects(s.submit("daily-rates", { insert_date: "2026-05-01" }, second), /already exists/);
+    assert.equal((await s.entry(second)).date.toISOString().slice(0, 10), "2026-05-02");
+    assert.equal(await s.db.petrosoftEntry.count({ where: { workspaceId: s.workspace.id, module: "daily-rates" } }), 2);
+  } finally { await s.cleanup(); }
+});
+
+test("lubricant cash sales accept an empty customer and mixed batches still require credit customers", async () => {
+  const s = await station();
+  try {
+    const fields = { insert_date: "2026-05-01", "pro_name2[]": ["1", "1"], "pro_rate1[]": ["200", "200"], "emp_rate[]": ["200", "200"], "pro_qty1[]": ["2", "1"], "pro_amt1[]": ["400", "200"], "prodsale_emp[]": ["1", "1"], "sale_type1[]": ["Cash", "Credit"], "org_name[]": ["", "1"] };
+    await s.action({ module: "lubricant-sales", formIndex: 1, fields });
+    const balances = await s.balanceMap(s.workspace.id, new Date("2026-05-01"));
+    assert.equal(balances.cash.cash.balance, "400"); assert.equal(balances.customer["1"].balance, "200");
+    await assert.rejects(s.action({ module: "lubricant-sales", formIndex: 1, fields: { ...fields, "org_name[]": ["", ""] } }), /active customers/);
+    assert.deepEqual(await s.balanceMap(s.workspace.id, new Date("2026-05-01")), balances);
+  } finally { await s.cleanup(); }
+});
+
+test("bowser fuel and lubricant sales can be billed without duplicating account movements", async () => {
+  const s = await station();
+  try {
+    const date = "2026-05-01";
+    await s.seed("bowsers", 1, "Delivery Bowser", { b_name: "Delivery Bowser", product: "1", capacity: "1000" });
+    const fuel = ids(await s.submit("bowser-credit-sales", { insert_date: date, Bowser_Crd: "1", organiz: "1", product: "1", price: "100", qnty: "1", credsale_emp: "1" }))[0];
+    const oil = ids(await s.submit("bowser-lubricant-sales", { insert_date: date, Bowser_lub: "1", org_name: "1", pro_name2: "1", pro_qty1: "2", pro_rate1: "200", sale_type1: "Credit", prodsale_emp: "1", lubvehi_no: "KA01TEST1" }))[0];
+    const before = await s.balanceMap(s.workspace.id, new Date(date));
+    const pending = await s.readState(s.actor, "sale-invoices", { date, from: date, to: date });
+    assert.deepEqual(pending.records.map(entry => entry.id).sort(), [fuel, oil].sort());
+    const generated = await s.action({ module: "sale-invoices", operation: "generate", ids: [fuel, oil], fields: { invoice_date: date } }) as { documents: { id: string }[] };
+    assert.equal(generated.documents.length, 1); assert.equal((await s.entry(generated.documents[0].id)).amount.toString(), "500");
+    assert.deepEqual(await s.balanceMap(s.workspace.id, new Date(date)), before);
+    await assert.rejects(s.submit("bowser-credit-sales", { qnty: "2" }, fuel), /Cancel/);
+    await assert.rejects(s.submit("bowser-lubricant-sales", { pro_qty1: "3" }, oil), /Cancel/);
+    assert.equal((await s.readState(s.actor, "sale-invoices", { date, from: date, to: date })).records.length, 0);
+  } finally { await s.cleanup(); }
+});
+
+test("bowser transfers preserve station stock and cash, carry readings, and reject dependent edits", async () => {
+  const s = await station();
+  try {
+    const date = "2026-05-01", tomorrow = "2026-05-02";
+    await s.seed("employees", 2, "Driver", { emp_name: "Driver" });
+    await s.seed("bowsers", 1, "Delivery Bowser", { b_name: "Delivery Bowser", product: "1", capacity: "1000" });
+    const nozzle = await s.seed("bowser-nozzles", 1, "BN1", { nozzle_name: "BN1", bowser: "1", open_read: "0" });
+    await s.submit("fuel-purchases", { pur_date: date, liq_vendor: "1", invo_no: "BOW-PUR-1", rows: [{ prod_code: "1", tank_no: "T1", pro_qty: "1000", purrate: "50" }] });
+    const meter = ids(await s.submit("meter-sales", { insert_date: date, product: "1", tank_no: "T1", pump_id: "1", nozzle_id: "1", open_read: "0", close_read: "100", price: "100", employee: "1" }))[0];
+    const fields = { insert_date: date, emp_id: "2", bowser: "1", opening: "0", "rec_noz[]": ["1"], "rec_qty[]": ["50"], "bow_nozzle[]": ["1"], "openread[]": ["0"], "closeread[]": ["40"], "test[]": ["0"], "rate[]": ["100"] };
+    const day = ids(await s.action({ module: "bowser-sales", formIndex: 1, fields }))[0];
+    const balances = await s.balanceMap(s.workspace.id, new Date(date));
+    assert.equal(balances.cash.cash.balance, "9000");
+    assert.equal(balances.employee["1"].balance, "5000"); assert.equal(balances.employee["2"].balance, "4000");
+    assert.equal(balances.bowser["1"].quantity, "10"); assert.equal(balances.product["1"].quantity, "910");
+    assert.equal((await s.tankStock(s.workspace.id, new Date(date)))[0].fields.close_stock, "900");
+    assert.equal(jsonFields((await s.entry(day)).fields).closing, "10");
+    const settlement = await s.readState(s.actor, "settlements", { date });
+    assert.equal(settlement.summary.hand_cash, "9000"); assert.equal(settlement.summary.meter_quantity, "90");
+    const dashboard = await s.readState(s.actor, "dashboard", { date, dashboard_product: "1" });
+    assert.equal(dashboard.monthlyTrends?.[0].sale, "90");
+    await assert.rejects(s.submit("meter-sales", { close_read: "110" }, meter), /Reverse the bowser receipt/);
+    await assert.rejects(s.action({ module: "meter-sales", operation: "delete", id: meter }), /Reverse the bowser receipt/);
+    await assert.rejects(s.action({ module: "bowser-nozzles", operation: "delete", id: nozzle.id }), /used by existing transactions/);
+    await assert.rejects(s.action({ module: "bowser-sales", formIndex: 1, fields }), /already has a sale entry/);
+    await assert.rejects(s.action({ module: "bowser-sales", formIndex: 1, id: day, fields: { ...fields, "rec_qty[]": ["101"] } }), /exceeds unallocated/);
+    await assert.rejects(s.action({ module: "bowser-sales", formIndex: 1, id: day, fields: { ...fields, "closeread[]": ["60"] } }), /exceed available/);
+    assert.deepEqual(await s.balanceMap(s.workspace.id, new Date(date)), balances);
+    await s.action({ module: "bowser-sales", formIndex: 1, id: day, fields: { ...fields, "closeread[]": ["45"] } });
+    assert.equal((await s.balanceMap(s.workspace.id, new Date(date))).cash.cash.balance, "9500");
+    await s.action({ module: "bowser-sales", formIndex: 1, id: day, fields });
+    assert.deepEqual(await s.balanceMap(s.workspace.id, new Date(date)), balances);
+    const nextFields = { insert_date: tomorrow, emp_id: "2", bowser: "1", opening: "10", "rec_noz[]": [""], "rec_qty[]": [""], "bow_nozzle[]": ["1"], "openread[]": ["40"], "closeread[]": ["45"], "test[]": ["0"], "rate[]": ["100"] };
+    const next = ids(await s.action({ module: "bowser-sales", formIndex: 1, fields: nextFields }))[0];
+    const closing = await s.balanceMap(s.workspace.id, new Date(tomorrow));
+    assert.equal(closing.bowser["1"].quantity, "5"); assert.equal(closing.product["1"].quantity, "905"); assert.equal(closing.cash.cash.balance, "9500");
+    const state = await s.readState(s.actor, "bowser-sales", { date: "2026-05-03" });
+    assert.equal(state.bowsers[0].opening, "5"); assert.equal(state.bowsers[0].nozzles[0].opening, "45");
+    await assert.rejects(s.action({ module: "bowser-sales", operation: "delete", id: day }), /Reverse later bowser days/);
+    await s.action({ module: "bowser-sales", operation: "delete", id: next });
+    await s.action({ module: "bowser-sales", operation: "delete", id: day });
+    const reversed = await s.balanceMap(s.workspace.id, new Date(tomorrow));
+    assert.equal(reversed.cash.cash.balance, "10000"); assert.equal(reversed.bowser?.["1"]?.quantity || "0", "0"); assert.equal(reversed.product["1"].quantity, "900");
+    await s.action({ module: "meter-sales", operation: "delete", id: meter });
+    assert.equal((await s.tankStock(s.workspace.id, new Date(tomorrow)))[0].fields.close_stock, "1000");
+  } finally { await s.cleanup(); }
+});
+
+test("bowser lubricant cash sales accept empty vehicles and credit sales validate them per row", async () => {
+  const s = await station();
+  try {
+    await s.seed("bowsers", 1, "Delivery Bowser", { b_name: "Delivery Bowser", product: "1", capacity: "1000" });
+    const fields = { insert_date: "2026-05-01", "Bowser_lub[]": ["1"], "pro_name2[]": ["1"], "pro_rate1[]": ["200"], "emp_rate[]": ["200"], "pro_qty1[]": ["2"], "pro_amt1[]": ["400"], "prodsale_emp[]": ["1"], "sale_type1[]": ["Cash"], "org_name[]": [""], "lubvehi_no[]": [""] };
+    await s.action({ module: "bowser-lubricant-sales", formIndex: 1, fields });
+    const balance = await s.balanceMap(s.workspace.id, new Date("2026-05-01"));
+    assert.equal(balance.cash.cash.balance, "400");
+    await assert.rejects(s.action({ module: "bowser-lubricant-sales", formIndex: 1, fields: { ...fields, "sale_type1[]": ["Credit"], "org_name[]": ["1"] } }), /vehicle number/);
+    await assert.rejects(s.action({ module: "bowser-lubricant-sales", formIndex: 1, fields: { ...fields, "Bowser_lub[]": ["other-station"] } }), /belonging to this station/);
+    assert.deepEqual(await s.balanceMap(s.workspace.id, new Date("2026-05-01")), balance);
   } finally { await s.cleanup(); }
 });
 

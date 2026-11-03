@@ -6,6 +6,7 @@ const localDevOrigins = process.env.NODE_ENV === "development"
 	: [];
 
 const nextConfig = {
+	distDir: process.env.PETROSOFT_NEXT_DIST_DIR || ".next",
 	reactStrictMode: true,
 	allowedDevOrigins: ["localhost", ...localDevOrigins],
 	env: {

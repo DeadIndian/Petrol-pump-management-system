@@ -22,7 +22,7 @@ npm run petrosoft:setup -- --empty --code MY-STATION --name "My Filling Station"
 
 An empty installation supports the same workflows. Add fuel products, employees, customers, vendors, bank parties, tanks, nozzles, pump assignments, and opening balances before recording business transactions. The organization and settings pages configure the station, purchase policy, bill numbering, and printing.
 
-The database is bound to `127.0.0.1:54330`. Its Docker volume persists independently of the development server. `.env.petrosoft.local` holds `PETROSOFT_DATABASE_URL` and optional provider configuration. Keep that file private. `npm run dev:petrosoft` loads it automatically and listens on all interfaces, so a phone on the same network can open `http://<computer-IP>:3000/petrosoft`.
+The database is bound to `127.0.0.1:54330`. Its Docker volume persists independently of the development server. `.env.petrosoft.local` holds `PETROSOFT_DATABASE_URL` and optional provider configuration. Keep that file private. The Petrosoft development, build, and start commands load it automatically. `npm run dev:petrosoft` listens on all interfaces, so a phone on the same network can open `http://<computer-IP>:3000/petrosoft`.
 
 To reset an existing local administrator password, run `npm run petrosoft:setup -- --reset-password`. Supply `--code` and `--user` when the installation uses custom values. This expires that user's local sessions.
 
@@ -87,9 +87,11 @@ Collector checks are available with `npm run test:petrosoft:source-requests`; th
 ## Production startup
 
 ```bash
-npm run build
-npm run start:petrosoft
+PETROSOFT_NEXT_DIST_DIR=.petrosoft/builds/production npm run build:petrosoft
+PETROSOFT_NEXT_DIST_DIR=.petrosoft/builds/production npm run start:petrosoft
 ```
+
+Use the same `PETROSOFT_NEXT_DIST_DIR` for building and starting. Keep the selected directory in `.env.petrosoft.local` for subsequent starts. When replacing a running version, build into a new directory, verify it on another port, then switch the main server to that directory. Next owns its build directory and can replace its contents.
 
 Use a persistent PostgreSQL database and a persistent upload directory. Put your runtime configuration in `.env.petrosoft.local` for `start:petrosoft`, or start Next with equivalent environment variables supplied by your host. Put HTTPS in front of the server. To use another Chrome executable for PDF generation and browser verification, set `PETROSOFT_CHROME` to its absolute path; the default is `/usr/bin/google-chrome`.
 
@@ -136,18 +138,34 @@ npm run test:petrosoft
 npm run petrosoft:check-privacy
 npm run lint
 npm run typecheck
-npm run build
+npm run build:petrosoft
 ```
 
 The Petrosoft tests create isolated `TEST-PETROSOFT-*` stations, exercise real database transactions, and remove only those test stations. They cover sales and reversals, backdated cash and stock, linked vendor/bank purchases, concurrency and uniqueness, invoice freezing, payroll and loans, roles and station boundaries, loyalty redemptions, master child replacements, file access, atomic CSV import, mocked external services, historical FIFO consumption, Tally projections, dashboard filters, stock locations, all 91 report definitions, and HTML/CSV/XLSX/PDF exports.
 
-For browser checks, create an authenticated local Playwright storage state at a private path, then run:
+With a local Petrosoft server running against the same database, verify the operator workflows:
+
+```bash
+npm run test:petrosoft:browser
+```
+
+Set `PETROSOFT_TEST_BASE_URL` to test another port. These tests sign in through the actual screens, save a complete day, reload records, edit rates, fuel receipts, and fuel/lubricant sales, and generate an invoice with PDF output. They verify stock and customer, employee, bank, and cash balances in PostgreSQL, protect billed sales, and preserve imported receipts without tank allocations. Additional browser workflows exercise employee creation, adding expense types, GST purchases and bank payments, POS collections, mixed cash/credit lubricant rows, bowser/nozzle configuration, bowser receipts and readings, and bowser cash/credit lubricant sales. Source add-row buttons are connected, and repeated radio groups retain each row's sale type independently. Screenshots and balance evidence stay in `.petrosoft/workflow-checks`.
+
+### Bowser stock and sales
+
+Use **Add Bowser** to configure its fuel product, capacity, and initial stock. Select it and use **Nozzles** to add its meters with initial readings. The **Bunk Nozzles** receipt dialog selects local station nozzles; the **Bowser Nozzles** dialog records closing readings, testing, rates, and sale amounts.
+
+The local accounting convention treats loading as part of the station's recorded meter quantity. Save the station meter entry before its bowser receipt. A receipt can use only that nozzle's unallocated metered quantity for the day. Loading reclassifies its value out of station cash, revenue, and the station operator's responsibility; bowser dispensing records the driver's sales. The tank's original meter withdrawal remains unchanged, while remaining bowser fuel stays in company product inventory. This prevents counting the transfer as a second tank withdrawal or customer sale. For example, a 100-litre station meter including a 50-litre bowser load, followed by 40 litres sold from the bowser, leaves 10 litres in the bowser and records 90 litres of customer sales overall.
+
+Each bowser has one daily record. Opening stock and nozzle readings carry forward. Reverse later bowser days before changing an earlier one; a referenced station meter is protected until its bowser receipt is reversed. Testing reduces bowser closing stock when source feature 52 is enabled. These rules are database-tested local behavior; the source account had no configured bowser history available to establish its financial conventions.
+
+For the full screen matrix, create an authenticated local Playwright storage state at a private path, then run:
 
 ```bash
 node scripts/petrosoft/check-ui.mjs --session /absolute/path/to/private-session.json
 ```
 
-This checks every captured module at 1600×1080 and 390×844, including selected auxiliary forms and report/service dialogs. It records readiness, JavaScript errors, failed requests, broken images, and document overflow, and blocks external browser requests. Private evidence is written to `.impeccable/review`. Optional `--base`, `--modules`, and `--out` arguments select a server, module IDs, and evidence directory. The checks do not submit business forms.
+This checks every captured module at 1600×1080 and 390×844, including selected auxiliary forms and report/service dialogs. It records readiness, JavaScript errors, failed requests, broken images, and document overflow, and blocks external browser requests. Private evidence is written to `.impeccable/review`. Optional `--base`, `--modules`, and `--out` arguments select a server, module IDs, and evidence directory. This matrix checks loading and layout; the operator tests above submit business forms.
 
 Where the private original report captures are available, `npx tsx scripts/petrosoft/check-reports.ts` renders the local report matrix into `.petrosoft/report-checks` without changing the station. The original account was inspected read-only. Captured source failures in reports 23, 35, 39, 43, and 56 are replaced with working local reports.
 
@@ -155,7 +173,8 @@ This is a working replica of the 85 accessible screens and 91 captured report de
 
 ## Verification record: 3 November 2026
 
-- All 18 Petrosoft database and export tests passed. Service tests used a local HTTP mock.
+- All 26 Petrosoft database and export tests passed. Service tests used a local HTTP mock. This includes purchase invoice aliases, rate-date uniqueness, cash/credit lubricant validation, bowser transfers, stock carryover, reversals, and billing without duplicate ledger postings.
+- Three real browser workflows verified a complete business day, employee and expense-type creation, GST purchases and payment edits, sales edits, POS collections, and bowser operations. The business-day closing balances were tank stock 900 litres, customer due ₹500, employee due ₹0, bank ₹9,000, and cash ₹300. Evidence stays in `.petrosoft/workflow-checks`.
 - The privacy check passed for all 102 shipped HTML templates and fragments; captured credential fields, including nameless hidden inputs, are empty.
 - Lint, TypeScript checking, and the Next.js 16.4.3 production build passed. Production starts with `npm run start:petrosoft` without requiring the older delivery application's Supabase settings.
 - The final production smoke check passed: `/` redirects to `/petrosoft`, the authenticated dashboard iframe loads without browser errors or external requests, and `/dashboard` retains its own login redirect.

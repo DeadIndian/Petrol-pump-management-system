@@ -13,7 +13,7 @@ export async function runtime() {
 }
 
 export async function station() {
-  const api = await runtime(), referenceCode = `TEST-PETROSOFT-${randomUUID()}`;
+  const api = await runtime(), referenceCode = `TEST-PETROSOFT-${randomUUID().toUpperCase()}`;
   const workspace = await api.db.petrosoftWorkspace.create({ data: { referenceCode, name: "Petrosoft isolated verification", settings: { currency: "₹", num_fmt: "en-IN", date_ctl: "no", credit_limit: "yes", purchase_policy: { lfr_tot: "yes", delar_comm: "yes" } } } });
   const actor: PetrosoftActor = await api.db.petrosoftUser.create({ data: { workspaceId: workspace.id, username: "admin", fullName: "Verification Admin", passwordHash: api.hashPassword("test-local-password"), role: "Super Admin", permissions: ["*"] }, include: { workspace: true } });
   const seed = async (module: string, number: number, name: string, fields: PetrosoftFields = {}, date = "2020-01-01") => {
@@ -42,6 +42,7 @@ export async function station() {
     const input = { ...fields };
     for (const field of id ? [] : form?.fields || []) {
       if (!field.required || ["hidden", "file", "checkbox", "radio"].includes(field.type) || input[field.name] !== undefined || input[field.name.replace(/\[\]$/, "")] !== undefined) continue;
+      if (["daily-rates", "shift-sheet"].includes(module) && /^(new_rate|cls_rate|var_amt)\[/.test(field.name)) continue;
       if (field.relation) continue;
       input[field.name.replace(/\[\]$/, "")] = /date|_dt$/.test(field.name) ? fields.insert_date || fields.pur_date || "2026-01-01" : /vehicle|vehi/.test(field.name) ? "KA01TEST1" : /bill|indent/.test(field.name) ? "TEST-1" : "0";
     }

@@ -83,7 +83,9 @@
     if (!["daily-rates", "shift-sheet"].includes(moduleId)) return;
     const form = document.querySelector('form[data-ps-form="1"]');
     if (!form) return;
-    for (const product of state.masters["fuel-products"] || []) {
+    const products = (state.masters["fuel-products"] || []).filter(product => product.status === "active");
+    R.renderRateProducts(form, products);
+    for (const product of products) {
       const id = product.externalId, rate = state.rates[id];
       R.set(form, `oid_ratre[${id}]`, rate?.closing || "0");
       R.set(form, `new_rate[${id}]`, rate?.date === state.date ? rate.opening : rate?.closing || "0");
@@ -198,9 +200,10 @@
     const data = await R.api(`/api/petrosoft/state?${params}`);
     if (current !== generation) return;
     Object.assign(state, data);
-    R.fillRelations(); R.initWidgets();
+    R.fillRelations(); R.refreshPurchaseTanks?.(); R.initWidgets();
     rateFields(); settlementFields();
     if (moduleId === "meter-sales") await R.renderMeter();
+    if (moduleId === "bowser-sales") R.renderBowser();
     if (moduleId === "opening-stock") await R.renderStock();
     R.renderTables();
     for (const form of document.querySelectorAll('form[data-ps-operation="save"]')) R.calculateForm(form);

@@ -36,6 +36,7 @@ export const NAME_KEYS: Record<string, string[]> = {
 export const PRODUCT_KEYS = ["product", "prod_code", "prod_id", "product_id", "pro_name", "pro_name2", "lub_name", "pur_proname1", "gname", "gifts", "stock_prod", "prodc"];
 export const CUSTOMER_KEYS = ["organiz", "rec_organiz", "credit_org", "org_input", "customer_id", "cust_id", "org_id", "organization", "org_name"];
 export const EMPLOYEE_KEYS = ["credsale_emp", "rec_emp", "swipesale_emp", "employees", "emp_id", "employee_id", "employee", "emp_assign", "rec_emp1", "noz_emp", "prodsale_emp", "sale_emp", "employeeName"];
+export const BOWSER_KEYS = ["bowser", "bowser_id", "Bowser_Crd", "Bowser_lub", "Bowser_Exp", "Bowser_Swipe", "Recovery_Crd"];
 export const VENDOR_KEYS = ["liq_vendor", "lub_vendor", "vend_name", "vendor_id", "ven_comp", "paidvend_name", "vendor", "Vendor", "vend", "expvendtype_field"];
 export const BANK_KEYS = ["payment_bank", "banktype_field", "bank_id", "bank_name", "expbanktype_field", "swipe_bank", "bank", "coll_name"];
 export function referenceValue(fields: PetrosoftFields, names: string[], fallback = "") {
@@ -64,6 +65,7 @@ export function baseModule(module: string) {
 }
 
 export function rowsFromForm(module: ModuleSchema, fields: PetrosoftFields): PetrosoftFields[] {
+  if (module.id === "bowser-sales") return [fields];
   if (Array.isArray(fields.rows)) return (fields.rows as unknown[]).map(row => ({ ...fields, ...jsonFields(row), rows: undefined }));
   if (module.id === "daily-rates" || module.id === "shift-sheet") {
     const rates = Object.entries(fields).filter(([key]) => /^new_rate\[\w+\]$/.test(key));
@@ -149,8 +151,8 @@ export function normalizeRow(module: ModuleSchema, input: PetrosoftFields): Norm
   if (module.id === "bowser-sales" && fieldValue(fields, "bowser")) {
     count = positive(fieldValue(fields, ["metersale", "quantity"], "0"), "Meter sale", true);
     rate = positive(fieldValue(fields, ["price", "rate"], "0"), "Sale price", true);
-    amount = money(count.mul(rate));
-    fields.closing = quantity(decimal(fieldValue(fields, "opening", "0")).add(fieldValue(fields, "receipt", "0")).sub(count)).toString();
+    amount = money(fieldValue(fields, "total_amount", "0"));
+    fields.closing = quantity(decimal(fieldValue(fields, "opening", "0")).add(fieldValue(fields, "receipt", "0")).sub(count).sub(fieldValue(fields, "testing_loss", "0"))).toString();
   } else if (base === "meter-sales") {
     const opening = positive(fieldValue(fields, ["open_read", "opening_reading"], "0"), "Opening reading", true);
     const closing = positive(fieldValue(fields, ["close_read", "closing_reading"], "0"), "Closing reading", true);
@@ -239,7 +241,18 @@ export function ledgerFor(module: ModuleSchema, row: NormalizedRow): LedgerPosti
     }
     return result;
   }
-  if (base === "meter-sales") {
+  if (module.id === "bowser-sales") {
+    result.push(post("cash", "cash", amount), post("revenue", "fuel", 0, amount));
+    if (employee) result.push(post("employee", employee, amount));
+    for (const receipt of Array.isArray(fields.receipts) ? fields.receipts.map(jsonFields) : []) {
+      const transferred = money(fieldValue(receipt, "amount", "0"));
+      result.push(post("cash", "cash", 0, transferred), post("revenue", "fuel", transferred));
+      if (fieldValue(receipt, "employee")) result.push(post("employee", fieldValue(receipt, "employee"), 0, transferred));
+    }
+    const movement = quantity(fieldValue(fields, "opening_added", "0")).add(fieldValue(fields, "receipt", "0")).sub(row.quantity).sub(fieldValue(fields, "testing_loss", "0"));
+    result.push(post("bowser", fieldValue(fields, BOWSER_KEYS), 0, 0, movement));
+    if (product) result.push(post("product", product, 0, 0, movement));
+  } else if (base === "meter-sales") {
     result.push(post("cash", "cash", amount), post("revenue", "fuel", 0, amount));
     if (product) result.push(post("product", product, 0, 0, row.quantity.neg()));
     const tank = fieldValue(fields, ["tank_no", "tank"]);
@@ -349,6 +362,10 @@ export function validateSchema(module: ModuleSchema, index: number | undefined, 
   for (const field of schema.fields) {
     if (!field.required || ["hidden", "file", "checkbox", "radio"].includes(field.type)) continue;
     if (editing && field.type === "password") continue;
+    if (["daily-rates", "shift-sheet"].includes(module.id) && /^new_rate\[/.test(field.name)) continue;
+    // Credit customers are checked on each normalized sale; cash rows have none.
+    if (baseModule(module.id) === "lubricant-sales" && ["org_name[]", "lubvehi_no[]"].includes(field.name)) continue;
+    if (module.id === "bowser-sales" && ["rec_noz[]", "rec_qty[]"].includes(field.name)) continue;
     if (/total|tot_|cost|amount|balance|cls_rate|var_amt|inclrate|purvat|purtcs|dealercomm|othertxs|batta|disc|desc|open_bal|gst|vat|tcs|lfr|hsn|min_quantity/i.test(field.name)) continue;
     const value = fields[field.name] ?? fields[field.name.replace(/\[\]$/, "")];
     if (value === undefined || value === "" || (Array.isArray(value) && value.every(item => item === ""))) {

@@ -20,20 +20,24 @@
   };
   R.renumber = row => {
     const number = ++rowCounter, ids = new Map();
-    for (const element of row.querySelectorAll("[id]")) { const old = element.id; element.id = `${old.replace(/\d+$/, "")}_ps${number}`; ids.set(old, element.id); }
+    for (const element of row.querySelectorAll("[id]")) { const old = element.id; element.id = `${old}_ps${number}`; ids.set(old, element.id); }
     for (const element of row.querySelectorAll("[for],[list],[data-target]")) {
       for (const attribute of ["for", "list", "data-target"]) { const value = element.getAttribute(attribute); if (value && ids.has(value.replace(/^#/, ""))) element.setAttribute(attribute, (value.startsWith("#") ? "#" : "") + ids.get(value.replace(/^#/, ""))); }
     }
     return row;
   };
   R.reindex = form => {
+    if (["daily-rates", "shift-sheet"].includes(form.dataset.psModule || context.module.id)) return;
     const bases = JSON.parse(form.dataset.psIndexBases || "{}");
     const rows = R.formRows(form);
-    for (const row of rows) for (const field of row.querySelectorAll("[name]")) {
+    if (rows.length > 1) rows.forEach((row, index) => row.querySelectorAll('input[type="radio"][name$="[]"]').forEach(field => {
+      const base = field.name.slice(0, -2); bases[base] = 0; field.name = `${base}[${index}]`;
+    }));
+    for (const row of rows) for (const field of row.querySelectorAll("input[name],select[name],textarea[name]")) {
       const match = field.name.match(/^(\w+)\[(\d+)\](\[\])?$/);
       if (match && bases[match[1]] === undefined) bases[match[1]] = Number(match[2]);
     }
-    rows.forEach((row, index) => row.querySelectorAll("[name]").forEach(field => {
+    rows.forEach((row, index) => row.querySelectorAll("input[name],select[name],textarea[name]").forEach(field => {
       const match = field.name.match(/^(\w+)\[(\d+)\](\[\])?$/);
       if (match) field.name = `${match[1]}[${index + bases[match[1]]}]${match[3] || ""}`;
     }));
@@ -58,13 +62,38 @@
       if (field.type === "checkbox" || field.type === "radio") field.checked = false;
       else if (field.type !== "hidden" || !/gst|vat|source|prefix|bowser/.test(field.name)) field.value = field.tagName === "SELECT" ? "" : /cost|amount|_amt|qty|qnty|rate|disc|lfr|vat|tcs|cess|read/.test(field.name) ? "0" : "";
     }
-    current.after(clone); R.reindex(form); R.fillRelations(clone); R.initWidgets(clone); R.calculateForm(form);
+    current.after(clone); R.reindex(form); R.fillRelations(clone); R.refreshPurchaseTanks?.(clone); R.initWidgets(clone); R.calculateForm(form);
     clone.querySelector("input:not([type=hidden]),select")?.focus();
   };
   function related(row, relation) { return row.querySelector(`select[data-ps-relation="${relation}"]`); }
+  R.refreshPurchaseTanks = (area = document) => {
+    for (const product of area.querySelectorAll('select[name="prod_code[]"]')) {
+      const form = product.closest("form");
+      if ((form?.dataset.psModule || context.module.id) !== "fuel-purchases") continue;
+      const row = R.rowFor(product);
+      let select = row.querySelector('[data-ps-purchase-tank]');
+      const editing = Boolean(form.dataset.psEdit), previous = select?.value ?? row.dataset.psPurchaseTank ?? "";
+      if (!select) {
+        const holder = document.createElement("div"); holder.className = "col-md-2 col-sm-6 col-xs-12 top-space op-bill-left width150";
+        holder.innerHTML = '<div class="float-container"><select class="form-control tom" name="tank_no[]" data-ps-purchase-tank required aria-label="Receiving tank"></select><label class="float-label">Tank <font color="#FF0000">*</font></label></div>';
+        product.closest('[class*="col-md-"]').after(holder); select = holder.querySelector("select");
+      }
+      select.required = !editing || Boolean(row.dataset.psPurchaseTank);
+      const tanks = (state.masters.tanks || []).filter(tank => (tank.status === "active" || editing && R.value(tank.fields, "tank_no", tank.externalId) === previous) && R.value(tank.fields, ["product", "pro_name"]) === product.value);
+      const options = tanks.map(tank => ({ id: R.value(tank.fields, "tank_no", tank.externalId), name: tank.name }));
+      const signature = JSON.stringify({ options, editing });
+      if (select.dataset.psTankOptions !== signature) {
+        select.tomselect?.destroy();
+        select.innerHTML = `<option value="">${editing && !row.dataset.psPurchaseTank ? "No tank allocation (legacy receipt)" : "Choose Tank"}</option>` + options.map(tank => `<option value="${esc(tank.id)}">${esc(tank.name)}</option>`).join("");
+        select.dataset.psTankOptions = signature;
+      }
+      select.value = options.some(tank => tank.id === previous) ? previous : !editing && options.length === 1 ? options[0].id : "";
+    }
+  };
   R.relationChanged = field => {
     const row = R.rowFor(field); if (!row) return;
     const relation = field.dataset.psRelation, record = R.master(relation, field.value), f = record?.fields || {}, module = R.base(field.form.dataset.psModule || context.module.id);
+    if (relation === "bowsers" && (field.form.dataset.psModule || context.module.id) === "bowser-sales") { R.renderBowser?.(field.form); return; }
     if (relation === "fuel-products" || relation === "lubricants" || relation === "gifts") {
       let rate = relation === "fuel-products" ? state.rates?.[field.value]?.closing || R.value(f, "sale_rate", "0") : relation === "gifts" ? "0" : R.value(f, "sale_rate", "0");
       if (/purchases/.test(module)) rate = R.fieldValue(row, module === "fuel-purchases" ? "purrate" : "pur_prorate", "0");
@@ -72,6 +101,7 @@
       for (const [name, key] of [["gst", "gst"], ["gstrate", "gst"], ["vat_rate", "vat"], ["lfr_rate", "lfr"], ["tcsfieldid", "tcs"], ["gst_no", "gst_no"]]) R.set(row, name, R.value(f, key, "0"));
       if (relation === "gifts") R.set(row, "points", R.value(f, ["emp_no", "points"], "0"));
       R.applyCustomerDiscount(row);
+      if (module === "fuel-purchases") { R.refreshPurchaseTanks(field.form); R.initWidgets(row); }
     }
     if (relation === "customers") {
       const balance = R.balance("customer", field.value);
@@ -106,6 +136,7 @@
     const module = R.base((row.tagName === "FORM" ? row : row.closest("form"))?.dataset.psModule || context.module.id), get = name => R.number(R.fieldValue(row, name, "0")), set = (name, value, digits = 2) => R.set(row, name, Number(value).toFixed(digits));
     if (["credit-sales", "guest-sales", "lubricant-sales", "handling-loss", "lubricant-loss", "gift-purchases"].includes(module)) {
       const lub = module.startsWith("lubricant"), gift = module === "gift-purchases", qtyName = lub ? "pro_qty1" : gift ? "qty" : "qnty", rateName = lub ? "pro_rate1" : "price", amountName = lub ? "pro_amt1" : "cost", discountName = lub ? "disc_amt" : module === "guest-sales" ? "disc" : "credit_discnt";
+      if (module === "lubricant-sales" && R.field(row, qtyName)) R.field(row, qtyName).readOnly = !related(row, "lubricants")?.value;
       let qty = get(qtyName), rate = get(rateName), discount = get(discountName);
       if (changed?.name === `${amountName}[]` || changed?.name === amountName) {
         const entered = get(amountName); qty = rate > 0 ? Number((entered / rate).toFixed(2)) : 0; set(qtyName, qty);
@@ -130,18 +161,21 @@
     }
     if (module === "fuel-purchases") {
       const qty = get("pro_qty"), rate = get("purrate"), basic = qty * rate;
+      const policy = state.settings.purchase_policy || {};
+      R.toggleFields(row, ["lfr"], policy.lfr_tot === "yes"); R.toggleFields(row, ["dealercomm"], policy.delar_comm === "yes");
       if (changed && !/purvat|purtcs|dealercomm|othertxs|lfr|cess|add_vat/.test(changed.name)) { set("purcost", basic); set("purvat", basic * get("vat_rate") / 100); set("lfr", qty / 1000 * get("lfr_rate")); }
       const taxable = basic + get("purvat") + get("othertxs");
       const product = R.master("fuel-products", R.fieldValue(row, "prod_code")); const tcsRate = R.number(product?.fields?.tcs || 0);
       if (tcsRate && changed && !/purtcs/.test(changed.name)) set("purtcs", taxable * tcsRate / 100);
-      set("purtotal", taxable + get("purtcs")); set("inclrate", qty ? taxable / qty : 0);
+      set("purtotal", taxable + get("purtcs") + (policy.lfr_tot === "yes" ? get("lfr") : 0)); set("inclrate", qty ? taxable / qty : 0);
     }
     if (module === "lubricant-purchases" || module === "other-purchases") {
+      for (const name of ["pur_disc", "pur_tcs"]) if (R.fieldValue(row, name) === "") set(name, 0);
       const qty = get("pur_proqty"), rate = get("pur_prorate"), basic = qty * rate;
       if (changed?.name?.includes("pur_disc_pct")) set("pur_disc", basic * get("pur_disc_pct") / 100);
       const taxable = Math.max(0, basic - get("pur_disc")), gst = get("gstrate");
       set("pur_proamt", basic); set("pur_billamt", taxable); set("tot_val", taxable);
-      if (changed && !/pur_sgst|pur_cgst|pur_igst|pur_tcs/.test(changed.name)) { const sameState = R.fieldValue(row.form, "bunk_gst").slice(0, 2) === R.fieldValue(row.form, "vend_gst").slice(0, 2); set("pur_sgst", sameState ? taxable * gst / 200 : 0); set("pur_cgst", sameState ? taxable * gst / 200 : 0); set("pur_igst", sameState ? 0 : taxable * gst / 100); }
+      if (changed && !/pur_sgst|pur_cgst|pur_igst|pur_tcs/.test(changed.name)) { const form = row.closest("form"), sameState = R.fieldValue(form, "bunk_gst").slice(0, 2) === R.fieldValue(form, "vend_gst").slice(0, 2); set("pur_sgst", sameState ? taxable * gst / 200 : 0); set("pur_cgst", sameState ? taxable * gst / 200 : 0); set("pur_igst", sameState ? 0 : taxable * gst / 100); }
       set("pur_prototamt", taxable + get("pur_sgst") + get("pur_cgst") + get("pur_igst") + get("pur_tcs"));
     }
     if (module === "recoveries") set("balance", get("pend_amt") - get("paid_amt") - get("rec_disc_amt"));
@@ -163,8 +197,13 @@
   }
   R.calculateForm = (form, changed) => {
     if (!form || form.dataset.psOperation === "report" || form.dataset.psOperation === "filter" || form.dataset.psOperation === "profile") return;
+    if ((form.dataset.psModule || context.module.id) === "bowser-sales") { R.calculateBowser?.(form); return; }
     const module = R.base(form.dataset.psModule || context.module.id), rows = R.formRows(form), sum = name => rows.reduce((total, row) => total + R.number(R.fieldValue(row, name, "0")), 0), set = (name, value) => R.set(form, name, R.money(value));
     for (const row of rows) calculateRow(row, changed && row.contains(changed) ? changed : undefined);
+    if (["daily-rates", "shift-sheet"].includes(module)) for (const input of form.querySelectorAll('[name^="new_rate["]')) {
+      const id = input.name.match(/\[([^\]]+)\]/)?.[1];
+      if (id) R.set(form, `var_amt[${id}]`, (R.number(R.fieldValue(form, `cls_rate[${id}]`)) - R.number(input.value)).toFixed(2));
+    }
     if (module === "credit-sales" || module === "guest-sales") { set("tot_cost", sum("cost")); set("tot_quant", sum("qnty")); set("totamt_batta", sum("batta_amt")); set("tot_discnt", sum("credit_discnt")); }
     if (module === "lubricant-sales") set("sale_total", sum("pro_amt1"));
     if (module === "swipes") set("tot_swiamt", sum("swipe_amt"));
@@ -176,8 +215,15 @@
     }
     if (module === "recoveries") set("tot_recoveramnt", sum("paid_amt"));
     if (module === "employee-recoveries") set("tot_recoveramnt", sum("recamnt"));
-    if (module === "fuel-purchases") { set("tot_cost", sum("purcost")); set("tot_vat", sum("purvat")); set("tot_tcs", sum("purtcs")); set("tot_othertxs", sum("othertxs")); set("total_amt", sum("purtotal") + R.number(R.fieldValue(form, "roundingoff", "0")) - sum("dealercomm")); }
-    if (module === "lubricant-purchases" || module === "other-purchases") { set("puritems_amt", sum("pur_proamt")); set("discnt", sum("pur_disc")); set("igst", sum("pur_igst")); set("cgst", sum("pur_cgst")); set("sgst", sum("pur_sgst")); set("tcstxs", sum("pur_tcs")); set("invoice_tot", sum("pur_prototamt") - R.number(R.fieldValue(form, "cashdisc", "0")) + R.number(R.fieldValue(form, "roundoff", "0"))); }
+    if (module === "fuel-purchases") { set("tot_cost", sum("purcost")); set("tot_vat", sum("purvat")); set("tot_tcs", sum("purtcs")); set("tot_othertxs", sum("othertxs")); set("total_amt", sum("purtotal") + R.number(R.fieldValue(form, "roundingoff", "0")) - (state.settings.purchase_policy?.delar_comm === "yes" ? sum("dealercomm") : 0)); }
+    if (module === "lubricant-purchases" || module === "other-purchases") {
+      for (const name of ["cashdisc", "roundoff"]) if (R.fieldValue(form, name) === "") set(name, 0);
+      set("puritems_amt", sum("pur_proamt")); set("discnt", sum("pur_disc")); set("igst", sum("pur_igst")); set("cgst", sum("pur_cgst")); set("sgst", sum("pur_sgst")); set("tcstxs", sum("pur_tcs")); set("invoice_tot", sum("pur_prototamt") - R.number(R.fieldValue(form, "cashdisc", "0")) + R.number(R.fieldValue(form, "roundoff", "0")));
+    }
+    if (["fuel-purchases", "lubricant-purchases", "other-purchases"].includes(module)) {
+      const payment = R.field(form, "Payment"), panel = form.querySelector('[id="paymentdiv"]');
+      if (payment && panel) panel.style.display = payment.checked ? "" : "none";
+    }
     if (module === "gift-purchases") set("tot_quant", sum("qty"));
     if (module === "meter-sales") {
       let total = 0; for (const input of form.querySelectorAll('[name^="sale_amt_"]')) total += R.number(input.value); set("totlqsale_amt", total);
@@ -193,6 +239,34 @@
     const employee = R.master("employees", id); return R.number(employee?.fields?.balance || 0);
   };
   R.sourceForm = index => R.cleanClone(sourceForms.get(String(index))?.cloneNode(true));
+  const rateLayouts = new WeakMap();
+  R.renderRateProducts = (form, products) => {
+    let layout = rateLayouts.get(form);
+    if (!layout) {
+      const blocks = [...new Set(Array.from(form.querySelectorAll('[name^="new_rate["]')).map(input => {
+        let block = input.parentElement;
+        while (block && !block.querySelector('[name^="cls_rate["]')) block = block.parentElement;
+        return block?.parentElement;
+      }).filter(Boolean))];
+      if (!blocks.length) return;
+      const anchor = document.createComment("station rate products"); blocks[0].before(anchor);
+      layout = { template: blocks[0].cloneNode(true), anchor, blocks, signature: null };
+      rateLayouts.set(form, layout);
+    }
+    const signature = products.map(product => `${product.externalId}:${product.name}`).join("|");
+    if (layout.signature === signature) return;
+    layout.blocks.forEach(block => block.remove());
+    let previous = layout.anchor;
+    layout.blocks = products.map(product => {
+      const block = R.renumber(layout.template.cloneNode(true));
+      for (const input of block.querySelectorAll("input[name]")) {
+        input.name = input.name.replace(/\[[^\]]+\]$/, `[${product.externalId}]`); input.dataset.psField = input.name;
+      }
+      const label = block.querySelector('[name="product"],b[id="product"]'); if (label) label.textContent = product.name;
+      previous.after(block); previous = block; return block;
+    });
+    layout.signature = signature;
+  };
   R.editRecord = async entry => {
     if (R.specialEdit && await R.specialEdit(entry)) return;
     const schema = context.module.forms.find(form => form.operation === "save" && form.fields.some(field => field.type !== "hidden" && field.type !== "file")) || context.module.forms.find(form => form.operation === "save");
@@ -211,8 +285,12 @@
       if (value === undefined) value = alias[base];
       if (value !== undefined) {
         if (field.type === "checkbox" || field.type === "radio") field.checked = Array.isArray(value) ? value.map(String).includes(field.value) : String(value) === field.value;
-        else field.value = Array.isArray(value) ? value[0] || "" : value;
+        else { const offered = Array.isArray(value) ? value[0] || "" : value; field.value = field.tagName === "SELECT" ? R.optionValue(field, offered) : offered; }
       }
+    }
+    if (entry.module === "fuel-purchases") {
+      editableRows.forEach((row, index) => { row.dataset.psPurchaseTank = R.value(items[index], ["tank_no", "tank"]); });
+      R.refreshPurchaseTanks(form);
     }
     R.hydrateChildren?.(form, entry);
     const body = R.dialog(`Edit ${context.module.title}`, form); R.initWidgets(body); R.calculateForm(form); await R.initLoan?.(form, entry);
@@ -230,6 +308,25 @@
       fields.attachments = [...(fields.attachments || []), ...uploaded];
     }
   }
+  R.showFormTab = (form, target) => {
+    const pane = form.querySelector(target); if (!pane) return;
+    const link = form.querySelector(`[data-target="${target}"],a[href="${target}"],[data-tab="${target.replace(/^#tab_/, "")}"]`);
+    pane.parentElement.querySelectorAll(":scope > .tab-pane").forEach(item => {
+      item.classList.toggle("active", item === pane); item.classList.toggle("in", item === pane);
+    });
+    form.querySelectorAll(".nav-tabs > li").forEach(item => item.classList.toggle("active", item.contains(link)));
+  };
+  R.validateBusinessForm = (form, area = form) => {
+    for (const input of area.querySelectorAll("input,select,textarea")) {
+      if (input.form !== form || input.disabled || input.closest(".modal") && !form.closest(".modal")) continue;
+      if (input.willValidate && !input.checkValidity()) {
+        const pane = input.closest(".tab-pane"); if (pane && !pane.classList.contains("active")) R.showFormTab(form, `#${pane.id}`);
+        if (input.tomselect) input.tomselect.focus(); else input.focus();
+        input.reportValidity(); R.notice(input.validationMessage || "Complete the required fields before saving.", "error"); return false;
+      }
+    }
+    return true;
+  };
   R.submitForm = async form => {
     if (form.dataset.psBusy) return;
     R.reindex(form);
@@ -272,8 +369,12 @@
     }
   });
   document.addEventListener("click", event => {
+    const control = event.target.closest('a[data-toggle="tab"]'), form = control?.closest("form[data-ps-form]"), target = control?.getAttribute("href");
+    if (form && /^#[\w-]+$/.test(target || "")) { event.preventDefault(); event.stopPropagation(); R.showFormTab(form, target); }
+  }, true);
+  document.addEventListener("click", event => {
     const control = event.target.closest("button,a,input[type=button]"); if (!control || !control.closest("form[data-ps-form]")) return;
-    if (/add_field_button|add_fields|add-row|add_row_button/.test(control.className) || control.dataset.psAddRow) { event.preventDefault(); R.addRow(control); }
+    if (/add_field_button|add_fields|add-row|add_row_button/.test(control.className) || control.matches(".nozz_add_field,.pro_field,.recovery_add,.cashrecovery_add,.pro_add_field,.comp_add_field,.pro_grid_field") || control.dataset.psAddRow) { event.preventDefault(); R.addRow(control); }
     if (/remove_field|remove-row/.test(control.className) || control.dataset.psRemoveRow) {
       event.preventDefault(); const row = control.closest("[data-ps-row]"), form = control.closest("form"); if (row && R.formRows(form).length > 1) row.remove(); else if (row) for (const field of row.querySelectorAll("input:not([type=hidden]),select,textarea")) { if (field.tomselect) field.tomselect.clear(); else field.value = ""; } R.calculateForm(form);
     }

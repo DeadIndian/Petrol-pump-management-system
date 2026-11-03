@@ -26,14 +26,14 @@
   };
   R.populate = (form, entry) => {
     const f = entry?.fields || entry || {};
-    for (const input of form.querySelectorAll("[name]")) {
+    for (const input of form.querySelectorAll("input[name],select[name],textarea[name]")) {
       const name = input.name.replace(/\[\]$/, "").replace(/\[\d+\]$/, "");
       const aliases = { join_dt: entry?.date, date: entry?.date, insert_date: entry?.date, pur_date: entry?.date, trans_dt: entry?.date, org_name: entry?.name, emp_name: entry?.name, swipe_name: entry?.name, tank_name: entry?.name, role_name: entry?.name };
       const value = f[input.name] ?? f[name] ?? aliases[name];
       if (input.type === "password" || input.type === "file") { input.required = false; continue; }
       if (value === undefined) continue;
       if (input.type === "checkbox" || input.type === "radio") input.checked = Array.isArray(value) ? value.map(String).includes(input.value) : String(value) === input.value;
-      else input.value = Array.isArray(value) ? value[0] ?? "" : value;
+      else { const offered = Array.isArray(value) ? value[0] ?? "" : value; input.value = input.tagName === "SELECT" ? R.optionValue(input, offered) : offered; }
     }
   };
   R.childTable = (table, entries, headings) => {
@@ -79,6 +79,51 @@
     }
     if (!readings.length) holder.innerHTML = '<p class="m_10">Add tanks, nozzles, and pump settings before entering a meter sale.</p>';
     R.fillRelations(holder); R.initWidgets(holder); R.calculateForm(form);
+    const confirm = form.querySelector("#sle_btnSubmit"); if (confirm) confirm.style.display = readings.length ? "" : "none";
+  };
+  R.bowserReceiptRow = (form, item = {}) => {
+    const bowser = (state.bowsers || []).find(row => row.id === R.fieldValue(form, "bowser"));
+    const row = document.createElement("div"); row.className = "form-inline mt-15"; row.dataset.psBowserReceipt = "1";
+    const nozzles = (state.nozzles || []).filter(nozzle => nozzle.product === bowser?.product);
+    row.innerHTML = `<div class="form-group"><label>Nozzle</label><select class="form-control tom" name="rec_noz[]" aria-label="Receiving nozzle"><option value="">Choose Nozzle</option>${nozzles.map(nozzle => `<option value="${esc(nozzle.id)}">${esc(nozzle.pump)}-${esc(nozzle.name)}</option>`).join("")}</select></div> <div class="form-group"><label>Qty</label><input class="form-control input-sm" name="rec_qty[]" aria-label="Receipt quantity" type="number" min="0" step="0.0001" value="${esc(item.quantity || "")}"></div> <button type="button" class="btn btn-default" data-ps-bowser-remove-receipt aria-label="Remove receipt">×</button>`;
+    row.querySelector("select").value = item.nozzle_id || "";
+    form.querySelector("#myModal .modal-body").append(row); R.initWidgets(row); return row;
+  };
+  R.renderBowser = (form = document.querySelector('form[data-ps-form="1"]'), entry) => {
+    if (!form) return;
+    const selected = R.fieldValue(form, "bowser"), bowser = (state.bowsers || []).find(row => row.id === selected), f = entry?.fields || {};
+    const holder = form.querySelector("#bow_sale"), receipts = form.querySelector("#myModal .modal-body");
+    if (!holder || !receipts) return;
+    const setup = form.querySelector('[name="bowser"]')?.closest('[class*="col-md-"]');
+    if (setup && !setup.querySelector("[data-ps-add-bowser]")) {
+      const tools = document.createElement("div"); tools.className = "mt-5";
+      tools.innerHTML = '<button type="button" class="label bg-orange" data-ps-add-bowser>Add Bowser</button> <button type="button" class="label bg-orange" data-ps-bowser-nozzles>Nozzles</button>';
+      setup.append(tools);
+    }
+    receipts.querySelectorAll("select").forEach(select => select.tomselect?.destroy()); receipts.innerHTML = "";
+    const grouped = new Map();
+    for (const receipt of f.receipts || []) { const old = grouped.get(receipt.nozzle_id) || { nozzle_id: receipt.nozzle_id, quantity: 0 }; old.quantity += R.number(receipt.quantity); grouped.set(receipt.nozzle_id, old); }
+    for (const receipt of grouped.size ? grouped.values() : [{}]) R.bowserReceiptRow(form, receipt);
+    const add = document.createElement("button"); add.type = "button"; add.className = "btn btn-default mt-15"; add.dataset.psBowserAddReceipt = "1"; add.textContent = "Add Nozzle"; receipts.append(add);
+    R.set(form, "opening", f.opening ?? bowser?.opening ?? "0");
+    const opening = R.field(form, "opening"); if (opening) opening.readOnly = Boolean(bowser?.carried);
+    const closing = R.field(form, "closing"); if (closing) closing.readOnly = true;
+    holder.innerHTML = bowser?.nozzles?.length ? `<div class="table-responsive"><table class="table table-bordered"><thead><tr><th>Nozzle</th><th>Opening</th><th>Closing</th><th>Testing</th><th>Rate</th><th>Sale Qty</th><th>Amount</th></tr></thead><tbody>${bowser.nozzles.map(nozzle => {
+      const saved = f.nozzle_sales?.find(row => row.nozzle_id === nozzle.id) || {}, rate = saved.rate || state.rates?.[bowser.product]?.closing || R.value(R.master("fuel-products", bowser.product)?.fields, "sale_rate", "0");
+      return `<tr data-ps-bowser-meter="${esc(nozzle.id)}"><td>${esc(nozzle.name)}<input type="hidden" name="bow_nozzle[]" value="${esc(nozzle.id)}"></td><td><input class="form-control input-sm" name="openread[]" aria-label="Opening meter reading" readonly value="${esc(saved.open_read ?? nozzle.opening)}"></td><td><input class="form-control input-sm" name="closeread[]" aria-label="Closing meter reading" type="number" min="0" step="0.0001" value="${esc(saved.close_read || "")}"></td><td><input class="form-control input-sm" name="test[]" aria-label="Test quantity" type="number" min="0" step="0.0001" value="${esc(saved.test_qty || "0")}"></td><td><input class="form-control input-sm" name="rate[]" aria-label="Sale rate" type="number" min="0.0001" step="0.0001" value="${esc(rate)}"></td><td><input class="form-control input-sm" name="sale_qty[]" aria-label="Sale quantity" readonly></td><td><input class="form-control input-sm" name="sale_amt[]" aria-label="Sale amount" readonly></td></tr>`;
+    }).join("")}</tbody></table></div>` : '<p>Select a bowser and configure its nozzles to enter meter readings.</p>';
+    R.initWidgets(holder); R.calculateBowser(form);
+  };
+  R.calculateBowser = form => {
+    let receipt = 0, sold = 0, testing = 0;
+    for (const input of form.querySelectorAll('[name="rec_qty[]"]')) receipt += R.number(input.value);
+    for (const row of form.querySelectorAll("[data-ps-bowser-meter]")) {
+      const open = R.number(R.fieldValue(row, "openread")), close = R.fieldValue(row, "closeread"), test = R.number(R.fieldValue(row, "test")), rate = R.number(R.fieldValue(row, "rate"));
+      const count = close ? R.number(close) - open - test : 0;
+      R.set(row, "sale_qty", close ? count.toFixed(4) : ""); R.set(row, "sale_amt", close ? (count * rate).toFixed(2) : ""); sold += count; if (close) testing += test;
+    }
+    const loss = (state.settings.feature_ids || []).map(String).includes("52") ? testing : 0;
+    R.set(form, "receipt", receipt.toFixed(4)); R.set(form, "metersale", sold.toFixed(4)); R.set(form, "closing", (R.number(R.fieldValue(form, "opening")) + receipt - sold - loss).toFixed(4));
   };
   R.renderStock = async (form = document.querySelector('form[data-ps-form="1"]'), offered) => {
     if (!form) return;
@@ -234,6 +279,21 @@
   };
   R.specialEdit = async entry => {
     if (entry.fields?.parent_id) { const result = await R.api(`/api/petrosoft/state?id=${encodeURIComponent(entry.fields.parent_id)}`); await R.editRecord(result.entry); return true; }
+    if (entry.module === "daily-rates") {
+      const schema = context.module.forms.find(form => form.operation === "save"), form = schema && R.sourceForm(schema.index);
+      if (!form) throw new Error("Open Daily Sale Rate to edit this rate.");
+      const product = R.value(entry.fields, "product"), master = R.master("fuel-products", product);
+      form.dataset.psModule = "daily-rates"; form.dataset.psEdit = entry.id; form.dataset.psRateProduct = product;
+      R.renderRateProducts(form, [{ externalId: product, name: master?.name || R.value(entry.fields, "product_name", product) }]);
+      R.set(form, "insert_date", entry.date); R.set(form, `new_rate[${product}]`, R.value(entry.fields, "new_rate", entry.rate));
+      R.set(form, `cls_rate[${product}]`, R.value(entry.fields, "cls_rate", entry.rate)); R.set(form, `oid_ratre[${product}]`, R.value(entry.fields, "old_rate", entry.rate));
+      R.dialog(`Edit ${master?.name || "Sale"} Rate`, form); R.initWidgets(form); R.calculateForm(form); return true;
+    }
+    if (entry.module === "bowser-sales") {
+      const form = R.sourceForm(1); form.dataset.psModule = entry.module; form.dataset.psEdit = entry.id;
+      R.fillRelations(form); R.populate(form, entry); R.renderBowser(form, entry);
+      R.dialog("Edit Bowser Sale", form); R.initWidgets(form); return true;
+    }
     if (entry.module === "meter-sales") { await R.meterDialog(R.value(entry.fields, "tank_no"), entry); return true; }
     if (entry.module === "opening-stock") {
       const form = R.localForm(document.createElement("form"), "opening-stock", entry); form.innerHTML = `<label>End Date/Time</label><input type="date" name="insert_date" class="form-control" required value="${esc(entry.date)}"><div id="tan"></div><div class="text-center"><button class="btn btn-success" type="submit">Save</button></div>`;
@@ -290,7 +350,8 @@
       else if (module === "expiry-renewals") fields = `<input name="item_id" type="hidden" value="${esc(R.value(parent.fields, "item_id", parent.externalId))}"><input name="cat_id" type="hidden" value="${esc(R.value(parent.fields, "cat_id"))}">` + input("item_number", "Unique Number", R.value(parent.fields, "item_number", parent.name)) + input("exp_date", "Expiry Date", state.date, "date") + input("alert_days", "Days Before Alert", R.value(parent.fields, "alert_days", "30")) + input("descp", "Note", "");
       else if (module === "assignment-returns") fields = `<input name="assignment_id" type="hidden" value="${esc(parent.id)}"><input name="date" type="hidden" value="${esc(state.date)}">` + input("sold_qty", "Sold", R.value(parent.fields, "sold_qty", "0")) + input("returned_qty", "Returned", R.value(parent.fields, "returned_qty", "0"));
       else if (module === "parameters") fields = input("cCode", "CODE", "") + input("cValue", "VALUE", "") + input("cDesc", "DESCRIPTION", "");
-      else if (module === "bowsers") fields = input("b_name", "Bowser Name", "") + input("b_vehicle", "Vehicle No", "") + input("capacity", "Capacity", "0") + '<div class="col-md-4"><label>Product</label><select name="product" data-ps-relation="fuel-products" class="form-control"></select></div>';
+      else if (module === "bowsers") fields = input("b_name", "Bowser Name", "") + input("b_vehicle", "Vehicle No", "") + input("capacity", "Capacity", "0") + input("opening_stock", "Opening Stock", "0") + '<div class="col-md-4"><label>Product</label><select name="product" data-ps-relation="fuel-products" class="form-control" required></select></div>';
+      else if (module === "bowser-nozzles") fields = `<input name="bowser" type="hidden" value="${esc(parent.externalId)}">` + input("nozzle_name", "Nozzle Name", "") + input("open_read", "Opening Reading", "0");
       else { if (parent) R.detail(parent); return; }
       const form = R.localForm(document.createElement("form"), module); form.innerHTML = `<div class="row">${fields}</div><div class="text-center mt-15"><button type="submit" class="btn btn-success">Save</button></div>`;
       R.dialog(parent ? `${parent.name} — ${title}` : title, form); R.fillRelations(form); R.initWidgets(form);
@@ -311,6 +372,10 @@
       R.notice(result.message); if (form.dataset.psAux || form.dataset.psEdit) R.closeDialog(); await R.refresh();
       if (result.documents?.[0]) await R.openDocument({ id: result.documents[0].id }); return result;
     };
+    if (form.dataset.psRateProduct) {
+      const product = form.dataset.psRateProduct;
+      await send({ insert_date: R.fieldValue(form, "insert_date"), rows: [{ product, new_rate: R.fieldValue(form, `new_rate[${product}]`), cls_rate: R.fieldValue(form, `cls_rate[${product}]`), old_rate: R.fieldValue(form, `oid_ratre[${product}]`) }] }); return true;
+    }
     if (form.dataset.psAttendance) {
       const rows = Array.from(form.querySelectorAll("[data-ps-attendance]")).map(row => ({ employee: row.dataset.psAttendance, ...readRow(row) }));
       await send({ insert_date: R.fieldValue(form, "insert_date"), shift: R.value(context.query, "shift", "S-1"), rows }); return true;
@@ -467,12 +532,36 @@
     const control = event.target.closest("button,a,input[type=button],input[type=submit]"); if (!control) return;
     const handler = control.dataset.psOnclick || "", id = control.id;
     try {
+      const tabTarget = control.dataset.target || (/^\d+$/.test(control.dataset.tab || "") ? `#tab_${control.dataset.tab}` : "");
+      if (handler.includes("validateForm(") && /^#tab_\w+$/.test(tabTarget)) {
+        event.preventDefault(); const form = control.closest("form[data-ps-form]");
+        if (form && R.validateBusinessForm(form, form.querySelector(".tab-pane.active") || form)) R.showFormTab(form, tabTarget);
+        return;
+      }
+      if (handler.includes("add_exp_type(")) { event.preventDefault(); await R.shiftEntryDialog("expense-types"); return; }
+      if (control.hasAttribute("data-ps-bowser-add-receipt")) { event.preventDefault(); R.bowserReceiptRow(control.closest("form")); return; }
+      if (control.hasAttribute("data-ps-bowser-remove-receipt")) { event.preventDefault(); const form = control.closest("form"); control.closest("[data-ps-bowser-receipt]").remove(); R.calculateBowser(form); return; }
+      if (control.hasAttribute("data-ps-bowser-nozzles")) { event.preventDefault(); const bowser = R.master("bowsers", R.fieldValue(control.closest("form"), "bowser")); if (!bowser) throw new Error("Choose a bowser first."); await R.auxDialog("bowser-nozzles", bowser); return; }
+      if (context.module.id === "bowser-sales" && /showUploadmodel\([12]\)/.test(handler)) {
+        event.preventDefault(); const modal = control.closest("form").querySelector(handler.includes("(1)") ? "#myModal" : "#myModal2"); if (modal && R.$?.fn.modal) R.$(modal).modal("show"); return;
+      }
+      if (id === "finlBtn" && context.module.id === "bowser-sales" || ["sle_btnSubmit", "btn_credit_details", "btn_recovery_details", "btn_expens_details", "btn_empcollct_details", "btn_swipe_details", "btn_lubs_details"].includes(id)) {
+        event.preventDefault(); const form = control.closest('form[data-ps-operation="save"]');
+        if (!form || form.dataset.psBusy) return;
+        R.calculateForm(form);
+        if (R.validateBusinessForm(form)) {
+          if (form.dataset.psEdit) await R.submitForm(form);
+          else R.confirm("Save these entries?", () => R.submitForm(form));
+        }
+        return;
+      }
       if (id === "bulk_delete" || handler.includes("delete_all")) {
         event.preventDefault(); const ids = Array.from(document.querySelectorAll("[data-ps-select]:checked")).map(input => input.dataset.psSelect); if (!ids.length) throw new Error("Select entries to delete.");
         R.confirm(`Delete ${ids.length} selected entries?`, async () => { const result = await R.api("/api/petrosoft/action", { module: context.module.id, operation: "delete", ids }); R.notice(result.message); await R.refresh(); }); return;
       }
-      if (id === "generate_bill") {
+      if (id === "generate_bill" || handler.includes("add_to_bill(")) {
         event.preventDefault(); const ids = Array.from(document.querySelectorAll("[data-ps-select]:checked")).map(input => input.dataset.psSelect);
+        if (!ids.length) throw new Error("Select sale entries to add to billing.");
         const result = await R.api("/api/petrosoft/action", { module: "sale-invoices", operation: "generate", ids, fields: { invoice_date: state.date } }); R.notice(result.message); await R.refresh(); if (result.documents?.[0]) await R.openDocument({ id: result.documents[0].id }); return;
       }
       if (id === "showModal" && context.module.id === "settlements") { event.preventDefault(); const form = control.closest("form"); R.calculateSettlement(form); R.confirm(`Closing cash: ${R.format(R.fieldValue(form, "closecash"))}. Save this day settlement?`, () => R.submitForm(form)); return; }
@@ -492,7 +581,7 @@
       if (handler.includes("resetModal")) { control.closest("form")?.reset(); return; }
       if (handler.includes("clearFile")) { event.preventDefault(); const modal = control.closest(".modal"), file = modal?.querySelector('input[type="file"]'); if (file) file.value = ""; return; }
       if (control.dataset.psPayrollAttendance) { event.preventDefault(); await R.attendanceMonth(control.closest("form")?.querySelector('[name="month"]')?.value); return; }
-      if (control.dataset.psAddBowser) { event.preventDefault(); await R.auxDialog("bowsers"); }
+      if (control.hasAttribute("data-ps-add-bowser")) { event.preventDefault(); await R.auxDialog("bowsers"); }
     } catch (error) { R.notice(error.message, "error"); }
   });
 })();

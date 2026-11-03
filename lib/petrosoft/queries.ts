@@ -6,6 +6,7 @@ import { baseModule, CUSTOMER_KEYS, EMPLOYEE_KEYS, money, PRODUCT_KEYS, quantity
 import { PetrosoftError } from "./actions";
 import { cashAt } from "./cash";
 import { hasMasterReferences } from "./masters";
+import { bowserReadings } from "./bowser";
 
 export interface QueryFilters extends PetrosoftFields { from?: string; to?: string; date?: string; search?: string; page?: number; limit?: number }
 export type PublicEntry = Omit<ReturnType<typeof serializeEntry>, "fields"> & { fields: PetrosoftFields; deletionProtected?: boolean };
@@ -73,6 +74,8 @@ export function matchesFilters(entry: PublicEntry, filters: PetrosoftFields) {
   if (machine && machine !== "all" && fieldValue(f, ["swipe_bank", "swipe_name"]) !== machine) return false;
   const shift = selected(["shift", "selct_shift"]);
   if (shift && shift !== "all" && fieldValue(f, "shift") !== shift) return false;
+  const bowser = selected(["bowser", "bowser_id"]);
+  if (bowser && bowser !== "all" && bowser !== "0" && fieldValue(f, "bowser") !== bowser) return false;
   const vehicle = selected(["vehicle", "vehi_no", "vehicle_no"]);
   if (vehicle && vehicle !== "all" && fieldValue(f, ["vehi_no", "vehicle_no", "lubvehi_no"]) !== vehicle) return false;
   const flow = selected(["flow", "seachflow"]);
@@ -150,7 +153,7 @@ export function dailySummary(records: PublicEntry[]) {
   const add = (row: Record<string, string>, key: string, value: unknown) => { row[key] = money(row[key] || 0).add(money(value || 0)).toString(); };
   for (const entry of records) {
     const f = entry.fields as PetrosoftFields, moduleSchema = baseModule(entry.module), row = groups[entry.date] ||= { date: entry.date };
-    if (moduleSchema === "meter-sales") { add(row, "meter_sale", entry.amount); add(row, "meter_quantity", entry.quantity); add(row, "testing", fieldValue(f, "test_qty", "0")); }
+    if (moduleSchema === "meter-sales") { add(row, "meter_sale", money(entry.amount).sub(entry.module === "bowser-sales" ? fieldValue(f, "receipt_amount", "0") : 0)); add(row, "meter_quantity", quantity(entry.quantity).sub(entry.module === "bowser-sales" ? fieldValue(f, "receipt", "0") : 0)); add(row, "testing", fieldValue(f, "test_qty", "0")); }
     if (moduleSchema === "lubricant-sales" && !/credit/i.test(fieldValue(f, ["sale_type1", "sale_type"]))) add(row, "lubricant_sale", entry.amount);
     if (moduleSchema === "recoveries") {
       if (/cash/i.test(fieldValue(f, "re_type", "Cash"))) add(row, "recovery", entry.amount); else add(row, "bank_recovery", entry.amount);
@@ -234,13 +237,14 @@ export async function readState(actor: PetrosoftActor, moduleId: string, filters
     const virtual = await virtualRecords(actor.workspaceId, moduleId, filters, masters, balances);
     records = virtual || await transactionRecords(actor.workspaceId, [sources[moduleId] || moduleId], filters);
   }
-  if (moduleId === "sale-invoices") records = (await transactionRecords(actor.workspaceId, ["credit-sales", "lubricant-sales", "guest-sales"], filters)).filter(entry => !fieldValue(entry.fields, "invoice_id"));
+  if (moduleId === "sale-invoices") records = (await transactionRecords(actor.workspaceId, ["credit-sales", "lubricant-sales", "guest-sales", "bowser-credit-sales", "bowser-lubricant-sales"], filters)).filter(entry => !fieldValue(entry.fields, "invoice_id"));
   if (moduleId === "attendance") {
     const details = await transactionRecords(actor.workspaceId, ["attendance-details"], filters);
     records = records.map(record => { const list = details.filter(detail => detail.date === record.date && (fieldValue(detail.fields as PetrosoftFields, "attend_id") === record.externalId || !fieldValue(detail.fields as PetrosoftFields, "attend_id"))); return { ...record, fields: { ...record.fields, presents: list.filter(item => fieldValue(item.fields as PetrosoftFields, "attend_type").startsWith("P")).length, absents: list.filter(item => fieldValue(item.fields as PetrosoftFields, "attend_type") === "A").length, details: list } }; });
   }
   const [stock, nozzles] = await Promise.all([tankStock(actor.workspaceId, selectedDate, masters), nozzleReadings(actor.workspaceId, selectedDate, masters, rates)]);
-  const recent = ["dashboard", "settlements", "employee-recoveries", "shift-sheet"].includes(moduleId) ? await transactionRecords(actor.workspaceId, ["meter-sales", "credit-sales", "lubricant-sales", "recoveries", "swipes", "expenses", "employee-recoveries", "settlements",'fuel-purchases','lubricant-purchases'], { from: selectedDate.toISOString().slice(0, 10), to: selectedDate.toISOString().slice(0, 10) }) : [];
+  const recent = ["dashboard", "settlements", "employee-recoveries", "shift-sheet"].includes(moduleId) ? await transactionRecords(actor.workspaceId, ["meter-sales", "credit-sales", "lubricant-sales", "recoveries", "swipes", "expenses", "bowser-sales", "bowser-credit-sales", "bowser-lubricant-sales", "bowser-recoveries", "bowser-swipes", "bowser-expenses", "employee-recoveries", "settlements",'fuel-purchases','lubricant-purchases'], { from: selectedDate.toISOString().slice(0, 10), to: selectedDate.toISOString().slice(0, 10) }) : [];
+  const bowsers = moduleId === "bowser-sales" ? await bowserReadings(petrosoftDb, actor.workspaceId, selectedDate) : [];
   const dashboard: Partial<Awaited<ReturnType<typeof dashboardData>>> = moduleId === "dashboard" ? await dashboardData(actor.workspaceId, selectedDate, masters, filters) : {};
   if (moduleId === "eway-bills") records = await transactionRecords(actor.workspaceId, ["generated-invoices", "eway-bills"], filters);
   const tables: Record<string, PublicEntry[]> = {};
@@ -251,7 +255,7 @@ export async function readState(actor: PetrosoftActor, moduleId: string, filters
   const cashOpening = await cashAt(petrosoftDb,actor.workspaceId,selectedDate,true);
   return { records: records.map(entry => displayNames(entry, masters, balances)), total: total || records.length, tables,
     masters: Object.fromEntries(Object.entries(masters).map(([key, entries]) => [key, entries.map(entry => displayNames(entry, masters, balances))])),
-    balances, rates, stock, nozzles, date: selectedDate.toISOString().slice(0, 10), filters,
+    balances, rates, stock, nozzles, bowsers, date: selectedDate.toISOString().slice(0, 10), filters,
     summary: dailySummary(recent)[0] || {}, ...dashboard, settings: safeFields(jsonFields(actor.workspace.settings)), cashOpening: cashOpening.toString(), cashClosing: balances.cash.cash.balance, recent: recent.map(entry=>displayNames(entry,masters,balances)) };
 }
 
@@ -261,7 +265,7 @@ async function dashboardData(workspaceId: string, asOf: Date, masters: Record<st
   const monthEnd = new Date(Date.UTC(Number(stockMonth.slice(0, 4)), Number(stockMonth.slice(5, 7)), 0));
   const stockTo = monthEnd > asOf ? asOf : monthEnd;
   const [history, banks, stockHistory, dashboardStock] = await Promise.all([
-    transactionRecords(workspaceId, ["meter-sales", "credit-sales", "recoveries", "swipes", "expenses", "lubricant-sales", "fuel-purchases", "lubricant-purchases"], { from: "1900-01-01", to }, false),
+    transactionRecords(workspaceId, ["meter-sales", "credit-sales", "recoveries", "swipes", "expenses", "lubricant-sales", "bowser-sales", "bowser-credit-sales", "bowser-recoveries", "bowser-swipes", "bowser-expenses", "bowser-lubricant-sales", "fuel-purchases", "lubricant-purchases"], { from: "1900-01-01", to }, false),
     petrosoftDb.petrosoftLedger.groupBy({ by: ["entityId"], where: { entityType: "bank", date: asOf, entry: { workspaceId, status: { not: "void" } } }, _sum: { debit: true, credit: true } }),
     stockTo.toISOString().slice(0, 7) === stockMonth ? transactionRecords(workspaceId, ["opening-stock"], { from: `${stockMonth}-01`, to: stockTo.toISOString().slice(0, 10) }, false) : Promise.resolve([]),
     tankStock(workspaceId, stockTo, masters),
@@ -270,11 +274,11 @@ async function dashboardData(workspaceId: string, asOf: Date, masters: Record<st
   const lubricant = product.startsWith("l_"), productId = lubricant ? product.slice(2) : product;
   const monthly = new Map<string, PetrosoftFields>();
   for (const entry of history) {
-    const isSale = entry.module === (lubricant ? "lubricant-sales" : "meter-sales"), isPurchase = entry.module === (lubricant ? "lubricant-purchases" : "fuel-purchases");
+    const isSale = baseModule(entry.module) === (lubricant ? "lubricant-sales" : "meter-sales"), isPurchase = entry.module === (lubricant ? "lubricant-purchases" : "fuel-purchases");
     if (!isSale && !isPurchase) continue;
     const f = entry.fields, items = isPurchase && Array.isArray(f.items) ? f.items.map(jsonFields) : [{ ...f, quantity: entry.quantity }];
-    const amount = items.filter(item => !productId || fieldValue(item, PRODUCT_KEYS) === productId).reduce((total, item) => total.add(fieldValue(item, ["quantity", "pro_qty", "pur_proqty"], entry.quantity)), quantity(0));
-    if (!amount.gt(0)) continue;
+    const amount = items.filter(item => !productId || fieldValue(item, PRODUCT_KEYS) === productId).reduce((total, item) => total.add(fieldValue(item, ["quantity", "pro_qty", "pur_proqty"], entry.quantity)).sub(entry.module === "bowser-sales" ? fieldValue(item, "receipt", "0") : 0), quantity(0));
+    if (amount.isZero()) continue;
     const date = `${entry.date.slice(0, 7)}-01`, row = monthly.get(date) || { date, sale: "0", purchase: "0" }, key = isSale ? "sale" : "purchase";
     row[key] = quantity(row[key]).add(amount).toString(); monthly.set(date, row);
   }
@@ -288,7 +292,7 @@ async function dashboardData(workspaceId: string, asOf: Date, masters: Record<st
     return [...groups.values()].sort((a, b) => String(a.date).localeCompare(String(b.date)));
   };
   const customer = fieldValue(filters, "credit_customer");
-  const recoveryHistory = history.filter(entry => ["credit-sales", "recoveries"].includes(entry.module) || entry.module === "lubricant-sales" && /credit/i.test(fieldValue(entry.fields, ["sale_type1", "sale_type"]))).filter(entry => !customer || customer === "0" || fieldValue(entry.fields, CUSTOMER_KEYS) === customer);
+  const recoveryHistory = history.filter(entry => ["credit-sales", "recoveries"].includes(baseModule(entry.module)) || baseModule(entry.module) === "lubricant-sales" && /credit/i.test(fieldValue(entry.fields, ["sale_type1", "sale_type"]))).filter(entry => !customer || customer === "0" || fieldValue(entry.fields, CUSTOMER_KEYS) === customer);
   return {
     dashboardProduct: product, stockMonth, dashboardStock,
     trends: aggregateMonths(history), monthlyTrends: [...monthly.values()].sort((a, b) => String(a.date).localeCompare(String(b.date))), recoveryTrends: aggregateMonths(recoveryHistory),

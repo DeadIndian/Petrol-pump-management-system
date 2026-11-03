@@ -10,6 +10,9 @@ export async function validateEntryUniqueness(database: Prisma.TransactionClient
     f.shift = shift;
     key = `${row.date.toISOString()}:${nozzle}:${shift}`; dated = true;
     clauses = [{ fields: { path: ["nozzle_id"], equals: nozzle } }, { OR: [{ fields: { path: ["shift"], equals: shift } }, ...(shift === "S-1" ? [{ fields: { path: ["shift"], equals: "" } }, { fields: { path: ["shift"], equals: Prisma.AnyNull } }] : [])] }];
+  } else if (module.id === "bowser-sales") {
+    const bowser = fieldValue(f, "bowser"); key = `${row.date.toISOString()}:${bowser}`; dated = true;
+    clauses = [{ fields: { path: ["bowser"], equals: bowser } }];
   } else if (module.id === "nozzles") {
     const tank = fieldValue(f, "tank_no"); key = `${tank}:${row.name.toLowerCase()}`;
     clauses = [{ name: { equals: row.name, mode: "insensitive" } }, { fields: { path: ["tank_no"], equals: tank } }];
@@ -23,7 +26,7 @@ export async function validateEntryUniqueness(database: Prisma.TransactionClient
   if (seen.has(batchKey)) throw new Error(module.id === "meter-sales" ? "A nozzle can appear only once for each date and shift." : "The same master appears more than once in this batch.");
   seen.add(batchKey);
   const duplicate = await database.petrosoftEntry.findFirst({ where: { workspaceId, module: module.id, status: { not: "void" }, ...(dated ? { date: row.date } : {}), ...(id ? { id: { not: id } } : {}), AND: clauses } });
-  if (duplicate) throw new Error(module.id === "meter-sales" ? "This nozzle already has a meter entry for this date and shift. Edit the existing entry." : module.id === "pump-settings" ? "This nozzle is already assigned to a pump. Edit its existing pump setting." : `An entry named ${row.name} already exists${module.id === "nozzles" ? " in this tank" : ""}.`);
+  if (duplicate) throw new Error(module.id === "bowser-sales" ? "This bowser already has a sale entry for this date. Edit the existing entry." : module.id === "meter-sales" ? "This nozzle already has a meter entry for this date and shift. Edit the existing entry." : module.id === "pump-settings" ? "This nozzle is already assigned to a pump. Edit its existing pump setting." : `An entry named ${row.name} already exists${module.id === "nozzles" ? " in this tank" : ""}.`);
   if (module.id === "tanks") {
     const tank = fieldValue(f, "tank_no");
     if (tank && await database.petrosoftEntry.count({ where: { workspaceId, module: "tanks", status: { not: "void" }, fields: { path: ["tank_no"], equals: tank }, ...(id ? { id: { not: id } } : {}) } })) throw new Error("This tank number is already registered.");
