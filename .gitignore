@@ -48,6 +48,7 @@ prisma/dev.db-journal
 # Next.js
 .next
 out
+next-env.d.ts
 
 # Optional npm cache
 .npm
