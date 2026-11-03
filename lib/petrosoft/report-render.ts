@@ -27,14 +27,15 @@ const aliases: Record<string, string[]> = {
 
 export function reportCell(row: ReportRow, heading: string, index: number): string | number {
   const label = normalizeHeading(heading);
-  if (/^(?:sno|slno|sino|sln o)$/.test(label)) return index + 1;
+  if (/^(?:sno|slno|sino|sln o)$/.test(label)) return row.date === "Total" || row.Particulars === "Total" ? "" : index + 1;
   if (label === "lastpaid") return /date/i.test(heading) ? fieldValue(row, "lastpaiddate") : fieldValue(row, "lastpaiddays", "0");
+  if (label === "noofrecords") return fieldValue(row, "count");
   if (row[heading] !== undefined) return scalar(row[heading]);
   const normalizedKey = Object.keys(row).find(key => normalizeHeading(key) === label);
   if (normalizedKey) return scalar(row[normalizedKey]);
   const names = aliases[label];
-  if (names) return fieldValue(row, names, numericHeading(heading) ? "0" : "");
-  return numericHeading(heading) ? "0" : "";
+  if (names) return fieldValue(row, names);
+  return "";
 }
 function scalar(value: unknown): string | number { return typeof value === "number" ? value : typeof value === "boolean" ? value ? "Yes" : "No" : typeof value === "object" ? "" : String(value ?? ""); }
 export function numericHeading(heading: string) {
@@ -48,7 +49,7 @@ const reportCss = `body{margin:0;color:#222;background:#fff;font:13px/1.5 Roboto
 
 export function reportTable(section: ReportSection) {
   const columns = section.columns.filter(column => column.trim());
-  return `<section><h2 class="report-title">${escapeHtml(section.title)}</h2><div class="report-scroll"><table class="table table-bordered"><thead><tr>${columns.map(column => `<th scope="col">${escapeHtml(column)}</th>`).join("")}</tr></thead><tbody>${section.rows.length ? section.rows.map((row, index) => `<tr>${columns.map(column => `<td${numericHeading(column) ? ' class="numeric"' : ""}>${escapeHtml(reportCell(row, column, index))}</td>`).join("")}</tr>`).join("") : `<tr><td colspan="${columns.length}" class="empty">No records found</td></tr>`}</tbody></table></div></section>`;
+  return `<section><h2 class="report-title">${escapeHtml(section.title)}</h2><div class="report-scroll"><table class="table table-bordered"><thead><tr>${columns.map(column => `<th scope="col">${escapeHtml(column)}</th>`).join("")}</tr></thead><tbody>${section.rows.length ? section.rows.map((row, index) => `<tr>${columns.map(column => `<td${numericHeading(column) ? ' class="numeric"' : ""}>${escapeHtml(reportCell(row, column, index))}</td>`).join("")}</tr>`).join("") : `<tr><td colspan="${columns.length}" class="empty">No records found</td></tr>`}</tbody>${section.totals ? `<tfoot><tr>${columns.map(column => `<td${numericHeading(column) ? ' class="numeric"' : ""}>${escapeHtml(reportCell(section.totals!, column, 0))}</td>`).join("")}</tr></tfoot>` : ""}</table></div></section>`;
 }
 export function reportHtml(report: ReportResult, actor: PetrosoftActor, printable = false) {
   const settings = jsonFields(actor.workspace.settings);
@@ -70,6 +71,7 @@ export async function reportXlsx(report: ReportResult) {
     sheet.addRow(columns);
     const header = sheet.getRow(1); header.font = { bold: true }; header.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE7E2F0" } };
     section.rows.forEach((row, index) => sheet.addRow(columns.map(column => spreadsheetValue(reportCell(row, column, index)))));
+    if (section.totals) { const footer = sheet.addRow(columns.map(column => spreadsheetValue(reportCell(section.totals!, column, 0)))); footer.font = { bold: true }; }
     sheet.views = [{ state: "frozen", ySplit: 1 }];
     sheet.autoFilter = { from: "A1", to: { row: 1, column: columns.length } };
     sheet.columns.forEach((column, index) => { column.width = Math.min(38, Math.max(14, columns[index].length + 2)); if (numericHeading(columns[index])) column.numFmt = "#,##0.00"; });
@@ -78,7 +80,7 @@ export async function reportXlsx(report: ReportResult) {
 }
 export function reportCsv(report: ReportResult) {
   const cell = (value: string | number) => `"${String(value).replace(/^[=+@-](?!\d)/, "'$&").replace(/"/g, '""')}"`;
-  return "\uFEFF" + report.sections.map(section => [cell(section.title), section.columns.map(cell).join(","), ...section.rows.map((row, index) => section.columns.map(column => cell(reportCell(row, column, index))).join(","))].join("\r\n")).join("\r\n\r\n");
+  return "\uFEFF" + report.sections.map(section => [cell(section.title), section.columns.map(cell).join(","), ...section.rows.map((row, index) => section.columns.map(column => cell(reportCell(row, column, index))).join(",")), ...(section.totals ? [section.columns.map(column => cell(reportCell(section.totals!, column, 0))).join(",")] : [])].join("\r\n")).join("\r\n\r\n");
 }
 let pdfActive = 0;
 export async function reportPdf(report: ReportResult, actor: PetrosoftActor, landscape = false) {

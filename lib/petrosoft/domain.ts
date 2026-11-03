@@ -5,6 +5,7 @@ import { money, positive, quantity, safeFields, type LedgerPosting, type Normali
 
 import { payrollPreview, savePayroll } from "./payroll";
 import { interestAction } from "./interest";
+import { hasMasterReferences } from "./masters";
 export { payrollPreview } from "./payroll";
 
 type Database = Prisma.TransactionClient;
@@ -120,27 +121,69 @@ export async function domainAction(database: Database, actor: PetrosoftActor, mo
 
 export async function synchronizeMasterChildren(database: Database, actor: PetrosoftActor, entry: PetrosoftEntry, fields: PetrosoftFields, save: Save) {
   const id = identity(entry);
+  const replace = fields.replace_children === true;
+  const removeMissing = async (module: string, key: string, parent: string, kept: string[]) => {
+    if (!replace) return;
+    const removed = await database.petrosoftEntry.findMany({ where: { workspaceId: actor.workspaceId, module, status: { not: "void" }, fields: { path: [key], equals: parent }, id: { notIn: kept } } });
+    for (const child of removed) {
+      if (module === "nozzles" && await hasMasterReferences(database, child)) throw new Error("A nozzle assigned to a pump or used by sales cannot be removed. Deactivate it separately.");
+      await database.petrosoftEntry.update({ where: { id: child.id }, data: { status: "void" } });
+    }
+  };
   if (entry.module === "customers" || entry.module === "guests") {
     const names = values(fields, "vehicle_no");
+    const vehicleIds: string[] = [], seen = new Set<string>();
     for (const [index, name] of names.entries()) {
       if (!String(name).trim()) continue;
-      const existing = await database.petrosoftEntry.findFirst({ where: { workspaceId: actor.workspaceId, module: "vehicles", name: String(name), status: { not: "void" }, fields: { path: [entry.module === "customers" ? "customer_id" : "guest_id"], equals: id } } });
-      if (!existing) await save("vehicles", emptyRow(String(name).toUpperCase(), entry.date, { vehicle_no: String(name).toUpperCase(), customer_id: entry.module === "customers" ? id : "", guest_id: entry.module === "guests" ? id : "", vehicle_place: values(fields, "vehicle_place")[index] || "", vehicle_type: values(fields, "vehicle_type")[index] || "" }), []);
+      const normalized = String(name).trim().toUpperCase();
+      if (seen.has(normalized)) throw new Error("Enter each vehicle only once.");
+      seen.add(normalized);
+      const existing = await database.petrosoftEntry.findFirst({ where: { workspaceId: actor.workspaceId, module: "vehicles", name: { equals: normalized, mode: "insensitive" }, status: { not: "void" }, fields: { path: [entry.module === "customers" ? "customer_id" : "guest_id"], equals: id } } });
+      const child = await save("vehicles", emptyRow(normalized, entry.date, { ...jsonFields(existing?.fields), vehicle_no: normalized, customer_id: entry.module === "customers" ? id : "", guest_id: entry.module === "guests" ? id : "", vehicle_place: values(fields, "vehicle_place")[index] || "", vehicle_type: values(fields, "vehicle_type")[index] || "" }), [], existing?.id);
+      vehicleIds.push(child.id);
     }
+    if (fields.vehicle_no !== undefined || fields["vehicle_no[]"] !== undefined) await removeMissing("vehicles", entry.module === "customers" ? "customer_id" : "guest_id", id, vehicleIds);
+    const discountIds: string[] = [];
     for (const [index, product] of values(fields, "pd_prod_id").entries()) {
       if (!product) continue;
       await requireMaster(database, actor, "fuel-products", product);
       const existing = await database.petrosoftEntry.findFirst({ where: { workspaceId: actor.workspaceId, module: "customer-discounts", status: { not: "void" }, AND: [{ fields: { path: ["customer_id"], equals: id } }, { fields: { path: ["product"], equals: String(product) } }] } });
-      await save("customer-discounts", emptyRow(String(product), entry.date, { customer_id: id, product, disc_offer: values(fields, "pd_disc_offer")[index] || "0", offer_type: values(fields, "pd_offer_type")[index] || "Qty" }), [], existing?.id);
+      const child = await save("customer-discounts", emptyRow(String(product), entry.date, { customer_id: id, product, disc_offer: positive(values(fields, "pd_disc_offer")[index] || "0", "Customer discount", true).toString(), offer_type: values(fields, "pd_offer_type")[index] || "Qty" }), [], existing?.id);
+      discountIds.push(child.id);
     }
+    if (fields.pd_prod_id !== undefined || fields["pd_prod_id[]"] !== undefined) await removeMissing("customer-discounts", "customer_id", id, discountIds);
   }
   if (entry.module === "tanks") {
-    for (const name of values(fields, "nozzel")) if (String(name).trim()) await save("nozzles", emptyRow(String(name), entry.date, { nozzle_name: name, noz_name: name, tank_no: fieldValue(jsonFields(entry.fields), "tank_no", `T${entry.number}`), product: fieldValue(fields, ["pro_name", "product"]) }), []);
+    const tank = fieldValue(jsonFields(entry.fields), "tank_no", `T${entry.number}`), kept: string[] = [], seen = new Set<string>();
+    for (const [index, offered] of values(fields, "nozzel").entries()) {
+      const name = String(offered).trim(); if (!name) continue;
+      if (seen.has(name.toLowerCase())) throw new Error("Enter each nozzle name only once for this tank.");
+      seen.add(name.toLowerCase());
+      const childId = String(values(fields, "nozzel_id")[index] || "");
+      const existing = await database.petrosoftEntry.findFirst({ where: { workspaceId: actor.workspaceId, module: "nozzles", status: { not: "void" }, fields: { path: ["tank_no"], equals: tank }, ...(childId ? { OR: [{ id: childId }, { externalId: childId }] } : { name: { equals: name, mode: "insensitive" } }) } });
+      if (childId && !existing) throw new Error("Choose a nozzle belonging to this tank.");
+      const product = fieldValue(fields, ["pro_name", "product"]);
+      if (existing && fieldValue(jsonFields(existing.fields), "product") !== product && await hasMasterReferences(database, existing)) throw new Error("The product of a tank with assigned nozzles cannot be changed.");
+      const child = await save("nozzles", { ...emptyRow(name, entry.date, { ...jsonFields(existing?.fields), nozzle_name: name, noz_name: name, tank_no: tank, product }), status: existing?.status || "active" }, [], existing?.id);
+      kept.push(child.id);
+    }
+    if (fields.nozzel !== undefined || fields["nozzel[]"] !== undefined) await removeMissing("nozzles", "tank_no", tank, kept);
   }
   if (entry.module === "employees") {
     const names = fields.earning ?? fields["earning[]"];
     const amounts = fields.earn_amt ?? fields["earn_amt[]"];
-    if (Array.isArray(names) && Array.isArray(amounts)) for (const [index, name] of names.entries()) if (String(name).trim()) await save("employee-benefits", emptyRow(String(name), entry.date, { employee: id, earn_type: name }, amounts[index] || 0), []);
+    const kept: string[] = [], seen = new Set<string>();
+    if (Array.isArray(names) && Array.isArray(amounts)) {
+      for (const [index, offered] of names.entries()) {
+        const name = String(offered).trim(); if (!name) continue;
+        if (seen.has(name.toLowerCase())) throw new Error("Enter each employee benefit only once.");
+        seen.add(name.toLowerCase());
+        const existing = await database.petrosoftEntry.findFirst({ where: { workspaceId: actor.workspaceId, module: "employee-benefits", name: { equals: name, mode: "insensitive" }, status: { not: "void" }, fields: { path: ["employee"], equals: id } } });
+        const child = await save("employee-benefits", emptyRow(name, entry.date, { employee: id, earn_type: name }, positive(amounts[index] || 0, "Employee benefit", true)), [], existing?.id);
+        kept.push(child.id);
+      }
+      await removeMissing("employee-benefits", "employee", id, kept);
+    }
   }
 }
 

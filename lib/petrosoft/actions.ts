@@ -17,6 +17,14 @@ import { baseModule, CUSTOMER_KEYS, decimal, EMPLOYEE_KEYS, ledgerFor, money, no
 
 type Transaction = Prisma.TransactionClient;
 export class PetrosoftError extends Error { constructor(message: string, public status = 400) { super(message); } }
+function assertGovernmentDocumentUnlocked(module: string, fields: PetrosoftFields) {
+  if (!["generated-invoices", "eway-bills"].includes(module)) return;
+  const integrations = jsonFields(fields.integrations);
+  const locked = Object.values(integrations).some(value => ["pending", "unknown", "generated"].includes(fieldValue(jsonFields(value), "status")));
+  if (locked || !Object.keys(integrations).length && (fields.provider_status === "generated" || Boolean(fieldValue(fields, ["irn", "eway_bill_no"]).replace(/^0$/, "")))) {
+    throw new PetrosoftError("Cancel the government document and check its service status before changing this invoice.", 409);
+  }
+}
 export interface ActionInput { module: string; operation?: string; action?: string; formIndex?: number; id?: string; ids?: string[]; fields?: PetrosoftFields }
 
 export async function transaction<T>(operation: (database: Transaction) => Promise<T>, timeout = 60000): Promise<T> {
@@ -193,6 +201,7 @@ async function saveEntry(database: Transaction, actor: PetrosoftActor, module: M
   const number = existing?.number || await nextNumber(database, actor.workspaceId, module.id);
   const fields = safeFields({ ...row.fields, ...(module.id === "tanks" && !fieldValue(row.fields, "tank_no") ? { tank_no: `T${number}` } : {}), transaction_no: existing ? fieldValue(jsonFields(existing.fields), "transaction_no", String(number)) : String(number) });
   const previousPosts = existing ? await database.petrosoftLedger.findMany({ where: { entryId: existing.id } }) : [];
+  await validateConsumableBalances(database, actor.workspaceId, previousPosts, posts);
   if (module.id === "opening-stock") {
     const tank = fieldValue(row.fields, "tank_no");
     if (existing && (existing.date.getTime() !== row.date.getTime() || fieldValue(jsonFields(existing.fields), "tank_no") !== tank)) throw new PetrosoftError("Keep the stock entry's date and tank when editing it. Delete the old entry to move it.");
@@ -217,72 +226,88 @@ async function saveEntry(database: Transaction, actor: PetrosoftActor, module: M
   return entry;
 }
 
+async function validateConsumableBalances(database: Transaction, workspaceId: string, before: LedgerPosting[], after: LedgerPosting[]) {
+  const changes = new Map<string, { type: string; id: string; quantity: Prisma.Decimal }>();
+  for (const [posts, sign] of [[before, -1], [after, 1]] as const) for (const post of posts) {
+    if (post.entityType !== "loyalty" && !(post.entityType === "product" && post.entityId.startsWith("gift:"))) continue;
+    const key = `${post.entityType}:${post.entityId}`, row = changes.get(key) || { type: post.entityType, id: post.entityId, quantity: quantity(0) };
+    row.quantity = row.quantity.add(quantity(post.quantity || 0).mul(sign)); changes.set(key, row);
+  }
+  for (const change of changes.values()) {
+    if (change.quantity.gte(0)) continue;
+    const current = await database.petrosoftLedger.aggregate({ where: { entityType: change.type, entityId: change.id, entry: { workspaceId, status: { not: "void" } } }, _sum: { quantity: true } });
+    if (quantity(current._sum.quantity || 0).add(change.quantity).lt(0)) throw new PetrosoftError(change.type === "loyalty" ? "Reverse the guest's gift redemptions before reducing earned points." : "Reverse issued gifts before reducing their purchased stock.", 409);
+  }
+}
+
 export async function executeAction(actor: PetrosoftActor, input: ActionInput) {
   const selectedModule = moduleById.get(input.module);
   if (!selectedModule) throw new PetrosoftError("Choose a valid Petrosoft module.", 404);
-  let module: ModuleSchema = selectedModule;
+  let moduleSchema: ModuleSchema = selectedModule;
   const operation = input.operation || "save";
-  const permission = operation === "save" ? input.id || module.kind === "settings" ? "edit" : "create" : operation === "generate" ? "create" : operation === "pay" || operation === "reset-bills" ? "edit" : operation.startsWith("preview") ? "view" : operation;
-  if (!hasPermission(actor, module.id, permission)) throw new PetrosoftError("Your role does not have permission to perform this action.", 403);
+  const permission = operation === "save" ? input.id || moduleSchema.kind === "settings" ? "edit" : "create" : operation === "generate" ? "create" : operation === "pay" || operation === "reset-bills" ? "edit" : operation.startsWith("preview") ? "view" : operation;
+  if (!hasPermission(actor, moduleSchema.id, permission)) throw new PetrosoftError("Your role does not have permission to perform this action.", 403);
   let fields = Object.fromEntries(Object.entries(jsonFields(input.fields)).filter(([key]) => !key.startsWith("_") || key === "_date"));
   let originalFields: PetrosoftFields | undefined;
-  if (operation === "filter" || operation === "report") return { module: module.id, filters: fields };
+  if (operation === "filter" || operation === "report") return { module: moduleSchema.id, filters: fields };
   return transaction(async database => {
     const save = async (moduleId: string, row: NormalizedRow, posts: LedgerPosting[] = [], id?: string) => {
       const schema = moduleById.get(moduleId);
       if (!schema) throw new PetrosoftError("Unknown record type.");
       return saveEntry(database, actor, schema, row, posts, id);
     };
-    if (["sale-invoices", "statements", "brs-generation", "vrs-generation"].includes(module.id) && ["save", "generate"].includes(operation)) {
-      const result = await generateDocuments(database, actor, module.id, fields, input.ids || [], save);
+    if (["sale-invoices", "statements", "brs-generation", "vrs-generation"].includes(moduleSchema.id) && ["save", "generate"].includes(operation)) {
+      const result = await generateDocuments(database, actor, moduleSchema.id, fields, input.ids || [], save);
       if (result) return result;
     }
     if (["delete", "toggle", "reconcile"].includes(operation)) {
       const ids = input.ids?.length ? input.ids : input.id ? [input.id] : [];
       if (!ids.length) throw new PetrosoftError("Select at least one entry.");
-      const entries = await database.petrosoftEntry.findMany({ where: { workspaceId: actor.workspaceId, module: module.id, id: { in: ids }, status: { not: "void" } } });
+      const entries = await database.petrosoftEntry.findMany({ where: { workspaceId: actor.workspaceId, module: moduleSchema.id, id: { in: ids }, status: { not: "void" } } });
       if (entries.length !== ids.length) throw new PetrosoftError("One or more entries do not belong to this station.", 404);
       for (const entry of entries) {
+        assertGovernmentDocumentUnlocked(entry.module, jsonFields(entry.fields));
         const parent = await sourceParent(database, entry);
         if (parent && ["vendor-transactions", "business-transactions"].includes(entry.module)) throw new PetrosoftError("Change this posting through its original transaction so all related balances stay together.", 409);
         if (operation === "delete") {
           if (fieldValue(jsonFields(entry.fields), "invoice_id")) throw new PetrosoftError("Cancel this sale's generated invoice before changing the sale.", 409);
-          if (module.id === "generated-invoices") {
+          if (moduleSchema.id === "generated-invoices") {
             const sources = await database.petrosoftEntry.findMany({ where: { workspaceId: actor.workspaceId, fields: { path: ["invoice_id"], equals: entry.id } } });
             for (const source of sources) { const fields = jsonFields(source.fields); delete fields.invoice_id; delete fields.invoice_number; await database.petrosoftEntry.update({ where: { id: source.id }, data: { fields: safeFields(fields) } }); }
           }
-          if (module.id === "opening-stock") {
+          if (moduleSchema.id === "opening-stock") {
             const tank = fieldValue(jsonFields(entry.fields), "tank_no"), recalculated = await stockAt(database, actor.workspaceId, tank, entry.date, entry.id);
             await shiftStockSnapshots(database, actor.workspaceId, tank, entry.date, recalculated.sub(fieldValue(jsonFields(entry.fields), "close_stock", "0")), entry.id);
           }
-          if (module.id === "interest" && jsonFields(entry.fields).type === "Loan" && await database.petrosoftEntry.count({ where: { workspaceId: actor.workspaceId, module: "interest", status: { not: "void" }, fields: { path: ["loan_id"], equals: entry.id } } })) throw new PetrosoftError("Reverse this loan's repayments before deleting the loan.", 409);
-          if (module.id === "users") {
+          if (moduleSchema.id === "interest" && jsonFields(entry.fields).type === "Loan" && await database.petrosoftEntry.count({ where: { workspaceId: actor.workspaceId, module: "interest", status: { not: "void" }, fields: { path: ["loan_id"], equals: entry.id } } })) throw new PetrosoftError("Reverse this loan's repayments before deleting the loan.", 409);
+          if (moduleSchema.id === "users") {
             const username = fieldValue(jsonFields(entry.fields), ["username", "user_name"], entry.name);
             await protectUser(database, actor, username, true);
             const account = await database.petrosoftUser.findUnique({ where: { workspaceId_username: { workspaceId: actor.workspaceId, username } } });
             if (account) { await database.petrosoftSession.deleteMany({ where: { userId: account.id } }); await database.petrosoftUser.update({ where: { id: account.id }, data: { active: false } }); }
           }
-          if (module.kind === "master") {
+          if (moduleSchema.kind === "master") {
             const types: Record<string, string[]> = { customers: ["customer"], vendors: ["vendor"], employees: ["employee", "employee-advance"], "swipe-machines": ["swipe"], "business-parties": ["bank", "party"], "fuel-products": ["product"], lubricants: ["product"], gifts: ["product"] };
-            const type = types[module!.id] || [];
-            const externalId = `${module!.id === "lubricants" ? "lub:" : module!.id === "gifts" ? "gift:" : ""}${entry.externalId || String(entry.number)}`;
+            const type = types[moduleSchema!.id] || [];
+            const externalId = `${moduleSchema!.id === "lubricants" ? "lub:" : moduleSchema!.id === "gifts" ? "gift:" : ""}${entry.externalId || String(entry.number)}`;
             const linked = type.length ? await database.petrosoftLedger.count({ where: { entityType: { in: type }, entityId: externalId, entry: { workspaceId: actor.workspaceId, id: { not: entry.id }, status: { not: "void" } } } }) : 0;
             if (linked || await hasMasterReferences(database, entry)) throw new PetrosoftError("This master is used by existing transactions. Deactivate it to keep its history.", 409);
           }
           const posts = await database.petrosoftLedger.findMany({ where: { entryId: entry.id } });
-          const cashChange = module.id === "settlements" ? (await cashAt(database, actor.workspaceId, entry.date, false, entry.id)).sub(entry.amount) : cashMovement(posts).neg();
-          await adjustCashSnapshots(database, actor.workspaceId, entry.date, cashChange, entry.id, module.id === "settlements");
+          await validateConsumableBalances(database, actor.workspaceId, posts, []);
+          const cashChange = moduleSchema.id === "settlements" ? (await cashAt(database, actor.workspaceId, entry.date, false, entry.id)).sub(entry.amount) : cashMovement(posts).neg();
+          await adjustCashSnapshots(database, actor.workspaceId, entry.date, cashChange, entry.id, moduleSchema.id === "settlements");
           await removeLinkedEntries(database, entry);
           await adjustStockSnapshots(database, actor.workspaceId, entry.date, posts, []);
           await database.petrosoftLedger.deleteMany({ where: { entryId: entry.id } });
           await database.petrosoftEntry.update({ where: { id: entry.id }, data: { status: "void" } });
-          if (module.id === "interest" && fieldValue(jsonFields(entry.fields), "loan_id")) await refreshLoan(database, fieldValue(jsonFields(entry.fields), "loan_id"));
+          if (moduleSchema.id === "interest" && fieldValue(jsonFields(entry.fields), "loan_id")) await refreshLoan(database, fieldValue(jsonFields(entry.fields), "loan_id"));
         } else if (operation === "toggle") {
-          if (module!.id === "users" && fieldValue(jsonFields(entry.fields), ["user_name", "username"], entry.name) === actor.username) throw new PetrosoftError("You cannot deactivate your own account.");
+          if (moduleSchema!.id === "users" && fieldValue(jsonFields(entry.fields), ["user_name", "username"], entry.name) === actor.username) throw new PetrosoftError("You cannot deactivate your own account.");
           const status = entry.status === "active" ? "inactive" : "active";
-          if (module.id === "users") await protectUser(database, actor, fieldValue(jsonFields(entry.fields), ["username", "user_name"], entry.name), status === "inactive");
+          if (moduleSchema.id === "users") await protectUser(database, actor, fieldValue(jsonFields(entry.fields), ["username", "user_name"], entry.name), status === "inactive");
           await database.petrosoftEntry.update({ where: { id: entry.id }, data: { status } });
-          if (module.id === "users") {
+          if (moduleSchema.id === "users") {
             const username = fieldValue(jsonFields(entry.fields), ["username", "user_name"], entry.name), account = await database.petrosoftUser.findUnique({ where: { workspaceId_username: { workspaceId: actor.workspaceId, username } } });
             if (!account && status === "active") throw new PetrosoftError("Set a local password before activating this user's login.");
             await database.petrosoftUser.updateMany({ where: { workspaceId: actor.workspaceId, username }, data: { active: status === "active" } });
@@ -291,11 +316,11 @@ export async function executeAction(actor: PetrosoftActor, input: ActionInput) {
         } else {
           await database.petrosoftEntry.update({ where: { id: entry.id }, data: { fields: safeFields({ ...jsonFields(entry.fields), reconciled: true, reconciled_date: today().toISOString().slice(0, 10) }) } });
         }
-        await audit(database, actor, module.id, operation.toUpperCase(), entry.id, { fields: entry.fields, amount: entry.amount });
+        await audit(database, actor, moduleSchema.id, operation.toUpperCase(), entry.id, { fields: entry.fields, amount: entry.amount });
       }
       return { message: operation === "delete" ? "Selected entries deleted and their balances updated." : operation === "toggle" ? "Status updated." : "Transactions reconciled.", count: entries.length };
     }
-    if (module.id === "password") {
+    if (moduleSchema.id === "password") {
       const current = fieldValue(fields, ["oldPwd", "current_password", "old_password", "old_pwd", "old_pass", "password"]);
       const next = fieldValue(fields, ["newPwd", "new_password", "new_pwd", "new_pass", "newpassword"]);
       const repeat = fieldValue(fields, ["conPwd", "confirm_password", "confirm_pwd", "re_password", "renew_pwd", "re_new_pass"]);
@@ -304,35 +329,36 @@ export async function executeAction(actor: PetrosoftActor, input: ActionInput) {
       if (next !== repeat) throw new PetrosoftError("The new passwords do not match.");
       await database.petrosoftUser.update({ where: { id: actor.id }, data: { passwordHash: hashPassword(next) } });
       await database.petrosoftSession.deleteMany({ where: { userId: actor.id } });
-      await audit(database, actor, module.id, "PASSWORD_CHANGED");
+      await audit(database, actor, moduleSchema.id, "PASSWORD_CHANGED");
       return { message: "Password changed. Sign in with your new password.", redirect: "/petrosoft/login" };
     }
-    if (module.id === "settings" && operation === "reset-bills") {
+    if (moduleSchema.id === "settings" && operation === "reset-bills") {
       await database.petrosoftSequence.upsert({ where: { workspaceId_module: { workspaceId: actor.workspaceId, module: "credit-bill" } }, create: { workspaceId: actor.workspaceId, module: "credit-bill", value: 0 }, update: { value: 0 } });
       await audit(database, actor, "settings", "BILL_SEQUENCE_RESET");
       return { message: "The next credit bill number is reset to 1." };
     }
-    if (["organization", "settings", "print-templates"].includes(module.id)) {
+    if (["organization", "settings", "print-templates"].includes(moduleSchema.id)) {
       const previous = jsonFields(actor.workspace.settings);
-      const featureIds = module.id === "settings" ? (Array.isArray(fields["page_id[]"]) ? fields["page_id[]"].map(String) : []) : Array.isArray(previous.feature_ids) ? previous.feature_ids.map(String) : [];
-      const settings = safeFields({ ...previous, ...fields, ...(module.id === "settings" ? { feature_ids: featureIds, purchase_policy: {
+      const featureIds = moduleSchema.id === "settings" ? (Array.isArray(fields["page_id[]"]) ? fields["page_id[]"].map(String) : []) : Array.isArray(previous.feature_ids) ? previous.feature_ids.map(String) : [];
+      const settings = safeFields({ ...previous, ...fields, ...(moduleSchema.id === "settings" ? { feature_ids: featureIds, purchase_policy: {
         lfr_tot: featureIds?.includes("1") ? "yes" : "no", delar_comm: featureIds?.includes("2") ? "yes" : "no", lfr_incl: featureIds?.includes("3") ? "yes" : "no", del_incl: featureIds?.includes("24") ? "yes" : "no", lfr_other: featureIds?.includes("35") ? "yes" : "no",
       } } : {}) });
       await database.petrosoftWorkspace.update({ where: { id: actor.workspaceId }, data: { settings,
-        ...(module.id === "organization" && fieldValue(fields, "company_name") ? { name: fieldValue(fields, "company_name") } : {}) } });
-      await audit(database, actor, module.id, "SETTINGS_UPDATED", undefined, safeFields(previous), safeFields(fields));
+        ...(moduleSchema.id === "organization" && fieldValue(fields, "company_name") ? { name: fieldValue(fields, "company_name") } : {}) } });
+      await audit(database, actor, moduleSchema.id, "SETTINGS_UPDATED", undefined, safeFields(previous), safeFields(fields));
       return { message: "Settings saved." };
     }
-    if (module.id === "roles" && fields.permissions !== undefined && !Array.isArray(fields.permissions)) throw new PetrosoftError("Choose valid role permissions.");
-    const originalSchema = formFor(module, input.formIndex, input.action);
+    if (moduleSchema.id === "roles" && fields.permissions !== undefined && !Array.isArray(fields.permissions)) throw new PetrosoftError("Choose valid role permissions.");
+    const originalSchema = formFor(moduleSchema, input.formIndex, input.action);
     if (/save_advance/.test(originalSchema?.action || input.action || "")) {
-      module = moduleById.get("recoveries")!;
+      moduleSchema = moduleById.get("recoveries")!;
       fields = { ...fields, insert_date: fieldValue(fields, "date_input"), rec_organiz: fieldValue(fields, "org_input"), paid_amt: fieldValue(fields, "adv_input"), rec_emp: fieldValue(fields, "employeeName"), re_type: fieldValue(fields, "mode", "Cash"), rec_desc: fieldValue(fields, "description"), advance: true };
     }
-    if (module.id === "shift-sheet") { module = moduleById.get("daily-rates")!; fields = { ...fields, _upsertRates: true }; }
+    if (moduleSchema.id === "shift-sheet") { moduleSchema = moduleById.get("daily-rates")!; fields = { ...fields, _upsertRates: true }; }
     if (input.id) {
-      const previous = await database.petrosoftEntry.findFirst({ where: { id: input.id, workspaceId: actor.workspaceId, module: module.id, status: { not: "void" } } });
+      const previous = await database.petrosoftEntry.findFirst({ where: { id: input.id, workspaceId: actor.workspaceId, module: moduleSchema.id, status: { not: "void" } } });
       if (!previous) throw new PetrosoftError("This entry does not belong to this station.", 404);
+      assertGovernmentDocumentUnlocked(previous.module, jsonFields(previous.fields));
       if (fieldValue(jsonFields(previous.fields), "invoice_id")) throw new PetrosoftError("Cancel this sale's generated invoice before editing the sale.", 409);
       const parent = await sourceParent(database, previous);
       if (parent && ["vendor-transactions", "business-transactions"].includes(previous.module)) throw new PetrosoftError("Edit this posting through its original transaction.", 409);
@@ -340,9 +366,9 @@ export async function executeAction(actor: PetrosoftActor, input: ActionInput) {
       originalFields = jsonFields(previous.fields);
       fields = { ...inherited, ...fields };
     }
-    const custom = await domainAction(database, actor, module.id, operation, fields, input.id, save);
+    const custom = await domainAction(database, actor, moduleSchema.id, operation, fields, input.id, save);
     if (custom !== undefined) return custom;
-    if (module.id === "roles") {
+    if (moduleSchema.id === "roles") {
       const offered = Array.isArray(fields.permissions) ? fields.permissions.map(String) : Array.isArray(fields.page_ids) ? permissionsForPages(fields.page_ids) : [];
       const known = new Set(Object.values(rolePages));
       if (offered.some(value => value !== "*" && !known.has(value) && !moduleById.has(value))) throw new PetrosoftError("Choose valid role permissions.");
@@ -363,41 +389,41 @@ export async function executeAction(actor: PetrosoftActor, input: ActionInput) {
         }
       }
     }
-    const schema = formFor(module, input.formIndex, input.action);
-    const rows = rowsFromForm(module, fields);
-    if (!(module.id === "daily-rates" && input.id)) {
-      if (Array.isArray(fields.rows)) for (const row of rows) validateSchema(module, schema?.index, row, Boolean(input.id));
-      else validateSchema(module, schema?.index, fields, Boolean(input.id));
+    const schema = formFor(moduleSchema, input.formIndex, input.action);
+    const rows = rowsFromForm(moduleSchema, fields);
+    if (!(moduleSchema.id === "daily-rates" && input.id)) {
+      if (Array.isArray(fields.rows)) for (const row of rows) validateSchema(moduleSchema, schema?.index, row, Boolean(input.id));
+      else validateSchema(moduleSchema, schema?.index, fields, Boolean(input.id));
     }
     if (!rows.length) throw new PetrosoftError("Enter at least one row before saving.");
-    if (input.id && rows.length > 1 && !/purchase/.test(module.id)) throw new PetrosoftError("Edit one transaction at a time.");
+    if (input.id && rows.length > 1 && !/purchase/.test(moduleSchema.id)) throw new PetrosoftError("Edit one transaction at a time.");
     let normalized: { row: NormalizedRow; posts: LedgerPosting[]; existingId?: string }[] = [];
     const saleTotals = new Map<string, Prisma.Decimal>();
     const giftTotals = new Map<string, Prisma.Decimal>();
     const seen = new Set<string>();
     for (const raw of rows) {
-      if (module.id === "settlements") { normalized.push(await normalizeSettlement(database, actor, raw, input.id)); continue; }
+      if (moduleSchema.id === "settlements") { normalized.push(await normalizeSettlement(database, actor, raw, input.id)); continue; }
       const approximateDate = (() => { try { return dateValue(fieldValue(raw, ["insert_date", "pur_date", "_date", "date"])); } catch { return today(); } })();
-      const guestFields = baseModule(module.id) === "guest-sales" ? await prepareGuest(database, actor, raw, approximateDate, save) : raw;
-      let enriched = await enrichRow(database, actor, module, guestFields, approximateDate, Boolean(input.id));
-      if (module.id === "gift-sales") enriched = jsonFields(await validateRedemption(database, actor, enriched, input.id, giftTotals));
-      await validateMasterReferences(database, actor.workspaceId, module.id, enriched, originalFields);
-      if (/purchase/.test(module.id)) enriched._purchase_policy = { delar_comm: "no", lfr_tot: "no", lfr_incl: "no", del_incl: "no", ...jsonFields(jsonFields(actor.workspace.settings).purchase_policy) };
-      const row = normalizeRow(module, enriched);
-      await validateEntryUniqueness(database, actor.workspaceId, module, row, seen, input.id);
-      if (baseModule(module.id) === "guest-sales") row.fields.points = (await earnedPoints(database, actor, row.fields, row.quantity)).toString();
-      if (jsonFields(actor.workspace.settings).date_ctl === "yes" && module.kind === "transaction" && module.id !== "settlements") {
+      const guestFields = baseModule(moduleSchema.id) === "guest-sales" ? await prepareGuest(database, actor, raw, approximateDate, save) : raw;
+      let enriched = await enrichRow(database, actor, moduleSchema, guestFields, approximateDate, Boolean(input.id));
+      if (moduleSchema.id === "gift-sales") enriched = jsonFields(await validateRedemption(database, actor, enriched, input.id, giftTotals));
+      await validateMasterReferences(database, actor.workspaceId, moduleSchema.id, enriched, originalFields);
+      if (/purchase/.test(moduleSchema.id)) enriched._purchase_policy = { delar_comm: "no", lfr_tot: "no", lfr_incl: "no", del_incl: "no", ...jsonFields(jsonFields(actor.workspace.settings).purchase_policy) };
+      const row = normalizeRow(moduleSchema, enriched);
+      await validateEntryUniqueness(database, actor.workspaceId, moduleSchema, row, seen, input.id);
+      if (baseModule(moduleSchema.id) === "guest-sales") row.fields.points = (await earnedPoints(database, actor, row.fields, row.quantity)).toString();
+      if (jsonFields(actor.workspace.settings).date_ctl === "yes" && moduleSchema.kind === "transaction" && moduleSchema.id !== "settlements") {
         const closed = await database.petrosoftEntry.count({ where: { workspaceId: actor.workspaceId, module: "settlements", date: row.date, status: { not: "void" } } });
         if (closed) throw new PetrosoftError("This date is settled. Unlock settled dates in Organization Details before changing its transactions.", 409);
       }
-      if (module.id === "daily-rates" && !input.id) {
+      if (moduleSchema.id === "daily-rates" && !input.id) {
         const duplicate = await database.petrosoftEntry.findFirst({ where: { workspaceId: actor.workspaceId, module: "daily-rates", date: row.date, status: { not: "void" }, fields: { path: ["product"], equals: fieldValue(row.fields, PRODUCT_KEYS) } } });
         if (duplicate && !fields._upsertRates) throw new PetrosoftError("A sale rate already exists for this product and date. Edit the existing rate.", 409);
         if (duplicate && fields._upsertRates) { normalized.push({ row, posts: [], existingId: duplicate.id }); continue; }
       }
-      if (module.id === "users") { const user = await saveUser(database, actor, enriched, input.id); row.fields.auth_user_id = user.id; }
-      const posts = ledgerFor(module, row);
-      if (baseModule(module.id) === "credit-sales") {
+      if (moduleSchema.id === "users") { const user = await saveUser(database, actor, enriched, input.id); row.fields.auth_user_id = user.id; }
+      const posts = ledgerFor(moduleSchema, row);
+      if (baseModule(moduleSchema.id) === "credit-sales") {
         const customer = await entity(database, actor.workspaceId, "customers", fieldValue(row.fields, CUSTOMER_KEYS));
         const limit = fieldNumber(jsonFields(customer?.fields), "credit_limit");
         if (limit > 0 && jsonFields(actor.workspace.settings).credit_limit === "yes") {
@@ -409,10 +435,10 @@ export async function executeAction(actor: PetrosoftActor, input: ActionInput) {
       }
       normalized.push({ row, posts });
     }
-    if (/purchase/.test(module.id) || module.id === "lfr-invoices") {
+    if (/purchase/.test(moduleSchema.id) || moduleSchema.id === "lfr-invoices") {
       const invoiceNumber = fieldValue(fields, ["invo_no", "invoice_no", "invoice_number"]);
       if (invoiceNumber && !input.id) {
-        const duplicate = await database.petrosoftEntry.findFirst({ where: { workspaceId: actor.workspaceId, module: module.id, status: { not: "void" }, fields: { path: ["invo_no"], equals: invoiceNumber } } });
+        const duplicate = await database.petrosoftEntry.findFirst({ where: { workspaceId: actor.workspaceId, module: moduleSchema.id, status: { not: "void" }, fields: { path: ["invo_no"], equals: invoiceNumber } } });
         if (duplicate) throw new PetrosoftError("This invoice number is already recorded.", 409);
       }
       if (normalized.length >= 1) {
@@ -420,19 +446,19 @@ export async function executeAction(actor: PetrosoftActor, input: ActionInput) {
         const count = normalized.reduce((total, item) => total.add(item.row.quantity), quantity(0));
         const aggregate = normalized[0].row;
         const items = normalized.map(item => ({ ...safeFields({ ...item.row.fields, items: undefined }), amount: item.row.amount.toString(), quantity: item.row.quantity.toString(), rate: item.row.rate.toString() }));
-        const rounding = money(fieldValue(fields, ["roundingoff", "roundoff"], "0")), dealer = module.id === "fuel-purchases" ? normalized.reduce((sum, item) => sum.add(fieldValue(item.row.fields, "dealercomm", "0")), money(0)) : money(0), cashDiscount = money(fieldValue(fields, "cashdisc", "0"));
+        const rounding = money(fieldValue(fields, ["roundingoff", "roundoff"], "0")), dealer = moduleSchema.id === "fuel-purchases" ? normalized.reduce((sum, item) => sum.add(fieldValue(item.row.fields, "dealercomm", "0")), money(0)) : money(0), cashDiscount = money(fieldValue(fields, "cashdisc", "0"));
         const dealerAlreadyDeducted = jsonFields(jsonFields(actor.workspace.settings).purchase_policy).delar_comm === "yes" ? dealer : money(0);
         const total = money(amount.add(rounding).add(dealerAlreadyDeducted).sub(dealer).sub(cashDiscount));
         if (total.lte(0)) throw new PetrosoftError("Invoice total must be a positive amount.");
-        const invoiceFields = { ...fields, ...aggregate.fields, items, payment_amnt: fieldValue(fields, "Payment") || !module.forms.some(form => form.fields.some(field => field.name === "Payment")) ? fieldValue(fields, "payment_amnt", "0") : "0", total_amount: total.toString(), _batch: randomUUID() };
+        const invoiceFields = { ...fields, ...aggregate.fields, items, payment_amnt: fieldValue(fields, "Payment") || !moduleSchema.forms.some(form => form.fields.some(field => field.name === "Payment")) ? fieldValue(fields, "payment_amnt", "0") : "0", total_amount: total.toString(), _batch: randomUUID() };
         if (money(invoiceFields.payment_amnt).gt(total)) throw new PetrosoftError("Payment cannot exceed the invoice total.");
         const invoiceRow = { ...aggregate, amount: total, quantity: count, fields: invoiceFields };
-        normalized = [{ row: invoiceRow, posts: ledgerFor(module, invoiceRow) }];
+        normalized = [{ row: invoiceRow, posts: ledgerFor(moduleSchema, invoiceRow) }];
       }
     }
     const entries = [];
     for (const { row, posts, existingId } of normalized) {
-      const entry = await saveEntry(database, actor, module, row, posts, existingId || input.id);
+      const entry = await saveEntry(database, actor, moduleSchema, row, posts, existingId || input.id);
       await synchronizeMasterChildren(database, actor, entry, row.fields, save);
       entries.push(entry);
     }
@@ -441,7 +467,7 @@ export async function executeAction(actor: PetrosoftActor, input: ActionInput) {
 }
 
 export async function saveGenerated(actor: PetrosoftActor, moduleId: string, fields: PetrosoftFields, amount: unknown, name: string) {
-  const module = moduleById.get(moduleId);
-  if (!module || !hasPermission(actor, moduleId, "edit")) throw new PetrosoftError("Your role cannot generate this record.", 403);
-  return transaction(async database => saveEntry(database, actor, module, { name, date: today(), amount: money(amount), quantity: quantity(0), rate: quantity(0), fields, status: "active" }, []));
+  const moduleSchema = moduleById.get(moduleId);
+  if (!moduleSchema || !hasPermission(actor, moduleId, "edit")) throw new PetrosoftError("Your role cannot generate this record.", 403);
+  return transaction(async database => saveEntry(database, actor, moduleSchema, { name, date: today(), amount: money(amount), quantity: quantity(0), rate: quantity(0), fields, status: "active" }, []));
 }

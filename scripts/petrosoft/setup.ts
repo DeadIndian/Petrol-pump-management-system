@@ -68,10 +68,11 @@ async function main() {
   }
   if ((!existing || process.argv.includes("--reset-password")) && password.length < 4) throw new Error("Use an administrator password with at least four characters.");
   const backupPath = argument("--native", ".petrosoft/native.json");
+  const empty = process.argv.includes("--empty");
   let backup: NativeBackup = { format: "petrosoft-native-v1", sourceSha256: "", insertRows: 0, tables: {} };
-  try { backup = JSON.parse(await readFile(backupPath, "utf8")) as NativeBackup; } catch { console.log("Starting with an empty station; no private data export was supplied."); }
+  if (!empty) try { backup = JSON.parse(await readFile(backupPath, "utf8")) as NativeBackup; } catch { console.log("Starting with an empty station; no private data export was supplied."); }
   let htmlSettings = {};
-  try { htmlSettings = jsonFields(JSON.parse(await readFile(".petrosoft/import.json", "utf8")).settings); } catch { /* An empty installation is supported. */ }
+  if (!empty) try { htmlSettings = jsonFields(JSON.parse(await readFile(".petrosoft/import.json", "utf8")).settings); } catch { /* An empty installation is supported. */ }
   const settings = nativeSettings(backup, htmlSettings);
   const workspace = existing || await database.petrosoftWorkspace.create({ data: { referenceCode, name: argument("--name", fieldValue(settings, "company_name", "SRI KRISHNA FILLING STATION")), settings } });
   const admin = await database.petrosoftUser.upsert({ where: { workspaceId_username: { workspaceId: workspace.id, username } },
@@ -134,7 +135,10 @@ async function main() {
   }
   await synchronizeMetadata(workspace.id, settings, backup);
   await mkdir(".petrosoft", { recursive: true, mode: 0o700 });
-  await writeFile(".env.petrosoft.local", `PETROSOFT_DATABASE_URL=${databaseUrl}\n`, { mode: 0o600 });
+  let environment = "";
+  try { environment = await readFile(".env.petrosoft.local", "utf8"); } catch { /* Create the local environment on first setup. */ }
+  environment = /^PETROSOFT_DATABASE_URL=.*$/m.test(environment) ? environment.replace(/^PETROSOFT_DATABASE_URL=.*$/m, `PETROSOFT_DATABASE_URL=${databaseUrl}`) : `${environment}${environment && !environment.endsWith("\n") ? "\n" : ""}PETROSOFT_DATABASE_URL=${databaseUrl}\n`;
+  await writeFile(".env.petrosoft.local", environment, { mode: 0o600 });
   await writeFile(".petrosoft/setup.json", JSON.stringify({ referenceCode, username, entries: imported.length, sha256: backup.sourceSha256, initializedAt: new Date().toISOString(), sourceDigest: createHash("sha256").update(backup.sourceSha256).digest("hex") }), { mode: 0o600 });
   console.log(`Initialized ${workspace.name}: ${imported.length} entries, ${nativeRecords.length} supplementary records and ${audits.length} audit events. Start with npm run dev:petrosoft.`);
 }

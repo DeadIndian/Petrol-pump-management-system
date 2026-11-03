@@ -18,6 +18,10 @@
   R.master = (module, id) => (state.masters?.[module] || []).find(record => record.externalId === String(id).split("|")[0] || record.id === id || record.name === id);
   R.balance = (type, id, measure = "balance") => R.number(state.balances?.[type]?.[String(id).split("|")[0]]?.[measure] || 0);
   R.base = module => module.startsWith("bowser-") ? module === "bowser-sales" ? "meter-sales" : module.slice(7) : module;
+  R.can = (module, operation = "view") => {
+    const permissions = context.actor?.permissions || [], parent = context.parents?.[module];
+    return permissions.includes("*") || permissions.includes(module) || permissions.includes(`${module}:${operation}`) || Boolean(parent && (permissions.includes(parent) || permissions.includes(`${parent}:${operation}`)));
+  };
   R.field = (area, name) => Array.from(area.querySelectorAll("[name]")).find(element => element.name === name || element.name === `${name}[]` || element.name.replace(/\[\]$/, "") === name);
   R.fieldValue = (area, name, fallback = "") => R.field(area, name)?.value ?? fallback;
   R.set = (area, name, value, notify = false) => {

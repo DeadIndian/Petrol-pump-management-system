@@ -15,6 +15,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (!entry) throw new PetrosoftError("Document not found.", 404);
     if (!hasPermission(actor, entry.module)) throw new PetrosoftError("Your role cannot open this document.", 403);
     const report = documentReport(entry), format = request.nextUrl.searchParams.get("format");
+    if (["pdf", "xlsx"].includes(format || "") && !hasPermission(actor, entry.module, "export")) throw new PetrosoftError("Your role cannot export this document.", 403);
     if (format === "pdf") return new Response(await reportPdf(report, actor), { headers: attachmentHeaders(`Petrosoft-${entry.number}.pdf`, "application/pdf") });
     if (format === "xlsx") return new Response(await reportXlsx(report), { headers: attachmentHeaders(`Petrosoft-${entry.number}.xlsx`, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") });
     if (format === "json") return NextResponse.json(projectedReport(report), { headers: { "Cache-Control": "private, no-store" } });

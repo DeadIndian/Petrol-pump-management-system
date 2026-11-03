@@ -4,19 +4,22 @@ import { buildReport, rowFor, type ReportResult } from "@/lib/petrosoft/report-d
 import { reportCsv, reportHtml, reportPdf, reportXlsx, tallyXml } from "@/lib/petrosoft/report-render";
 import { jsonFields, moduleById } from "@/lib/petrosoft/catalog";
 import { readState } from "@/lib/petrosoft/queries";
+import { hasPermission } from "@/lib/petrosoft/auth";
+import { PetrosoftError } from "@/lib/petrosoft/actions";
 
 export const runtime = "nodejs";
 export async function POST(request: NextRequest) {
   try {
     const actor = await authenticated(request, true), input = await request.json(), format = String(input.format || "xlsx").toLowerCase();
+    if (!hasPermission(actor, input.index !== undefined ? "reports" : String(input.module), "export")) throw new PetrosoftError("Your role cannot export this data.", 403);
     let report: ReportResult;
     if (input.index !== undefined) report = await buildReport(actor, Number(input.index), jsonFields(input.fields));
     else {
-      const module = moduleById.get(String(input.module));
-      if (!module) throw new Error("Choose a valid module to export.");
-      const state = await readState(actor, module.id, jsonFields(input.filters));
-      const headings = module.tables[0]?.headers.filter(column => column.trim() && !/^(action|edit|delete|status|image|view|user log details|password|vehicles|pf \/ esi \/ it|add nozzles)$/i.test(column)) || ["Date", "Name", "Quantity", "Rate", "Amount", "Description"];
-      report = { title: module.title, from: String(input.filters?.from || input.filters?.frm_dt || state.date), to: String(input.filters?.to || input.filters?.to_dt || state.date), sections: [{ title: module.title, columns: headings, rows: state.records.map(rowFor) }], format };
+      const moduleSchema = moduleById.get(String(input.module));
+      if (!moduleSchema) throw new Error("Choose a valid module to export.");
+      const state = await readState(actor, moduleSchema.id, jsonFields(input.filters));
+      const headings = moduleSchema.tables[0]?.headers.filter(column => column.trim() && !/^(action|edit|delete|status|image|view|user log details|password|vehicles|pf \/ esi \/ it|add nozzles)$/i.test(column)) || ["Date", "Name", "Quantity", "Rate", "Amount", "Description"];
+      report = { title: moduleSchema.title, from: String(input.filters?.from || input.filters?.frm_dt || state.date), to: String(input.filters?.to || input.filters?.to_dt || state.date), sections: [{ title: moduleSchema.title, columns: headings, rows: state.records.map(rowFor) }], format };
     }
     const name = report.title.replace(/[^a-z0-9-]/gi, "-").replace(/-+/g, "-").slice(0, 70) || "Petrosoft";
     if (format === "pdf") return new Response(await reportPdf(report, actor, input.layout === "L" || report.sections.some(section => section.columns.length > 9)), { headers: attachmentHeaders(`${name}.pdf`, "application/pdf") });

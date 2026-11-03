@@ -171,6 +171,60 @@
     R.set(row, "net_salary", R.money(Math.max(0, net)));
     const form = row.closest("form"), total = Array.from(form.querySelectorAll('[name="net_salary"]')).reduce((sum, input) => sum + R.number(input.value), 0); form.querySelector("[data-ps-payroll-total]").textContent = R.format(total);
   };
+  R.updatePayrollDeductions = row => {
+    const offered = JSON.parse(row.closest("form").dataset.psPayrollRows || "[]").find(item => item.employee === row.dataset.psPayrollEmployee);
+    if (offered?.pf_enabled) {
+      const factor = R.number(offered.total_salary) > 0 ? R.number(offered.basic_salary) / R.number(offered.total_salary) : 1;
+      R.set(row, "pf", R.money(R.number(R.fieldValue(row, "total_salary")) * factor * 0.12));
+    }
+    if (offered?.esi_enabled) R.set(row, "esi", R.money(R.number(R.fieldValue(row, "total_salary")) * 0.0075));
+  };
+  R.initLoan = async (form, entry) => {
+    if (!form || (form.dataset.psModule || context.module.id) !== "interest") return;
+    const select = R.field(form, "loan"), previous = entry?.fields?.loan_id || select?.value;
+    if (!select) return;
+    select.tomselect?.destroy();
+    select.innerHTML = '<option value="0">New Loan</option>' + (state.records || []).filter(record => record.fields.type === "Loan" && (!record.fields.closed || record.id === previous)).map(record => `<option value="${esc(record.id)}">${esc(record.name)} — ${R.format(record.fields.balance_amount || record.amount)}</option>`).join("");
+    select.value = previous && select.querySelector(`option[value="${CSS.escape(previous)}"]`) ? previous : "0";
+    const holder = select.closest('[class*="col-md-"],[class*="col-sm-"]'); if (holder) holder.style.display = "";
+    R.field(form, "loan_balance").readOnly = true; R.field(form, "interest_payable").readOnly = true;
+    R.initWidgets(form); await R.previewLoan(form);
+  };
+  R.previewLoan = async form => {
+    const selected = R.fieldValue(form, "loan").trim(), repayment = Boolean(selected && selected !== "0" && selected !== "new");
+    R.toggleFields(form, ["partytype", "Topartytype", "interest", "trans_amnt"], !repayment);
+    R.toggleFields(form, ["loan_balance", "interest_payable", "interest_repay", "principal_repay"], repayment);
+    for (const key of ["interest", "trans_amnt", "partytype", "Topartytype"]) { const input = R.field(form, key); if (input) input.required = !repayment; }
+    if (!repayment) return;
+    const requestKey = `${selected}:${R.fieldValue(form, "trans_dt")}`, sequence = (R.loanPreviewSequence || 0) + 1; R.loanPreviewSequence = sequence;
+    const result = await R.api("/api/petrosoft/action", { module: "interest", operation: "preview-loan", id: form.dataset.psEdit || undefined, fields: { loan: selected, trans_dt: R.fieldValue(form, "trans_dt") } });
+    if (sequence !== R.loanPreviewSequence || requestKey !== `${R.fieldValue(form, "loan")}:${R.fieldValue(form, "trans_dt")}`) return;
+    for (const key of ["loan_balance", "interest_payable", "interest_rate"]) R.set(form, key, result[key]);
+  };
+  R.hydrateChildren = (form, entry) => {
+    const groups = [];
+    if (["customers", "guests"].includes(entry.module)) groups.push({ base: "vehicle_no", records: (state.masters.vehicles || []).filter(child => R.value(child.fields, entry.module === "customers" ? "customer_id" : "guest_id") === entry.externalId), fields: { vehicle_no: child => child.name, vehicle_place: child => child.fields.vehicle_place || "", vehicle_type: child => child.fields.vehicle_type || "" } });
+    if (entry.module === "customers") groups.push({ base: "pd_prod_id", records: (state.masters["customer-discounts"] || []).filter(child => R.value(child.fields, "customer_id") === entry.externalId), fields: { pd_prod_id: child => child.fields.product, pd_disc_offer: child => child.fields.disc_offer, pd_offer_type: child => child.fields.offer_type } });
+    if (entry.module === "tanks") groups.push({ base: "nozzel", records: (state.masters.nozzles || []).filter(child => R.value(child.fields, "tank_no") === R.value(entry.fields, "tank_no")), fields: { nozzel: child => child.name, nozzel_id: child => child.id } });
+    if (entry.module === "employees") groups.push({ base: "earning", records: (state.masters["employee-benefits"] || []).filter(child => R.value(child.fields, ["employee", "emp_id"]) === entry.externalId), fields: { earning: child => child.name, earn_amt: child => child.amount } });
+    for (const group of groups) {
+      const field = Array.from(form.querySelectorAll("[name]")).find(field => field.name === group.base || field.name.startsWith(`${group.base}[`));
+      const row = field?.closest("tr,[data-ps-row]") || field?.closest(".nozzel_grid")?.firstElementChild;
+      if (!row) continue;
+      row.dataset.psChildRow = group.base;
+      for (const duplicate of row.parentElement.querySelectorAll(`[data-ps-child-row="${group.base}"]`)) if (duplicate !== row) duplicate.remove();
+      const entries = group.records.length ? group.records : [{ fields: {}, name: "", amount: "0", id: "" }];
+      entries.forEach((child, index) => {
+        const target = index ? R.renumber(R.cleanClone(row.cloneNode(true))) : row; if (index) row.parentElement.append(target);
+        target.dataset.psChildId = child.id;
+        for (const input of target.querySelectorAll("[name]")) {
+          const base = input.name.replace(/\[.*$/, ""); if (!group.fields[base]) continue;
+          const offered = group.fields[base](child) ?? ""; if (input.tomselect) input.tomselect.setValue(offered, true); else input.value = offered;
+        }
+      });
+      form.dataset.psChildrenHydrated = "1";
+    }
+  };
   R.payrollDetail = entry => {
     const rows = entry.fields.rows || [], html = `<div class="table-responsive"><table class="table table-bordered"><thead><tr><th>Employee</th><th>Total Salary</th><th>Benefits</th><th>Deductions</th><th>Net Salary</th><th>Payment Mode</th></tr></thead><tbody>${rows.map(row => `<tr><td>${esc(row.employee_name)}</td><td>${R.format(row.total_salary || row.duty_salary)}</td><td>${R.format(row.benefits)}</td><td>${R.format(["pf", "esi", "it", "loan", "advance", "penalty", "shortage"].reduce((sum, key) => sum + R.number(row[key]), 0))}</td><td>${R.format(row.net_salary)}</td><td>${esc(row.pay_mode)}</td></tr>`).join("")}</tbody></table></div><p>Total: ${R.format(entry.amount)} — ${entry.fields.paid ? "Paid" : "Generated"}</p>`;
     const body = R.dialog("Pay Roll", html, `${entry.fields.paid ? "" : '<button class="btn btn-primary" data-ps-pay-salary type="button">Pay Salary</button>'} <button class="btn btn-default" data-ps-print type="button">Print</button>`);
@@ -240,6 +294,7 @@
   const readRow = row => Object.fromEntries(Array.from(row.querySelectorAll("input[name],select[name],textarea[name]")).filter(input => !["button", "submit", "file"].includes(input.type) && (!["radio", "checkbox"].includes(input.type) || input.checked)).map(input => [input.name.replace(/\[\]$/, ""), input.value]));
   R.specialSubmit = async (form, schema, fields) => {
     const module = form.dataset.psModule || context.module.id;
+    if (form.dataset.psChildrenHydrated) fields.replace_children = true;
     const send = async (body, operation = "save") => {
       const result = await R.api("/api/petrosoft/action", { module, operation, formIndex: schema?.index, id: form.dataset.psEdit || undefined, fields: body });
       R.notice(result.message); if (form.dataset.psAux || form.dataset.psEdit) R.closeDialog(); await R.refresh();
@@ -325,9 +380,35 @@
     const target = area.querySelector('[id*="total"],[data-ps-denomination-total]'); if (target) target.textContent = R.format(total);
     area.dataset.psDenominationTotal = total;
   };
+  R.serviceForm = async (title, request, fieldsHtml) => {
+    const form = document.createElement("form"); form.dataset.psCustom = "1";
+    form.innerHTML = `${fieldsHtml}<p data-ps-service-status role="status"></p><div class="text-right"><button type="submit" class="btn btn-primary">${esc(title)}</button></div>`;
+    const body = R.dialog(title, form), submit = form.querySelector('[type="submit"]'), status = form.querySelector("[data-ps-service-status]");
+    const services = await R.api("/api/petrosoft/integration");
+    if (!services.services.find(service => service.type === request.type)?.configured) { status.textContent = `${title} requires a service connection. Configure it for this installation, then reopen this form.`; submit.disabled = true; }
+    form.addEventListener("submit", async event => {
+      event.preventDefault(); submit.disabled = true; status.textContent = "Processing…";
+      try { const result = await R.api("/api/petrosoft/integration", { ...request, fields: { ...request.fields, ...R.readForm(form) } }); status.textContent = result.message || "The service accepted the request."; await R.refresh(); }
+      catch (error) { status.textContent = error.message; }
+      finally { submit.disabled = false; }
+    });
+    return body;
+  };
   R.providerDialog = (entry, action) => {
-    const type = action?.includes("cancel") ? "Cancel" : "Generate";
-    R.dialog(`${type} ${context.module.id === "eway-bills" ? "E-way Bill" : "E-Invoice"}`, `<p>${esc(entry?.name || "")}</p><p>Configure the NIC or authorized GSP credentials in this installation to ${type.toLowerCase()} government documents.</p><p>Local invoices and reports are available from the records above.</p>`);
+    const type = context.module.id === "eway-bills" ? "eway" : "einvoice", operation = action?.includes("cancel") ? "cancel" : "generate", title = `${operation === "cancel" ? "Cancel" : "Generate"} ${type === "eway" ? "E-way Bill" : "E-Invoice"}`;
+    const fields = `<p>${esc(entry?.name || "")} · Invoice ${esc(entry?.number || "")}</p>` + (operation === "cancel" ? '<label>Cancellation reason</label><textarea class="form-control" name="reason" required maxlength="300"></textarea>' : type === "eway" ? '<div class="row"><div class="col-md-4"><label>Vehicle No</label><input class="form-control" name="vehicle" required></div><div class="col-md-4"><label>Distance (km)</label><input class="form-control" name="distance" type="number" min="1" required></div><div class="col-md-4"><label>Transporter</label><input class="form-control" name="transporter"></div></div>' : "");
+    return R.serviceForm(title, { type, operation, id: entry.id }, fields).then(body => {
+      const statusButton = document.createElement("button"); statusButton.type = "button"; statusButton.className = "btn btn-default"; statusButton.textContent = "Check Status";
+      statusButton.onclick = async () => { statusButton.disabled = true; try { const result = await R.api("/api/petrosoft/integration", { type, operation: "status", id: entry.id }); body.querySelector("[data-ps-service-status]").textContent = `${result.message} ${result.reference || ""}`; await R.refresh(); } catch (error) { R.notice(error.message, "error"); } finally { statusButton.disabled = false; } };
+      body.append(statusButton);
+    }).catch(error => R.notice(error.message, "error"));
+  };
+  R.biometricDialog = () => R.serviceForm("Push Employees", { type: "biometric", operation: "employees" }, `<p>Send ${(state.masters.employees || []).filter(entry => entry.status === "active").length} active employees to the configured biometric device.</p>`);
+  R.communicationDialog = (handler, control) => {
+    const type = /whatsapp/i.test(handler) ? "whatsapp" : /mail/i.test(handler) || control.closest("a")?.getAttribute("href")?.startsWith("mailto:") ? "email" : "sms", label = { email: "Email", sms: "SMS", whatsapp: "WhatsApp" }[type];
+    const form = control.closest("form"), customerId = form && ["organiz", "rec_organiz", "customer_id", "guest_cust", "guest_id"].map(name => R.fieldValue(form, name)).find(Boolean), customer = R.master("customers", customerId) || R.master("guests", customerId);
+    const to = type === "email" ? R.value(customer?.fields, ["eml", "email", "g_email"], "") : R.value(customer?.fields, ["phone_no", "g_number", "mobile"], "");
+    return R.serviceForm(`Send ${label}`, { type, fields: { module: context.module.id } }, `<label>${type === "email" ? "Email address" : "Mobile number"}</label><input class="form-control" name="to" type="${type === "email" ? "email" : "tel"}" value="${esc(to)}" required>${type === "email" ? '<label>Subject</label><input class="form-control" name="subject">' : ""}<label>Message</label><textarea class="form-control" name="message" required maxlength="10000"></textarea>`);
   };
   const aliases = {
     "app/sale/add": "meter-sales", "app/product/add": "lubricant-sales", "app/swipe/add": "swipes", "app/credit/add": "credit-sales", "app/expenses/add": "expenses", "app/recovery/add/recovery": "recoveries", "app/settlement/add": "settlements", "app/daily_sale_rate/add": "daily-rates", "attendanceemp": "attendance", "app/master/box/sheet": "shift-sheet", "app/dashboard": "dashboard",
@@ -338,7 +419,7 @@
     if (/app\/attendence\/attendance_add$/.test(route)) { await R.attendanceDialog(); return true; }
     if (/app\/attendence\/view_month_atten$/.test(route)) { await R.attendanceMonth(); return true; }
     if (/app\/payroll\/salary_summary$/.test(route)) { await R.payrollDialog(); return true; }
-    if (/biometric|push_new_employees/.test(route)) { R.dialog("Biometric Device", "<p>Configure the biometric device connection for this installation before pushing employees.</p>"); return true; }
+    if (/biometric|push_new_employees/.test(route)) { await R.biometricDialog(); return true; }
     if (aliases[route]) { const module = state.modules.find(module => module.id === aliases[route]); if (module) { R.destination(`/petrosoft/${module.path}`); return true; } }
     return false;
   };
@@ -355,11 +436,12 @@
   document.addEventListener("input", event => {
     const field = event.target, row = field.closest("[data-ps-row]");
     if (row?.dataset.psTank && row.closest("form")?.querySelector("#tan")) R.calculateStockRow(row);
-    const salary = field.closest("[data-ps-payroll-employee]"); if (salary) { if (field.name === "duty_rate") R.set(salary, "total_salary", R.money(R.number(field.value) * R.number(R.fieldValue(salary, "total_duties")))); R.calculatePayrollRow(salary); }
+    const salary = field.closest("[data-ps-payroll-employee]"); if (salary) { if (field.name === "duty_rate") R.set(salary, "total_salary", R.money(R.number(field.value) * R.number(R.fieldValue(salary, "total_duties")))); if (["duty_rate", "total_salary"].includes(field.name)) R.updatePayrollDeductions(salary); R.calculatePayrollRow(salary); }
   });
   document.addEventListener("change", async event => {
     const field = event.target;
     try {
+      if ((field.form?.dataset.psModule || context.module.id) === "interest" && ["loan", "trans_dt"].includes(field.name)) await R.previewLoan(field.form);
       if (field.closest("[data-ps-payroll-employee]") && field.name === "pay_mode") { const bank = R.field(field.closest("tr"), "pay_bank"); bank.hidden = field.value !== "Bank"; bank.parentElement.querySelector(".ts-wrapper")?.classList.toggle("ps-hidden", field.value !== "Bank"); }
       const row = field.closest("[data-ps-row]");
       if (row?.dataset.psTank && ["dip_reading[]", "dip_stock[]"].includes(field.name) && field.value) {
@@ -394,7 +476,8 @@
       if (id === "link" && context.module.id === "shift-sheet") { event.preventDefault(); const body = R.dialog("Shift Sheet Entry", `<div class="row">${["meter-sales", "lubricant-sales", "swipes", "credit-sales", "expenses", "recoveries", "employee-recoveries", "opening-stock", "settlements"].map(id => state.modules.find(module => module.id === id)).filter(Boolean).map(module => `<div class="col-md-4 mt-15"><button class="btn btn-primary btn-block" type="button" data-ps-shift-module="${module.id}">${esc(module.title)}</button></div>`).join("")}</div>`); body.querySelectorAll("[data-ps-shift-module]").forEach(button => { button.onclick = () => R.shiftEntryDialog(button.dataset.psShiftModule).catch(error => R.notice(error.message, "error")); }); return; }
       if (handler.includes("goToDaySheetReport")) { event.preventDefault(); await R.openReport(30, { from: state.date, to: state.date }); return; }
       if (handler.includes("printPageArea")) { event.preventDefault(); window.print(); return; }
-      if (/send_sms|sendMail|send_email|send_whatsapp|confirmPush/.test(handler) || control.closest("a")?.getAttribute("href")?.startsWith("mailto:")) { event.preventDefault(); R.dialog("Communication Settings", "<p>Configure the email, SMS, WhatsApp, or device connection for this installation before sending.</p>"); return; }
+      if (/confirmPush/.test(handler)) { event.preventDefault(); return; }
+      if (/send_sms|sendMail|send_email|send_whatsapp/.test(handler) || control.closest("a")?.getAttribute("href")?.startsWith("mailto:")) { event.preventDefault(); await R.communicationDialog(handler, control); return; }
       if (handler.includes("resetModal")) { control.closest("form")?.reset(); return; }
       if (handler.includes("clearFile")) { event.preventDefault(); const modal = control.closest(".modal"), file = modal?.querySelector('input[type="file"]'); if (file) file.value = ""; return; }
       if (control.dataset.psPayrollAttendance) { event.preventDefault(); await R.attendanceMonth(control.closest("form")?.querySelector('[name="month"]')?.value); return; }

@@ -42,9 +42,9 @@ const specific: Record<string, string> = {
 const normalized = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, "");
 function permission(page: (typeof pages)[number]) {
   if (specific[page.page_id]) return specific[page.page_id];
-  const module = groups[page.page_module.trim().toLowerCase()];
-  if (!module) return `legacy:${page.page_id}`;
-  if (module === "reports") {
+  const moduleSchema = groups[page.page_module.trim().toLowerCase()];
+  if (!moduleSchema) return `legacy:${page.page_id}`;
+  if (moduleSchema === "reports") {
     const report = reports.find(item => normalized(item.title) === normalized(page.page_link) || normalized(item.title) === normalized(page.page_name));
     if (report) return `reports:report-${report.index}`;
   }
@@ -52,7 +52,7 @@ function permission(page: (typeof pages)[number]) {
   const operation = /delete/.test(label) ? "delete" : /inact|act\/|active.*status/.test(label) ? "toggle"
     : /update|edit|change/.test(label) ? "edit" : /print|buttons|button_/.test(label) ? "export"
       : /add|create|creat_|generate|save/.test(label) ? "create" : "view";
-  return `${module}:${operation}`;
+  return `${moduleSchema}:${operation}`;
 }
 export const rolePages: Record<string, string> = Object.fromEntries(pages.map(page => [page.page_id, permission(page)]));
 export function permissionsForPages(ids: unknown[]) {

@@ -4,8 +4,8 @@ import { hasPermission, type PetrosoftActor } from "./auth";
 import { PetrosoftError } from "./actions";
 
 export async function calculateDip(actor: PetrosoftActor, fields: PetrosoftFields) {
-  const module = fieldValue(fields, "module", "opening-stock");
-  if (!hasPermission(actor, module)) throw new PetrosoftError("Your role cannot open tank calculations.", 403);
+  const moduleSchema = fieldValue(fields, "module", "opening-stock");
+  if (!hasPermission(actor, moduleSchema)) throw new PetrosoftError("Your role cannot open tank calculations.", 403);
   const tankNo = fieldValue(fields, ["tank_no", "tank"]);
   const tank = await petrosoftDb.petrosoftEntry.findFirst({ where: { workspaceId: actor.workspaceId, module: "tanks", status: { not: "void" }, OR: [{ externalId: tankNo }, { fields: { path: ["tank_no"], equals: tankNo } }] } });
   if (!tank) throw new Error("Choose a valid tank.");

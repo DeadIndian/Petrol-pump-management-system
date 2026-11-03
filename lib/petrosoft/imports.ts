@@ -18,8 +18,8 @@ export function importTarget(module: string, action: string) {
   return module;
 }
 export async function previewImport(actor: PetrosoftActor, file: File, moduleId: string, action: string, offeredMapping: PetrosoftFields = {}) {
-  const target = importTarget(moduleId, action), module = moduleById.get(target);
-  if (!module || !hasPermission(actor, target, "edit")) throw new PetrosoftError("Your role cannot import into this module.", 403);
+  const target = importTarget(moduleId, action), moduleSchema = moduleById.get(target);
+  if (!moduleSchema || !hasPermission(actor, target, "edit")) throw new PetrosoftError("Your role cannot import into this module.", 403);
   if (!file.size || file.size > 20 * 1024 * 1024) throw new PetrosoftError("Choose a CSV or spreadsheet smaller than 20 MB.", 413);
   const bytes = new Uint8Array(await file.arrayBuffer()), extension = file.name.split(".").pop()?.toLowerCase();
   if (!["csv", "xlsx", "xls", "txt"].includes(extension || "")) throw new Error("Choose a CSV, XLS, or XLSX file.");
@@ -29,7 +29,7 @@ export async function previewImport(actor: PetrosoftActor, file: File, moduleId:
   if (cells.length > 5001) throw new Error("Import at most 5,000 rows at a time.");
   const headers = cells[0].map(value => String(value ?? "").replace(/^\uFEFF/, "").trim());
   if (headers.length > 150) throw new Error("The file has too many columns.");
-  const saveForm = module.forms.find(form => form.operation === "save") || formFor(module), schema = saveForm?.fields || [];
+  const saveForm = moduleSchema.forms.find(form => form.operation === "save") || formFor(moduleSchema), schema = saveForm?.fields || [];
   const mapping: Record<string, string> = {};
   for (const header of headers) {
     const offered = offeredMapping[header], automatic = schema.find(field => normalize(field.name) === normalize(header) || normalize(field.label.replace(/\*$/, "")) === normalize(header));
@@ -45,7 +45,7 @@ export async function previewImport(actor: PetrosoftActor, file: File, moduleId:
   const rows = cells.slice(1).filter(row => row.some(value => String(value).trim())).map((values, index) => {
     const parsed: PetrosoftFields = { __headers: headers, __cells: values.map(value => value instanceof Date ? value.toISOString().slice(0, 10) : String(value ?? "")) };
     headers.forEach((header, column) => { if (mapping[header]) parsed[mapping[header]] = parsed.__cells instanceof Array ? parsed.__cells[column] : ""; });
-    const row = rowFromImport(module, parsed);
+    const row = rowFromImport(moduleSchema, parsed);
     const date = fieldValue(row, ["_date", "insert_date", "join_dt", "date"], today().toISOString().slice(0, 10));
     if (/^\d{1,2}[-/]\d{1,2}[-/]\d{4}$/.test(date)) { const [day, month, year] = date.split(/[-/]/); row._date = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`; }
     else if (!/^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isFinite(new Date(date).getTime())) row._date = new Date(date).toISOString().slice(0, 10);
@@ -54,7 +54,7 @@ export async function previewImport(actor: PetrosoftActor, file: File, moduleId:
     if (target === "employees") { row.emp_name ||= row.name; row.designation ||= "DSM"; row.salary_type ||= "Per Duty"; row.salary ||= "0"; row.emp_ph_no ||= row.phone_no; row.emp_addrs ||= row.org_address; }
     if (target === "fuel-products") row.liqpro_name ||= row.name;
     if (target === "lubricants") row.pro_name ||= row.name;
-    if (module.kind !== "master") {
+    if (moduleSchema.kind !== "master") {
       if (row.__customerName || row.org_name || row.customer) { row.customer_id = lookup("customers", fieldValue(row, ["__customerName", "org_name", "customer"]), index + 2); row.organiz = row.customer_id; row.rec_organiz = row.customer_id; }
       if (row.__productName || row.product) { row.product = lookup(/lubricant/.test(target) ? "lubricants" : "fuel-products", fieldValue(row, ["__productName", "product"]), index + 2); }
       if (row.__employeeName || row.employee) row.employee = lookup("employees", fieldValue(row, ["__employeeName", "employee"]), index + 2);

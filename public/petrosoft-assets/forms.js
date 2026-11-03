@@ -51,7 +51,7 @@
     return area;
   };
   R.addRow = control => {
-    const form = control.closest("form"), current = control.closest("[data-ps-row]") || R.formRows(form)[0];
+    const form = control.closest("form"), current = control.closest("[data-ps-child-row],[data-ps-row]") || R.formRows(form)[0];
     if (!form || current === form) return;
     const clone = R.cleanClone(R.renumber(current.cloneNode(true)));
     for (const field of clone.querySelectorAll("input,select,textarea")) {
@@ -214,7 +214,8 @@
         else field.value = Array.isArray(value) ? value[0] || "" : value;
       }
     }
-    const body = R.dialog(`Edit ${context.module.title}`, form); R.initWidgets(body); R.calculateForm(form);
+    R.hydrateChildren?.(form, entry);
+    const body = R.dialog(`Edit ${context.module.title}`, form); R.initWidgets(body); R.calculateForm(form); await R.initLoan?.(form, entry);
   };
   async function attachments(form, fields) {
     for (const input of form.querySelectorAll('input[type="file"]')) {

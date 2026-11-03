@@ -51,6 +51,8 @@
     for (const input of document.querySelectorAll('[data-ps-setting]')) input.value = state.settings[input.dataset.psSetting] || "";
     for (const form of document.querySelectorAll("form[data-ps-form]")) {
       const operation = form.dataset.psOperation;
+      const allowed = operation === "save" || operation === "import" ? R.can(moduleId, context.module.kind === "settings" ? "edit" : "create") : operation === "report" ? R.can("reports", `report-${form.dataset.psForm}`) : true;
+      if (!allowed) { form.hidden = true; continue; }
       for (const input of form.querySelectorAll("input[name],textarea[name]")) {
         const name = input.name.replace(/\[.*$/, "");
         if (input.type === "password") { input.value = ""; continue; }
@@ -112,7 +114,16 @@
 
   async function dashboard() {
     if (moduleId !== "dashboard") return;
-    const summary = state.summary || {}, recent = state.recent || [], trends = (state.trends || []).slice().sort((a, b) => a.date.localeCompare(b.date));
+    const summary = state.summary || {}, recent = state.recent || [], trends = state.trends || [], monthly = state.monthlyTrends || [], recovery = state.recoveryTrends || [], stocks = state.dashboardStock || state.stock || [];
+    const productSelect = document.getElementById("sel2");
+    if (productSelect) {
+      productSelect.tomselect?.destroy(); productSelect.removeAttribute("data-ps-relation");
+      productSelect.innerHTML = [["Liquids", "fuel-products", ""], ["Lubricants", "lubricants", "l_"]].map(([label, type, prefix]) => `<optgroup label="${label}">${(state.masters[type] || []).filter(entry => entry.status === "active").map(entry => `<option value="${esc(prefix + entry.externalId)}">${esc(entry.name)}</option>`).join("")}</optgroup>`).join("");
+      productSelect.value = state.dashboardProduct || ""; R.initWidgets(productSelect.parentElement);
+    }
+    const stockMonth = document.getElementById("month_picker_current_stock"); if (stockMonth) stockMonth.value = state.stockMonth || state.date.slice(0, 7);
+    const recoverySelect = document.getElementById("credit_recov_select");
+    if (recoverySelect) { recoverySelect.dataset.psRelation = "customers"; R.fillRelations(recoverySelect.parentElement); recoverySelect.value = state.filters.credit_customer || "0"; R.initWidgets(recoverySelect.parentElement); }
     const sale = number(summary.meter_sale) + number(summary.lubricant_sale), purchase = number(summary.fuel_purchase) + number(summary.lubricant_purchase);
     const vendorCollection = total(recent, row => R.base(row.module) === "recoveries" && /vendor/i.test(R.value(row.fields, "re_type")));
     const bankCollection = total(recent, row => R.base(row.module) === "recoveries" && /bank|upi|cheque/i.test(R.value(row.fields, "re_type"))) + number(summary.swipe);
@@ -125,28 +136,28 @@
       return [product.name, R.format(list.reduce((qty, row) => qty + number(row.quantity), 0)), R.format(total(list, () => true))];
     });
     html("prd-data", products.map(row => `<tr>${row.map(cell => `<td>${esc(cell)}</td>`).join("")}</tr>`).join(""));
-    const bankRows = Object.entries(state.balances.bank || {}).map(([id, balance]) => [R.master("business-parties", id)?.name || id, R.format(balance.balance)]);
-    html("bank_transactions_list", simpleTable(["Bank", "Balance"], bankRows));
+    const bankRows = (state.bankFlow || []).map(row => [row.name, R.format(row.debit), R.format(row.credit)]);
+    html("bank_transactions_list", simpleTable(["Bank", "Debit", "Credit"], bankRows));
     const summaryRows = [["Meter Sale", summary.meter_sale], ["Lubricant Sale", summary.lubricant_sale], ["Recovery", summary.recovery], ["Cash In", summary.cash_in], ["Credit Sale", summary.credit], ["Swipe", summary.swipe], ["Discount", summary.discount], ["Expenses", summary.expenses], ["Hand Cash", summary.hand_cash], ["Opening Cash", state.cashOpening], ["Closing Cash", state.cashClosing]].map(([label, value]) => [label, R.format(value)]);
     html("overall_summary", summaryRows.map(row => `<tr><td>${esc(row[0])}</td><td class="text-right">${esc(row[1])}</td></tr>`).join(""));
-    const categories = trends.map(row => row.date.slice(8));
-    html("tbl_data1", simpleTable(["Date", "Sale", "Purchase"], trends.map(row => [row.date, R.format(number(row.meter_sale) + number(row.lubricant_sale)), R.format(number(row.fuel_purchase) + number(row.lubricant_purchase))])));
-    html("tbl_data2", recent.length ? simpleTable(["Bank", "Debit", "Credit"], (state.bankFlow || []).map(row => [row.name, R.format(row.debit), R.format(row.credit)])) : "");
-    html("tbl_data3", simpleTable(["Tank", "Opening Stock", "Receipt", "Meter Sale", "Closing Stock", "Variation"], (state.stock || []).map(stock => [stock.name, R.format(stock.fields.open_stock), R.format(stock.fields.receipt), R.format(stock.fields.meter_sale), R.format(stock.fields.close_stock), R.format(stock.fields.stk_variation)])));
-    html("monthly_recovery_data", simpleTable(["Date", "Credit", "Recovery"], trends.map(row => [row.date, R.format(row.credit), R.format(number(row.recovery) + number(row.bank_recovery))])));
+    const monthLabel = date => new Intl.DateTimeFormat("en-IN", { month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${date}T00:00:00Z`));
+    const categories = trends.map(row => monthLabel(row.date)), monthlyCategories = monthly.map(row => monthLabel(row.date));
+    html("tbl_data1", simpleTable(["Month", "Sale Qty", "Purchase Qty"], monthly.map(row => [monthLabel(row.date), R.format(row.sale), R.format(row.purchase)])));
+    html("tbl_data2", simpleTable(["Bank", "Debit", "Credit"], bankRows));
+    html("tbl_data3", simpleTable(["Tank", "Opening Stock", "Receipt", "Meter Sale", "Closing Stock", "Variation"], stocks.map(stock => [stock.name, R.format(stock.fields.open_stock), R.format(stock.fields.receipt), R.format(stock.fields.meter_sale), R.format(stock.fields.close_stock), R.format(stock.fields.stk_variation)])));
+    html("monthly_recovery_data", simpleTable(["Month", "Credit", "Recovery"], recovery.map(row => [monthLabel(row.date), R.format(row.credit), R.format(number(row.recovery) + number(row.bank_recovery))])));
     const creditAlerts = (state.masters.customers || []).filter(customer => number(customer.fields.credit_limit) > 0 && R.balance("customer", customer.externalId) > number(customer.fields.credit_limit));
     html("creditlimit_custs", creditAlerts.map(customer => `<tr><td>${esc(customer.name)}</td><td>${esc(R.value(customer.fields, "phone_no"))}</td><td>${R.format(R.balance("customer", customer.externalId))}</td></tr>`).join(""));
     const tasks = [
       R.drawChart("day_summary_chart", { chart: { type: "bar", height: 285 }, series: [{ name: "Amount", data: summaryRows.slice(0, 9).map(row => number(String(row[1]).replace(/,/g, ""))) }], xaxis: { categories: summaryRows.slice(0, 9).map(row => row[0]) } }),
-      R.drawChart("m_sale_chart", { chart: { type: "area" }, series: [{ name: "Fuel", data: trends.map(row => number(row.meter_sale)) }, { name: "Lubricants", data: trends.map(row => number(row.lubricant_sale)) }], xaxis: { categories } }),
-      R.drawChart("m_pur_chart", { chart: { type: "area" }, series: [{ name: "Fuel", data: trends.map(row => number(row.fuel_purchase)) }, { name: "Lubricants", data: trends.map(row => number(row.lubricant_purchase)) }], xaxis: { categories } }),
+      R.drawChart("m_sale_chart", { chart: { type: "area" }, series: [{ name: "Sales", data: monthly.map(row => number(row.sale)) }], xaxis: { categories: monthlyCategories } }),
+      R.drawChart("m_pur_chart", { chart: { type: "area" }, series: [{ name: "Purchase", data: monthly.map(row => number(row.purchase)) }], xaxis: { categories: monthlyCategories } }),
       R.drawChart("actualvssale", { chart: { type: "line" }, series: [{ name: "Meter Sale", data: trends.map(row => number(row.meter_sale)) }, { name: "Credit + Swipe + Cash", data: trends.map(row => number(row.credit) + number(row.swipe) + number(row.hand_cash)) }], xaxis: { categories } }),
-      R.drawChart("stock_chart", { chart: { type: "bar" }, series: [{ name: "Stock (L)", data: (state.stock || []).map(stock => number(stock.quantity)) }], xaxis: { categories: (state.stock || []).map(stock => stock.name) } }),
-      R.drawChart("stock_variation", { chart: { type: "bar" }, series: [{ name: "Variation (L)", data: (state.stock || []).map(stock => number(stock.fields.stk_variation)) }], xaxis: { categories: (state.stock || []).map(stock => stock.name) } }),
-      R.drawChart("monthly_recovery", { chart: { type: "bar" }, series: [{ name: "Credit", data: trends.map(row => number(row.credit)) }, { name: "Recovery", data: trends.map(row => number(row.recovery) + number(row.bank_recovery)) }], xaxis: { categories } }),
+      ...["stock_chart", "stock_variation"].map(id => R.drawChart(id, { chart: { type: "line" }, series: stocks.map(stock => ({ name: stock.name, data: (state.stockTrends || []).filter(row => R.value(row.fields, "tank_no") === R.value(stock.fields, "tank_no")).map(row => ({ x: row.date, y: number(R.value(row.fields, id === "stock_chart" ? ["dip_stock", "close_stock"] : "stk_variation")) })) })), xaxis: { type: "datetime" } })),
+      R.drawChart("monthly_recovery", { chart: { type: "bar" }, series: [{ name: "Credit", data: recovery.map(row => number(row.credit)) }, { name: "Recovery", data: recovery.map(row => number(row.recovery) + number(row.bank_recovery)) }], xaxis: { categories: recovery.map(row => monthLabel(row.date)) } }),
       R.drawChart("day_sale_flow_pie", { chart: { type: "donut" }, labels: ["Cash", "Credit", "Bank", "Vendor", "Discount"], series: [Math.max(0, number(summary.hand_cash)), number(summary.credit), bankCollection, vendorCollection, number(summary.discount)] }),
       R.drawChart("day_purchase_pie", { chart: { type: "donut" }, labels: ["Fuel", "Lubricants"], series: [number(summary.fuel_purchase), number(summary.lubricant_purchase)] }),
-      R.drawChart("bank_transactions_pie", { chart: { type: "donut" }, labels: bankRows.map(row => row[0]), series: Object.values(state.balances.bank || {}).map(balance => Math.max(0, number(balance.balance))) }),
+      R.drawChart("bank_transactions_pie", { chart: { type: "donut" }, labels: bankRows.map(row => row[0]), series: (state.bankFlow || []).map(row => Math.max(0, number(row.debit))) }),
     ];
     await Promise.allSettled(tasks);
     await dashboardLedger(); dashboardViews();
@@ -193,6 +204,7 @@
     if (moduleId === "opening-stock") await R.renderStock();
     R.renderTables();
     for (const form of document.querySelectorAll('form[data-ps-operation="save"]')) R.calculateForm(form);
+    if (moduleId === "interest") await R.initLoan(document.querySelector('form[data-ps-operation="save"]'));
     await dashboard(); loyalty();
     document.body.dataset.psReady = "true";
     document.dispatchEvent(new CustomEvent("petrosoft:ready", { detail: { module: moduleId } }));
@@ -218,6 +230,7 @@
       if (field.id === "file-date") await R.formDateChanged(field.value);
       if (["cr_dt_type", "cr_dt_select"].includes(field.id)) await dashboardLedger();
       if (["sel1", "sel3", "sel5", "sel6"].includes(field.id)) dashboardViews();
+      if (["sel2", "credit_recov_select", "month_picker_current_stock"].includes(field.id)) { const key = { sel2: "dashboard_product", credit_recov_select: "credit_customer", month_picker_current_stock: "stock_month" }[field.id]; await R.refresh({ ...state.filters, [key]: field.value }); }
       if (field.name === "anyinflw" || field.name === "handover_type") settlementFields();
       if (/^(?:inflwtype|outtype)\[\]$/.test(field.name)) {
         const row = R.rowFor(field), target = R.field(row, field.name.startsWith("in") ? "received" : "handed");

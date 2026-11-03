@@ -4,7 +4,11 @@
   if (!R) return;
   const { state, context, esc, $ } = R;
   const icons = { edit: "edit.png", delete: "delete.png" };
-  const button = (entry, action, label, icon) => `<button type="button" data-ps-record="${esc(entry.id)}" data-ps-record-module="${esc(entry.module)}" data-ps-action="${action}" title="${esc(label)}" aria-label="${esc(label)}">${icon && icons[icon] ? `<img src="/petrosoft-assets/assets/images/${icons[icon]}" alt="">` : esc(label)}</button>`;
+  const button = (entry, action, label, icon) => {
+    const operation = ["edit", "delete", "toggle"].includes(action) ? action : action === "permissions" || action.startsWith("provider-") ? "edit" : "view";
+    if (!R.can(action.startsWith("provider-") ? context.module.id : entry.module, operation)) return "";
+    return `<button type="button" data-ps-record="${esc(entry.id)}" data-ps-record-module="${esc(entry.module)}" data-ps-action="${action}" title="${esc(label)}" aria-label="${esc(label)}">${icon && icons[icon] ? `<img src="/petrosoft-assets/assets/images/${icons[icon]}" alt="">` : esc(label)}</button>`;
+  };
   const field = (entry, names, fallback = "") => R.value(entry.fields, names, fallback);
   const normalize = label => label.toLowerCase().replace(/\([^)]*\)/g, "").replace(/[^a-z0-9]/g, "");
   R.cell = (entry, heading, index, rowIndex) => {
@@ -150,11 +154,11 @@
       table.querySelectorAll("thead input[type=checkbox]").forEach(checkbox => { checkbox.setAttribute("aria-label", "Select all entries"); checkbox.onchange = () => table.querySelectorAll("[data-ps-select]").forEach(input => { input.checked = checkbox.checked; }); });
       if ($?.fn.DataTable) {
         $(table).DataTable({ pageLength: 10, order: [], autoWidth: false, scrollX: true, deferRender: true,
-          dom: "Bflrtip", buttons: [
+          dom: "Bflrtip", buttons: R.can(context.module.id, "export") ? [
             { text: "Copy", action: () => { navigator.clipboard?.writeText(table.innerText).then(() => R.notice("Table copied.")); } },
             { text: "Excel", action: () => R.exportModule("xlsx") }, { text: "PDF", action: () => R.exportModule("pdf") },
             { text: "Print", action: () => R.printTable(table, context.module.title) },
-          ], language: { emptyTable: "No data available in table", search: "Search:", lengthMenu: "Show _MENU_ entries" } });
+          ] : [], language: { emptyTable: "No data available in table", search: "Search:", lengthMenu: "Show _MENU_ entries" } });
       }
     }
   };

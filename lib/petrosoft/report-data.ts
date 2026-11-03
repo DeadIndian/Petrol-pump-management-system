@@ -6,12 +6,14 @@ import { petrosoftDb } from "./db";
 import { balanceMap, dailySummary, dateRange, displayNames, latestRates, mastersFor, serializeEntry, tankStock, transactionRecords, type PublicEntry } from "./queries";
 import { baseModule, CUSTOMER_KEYS, EMPLOYEE_KEYS, money, PRODUCT_KEYS, quantity, VENDOR_KEYS } from "./rules";
 import reportCatalog from "./reports.json";
+import { extendedReport } from "./report-aggregates";
+import { requestIntegration } from "./integrations";
 
 export type ReportRow = Record<string, unknown>;
-export interface ReportSection { title: string; columns: string[]; rows: ReportRow[] }
+export interface ReportSection { title: string; columns: string[]; rows: ReportRow[]; totals?: ReportRow }
 export interface ReportResult { title: string; from: string; to: string; sections: ReportSection[]; format: string; summary?: ReportRow }
 const reportSpecs = reportCatalog as { index: number; title: string; action: string; format: string; tables: { headers: string[]; class: string }[] }[];
-const transactionModules = ["meter-sales", "credit-sales", "recoveries", "lubricant-sales", "swipes", "expenses", "employee-recoveries", "fuel-purchases", "lubricant-purchases", "other-purchases", "lfr-invoices", "settlements", "opening-stock", "business-transactions", "vendor-transactions", "swipe-settlements", "attendance-details", "guest-sales", "gift-purchases", "gift-sales", "handling-loss", "lubricant-loss", "interest", "bowser-sales", "bowser-credit-sales", "bowser-recoveries", "bowser-swipes", "bowser-expenses", "bowser-lubricant-sales", "feedback", "pump-incentives", "godown-transfers"];
+const transactionModules = ["meter-sales", "credit-sales", "recoveries", "lubricant-sales", "swipes", "expenses", "employee-recoveries", "employee-payments", "employee-loans", "fuel-purchases", "lubricant-purchases", "other-purchases", "lfr-invoices", "settlements", "opening-stock", "business-transactions", "vendor-transactions", "swipe-settlements", "attendance-details", "guest-sales", "gift-purchases", "gift-sales", "handling-loss", "lubricant-loss", "interest", "bowser-sales", "bowser-credit-sales", "bowser-recoveries", "bowser-swipes", "bowser-expenses", "bowser-lubricant-sales", "feedback", "pump-incentives", "godown-transfers", "sales-officer", "bowsers", "bowser-fillings"];
 const source = (entry: PublicEntry) => entry.fields as PetrosoftFields;
 const sum = (rows: PublicEntry[], key: "amount" | "quantity" = "amount") => rows.reduce((total, row) => total.add(row[key]), money(0));
 function add(row: ReportRow, key: string, amount: unknown) { row[key] = money(row[key] || 0).add(money(amount || 0)).toString(); }
@@ -35,11 +37,12 @@ function rowFor(entry: PublicEntry): ReportRow {
 }
 
 export async function buildReport(actor: PetrosoftActor, index: number, input: PetrosoftFields = {}): Promise<ReportResult> {
-  if (!hasPermission(actor, "reports")) throw new PetrosoftError("Your role cannot open reports.", 403);
+  if (!hasPermission(actor, "reports", `report-${index}`)) throw new PetrosoftError("Your role cannot open this report.", 403);
   const spec = reportSpecs.find(report => report.index === index);
   if (!spec) throw new PetrosoftError("Choose a valid report.", 404);
+  const singleDay = fieldValue(input, ["rdate", "bowsr_date", "one_dt"]);
   const fields = { ...input,
-    from: fieldValue(input, ["from", "frm_dt", "from_dt", "purfrm_dt", "swp_frm_dt", "dt", "credit_dt", "recov_dt"]),
+    from: fieldValue(input, ["from", "frm_dt", "from_dt", "purfrm_dt", "swp_frm_dt", "dt", "credit_dt", "recov_dt"], singleDay),
     to: fieldValue(input, ["to", "to_dt", "purto_dt", "swp_to_dt", "dt2", "one_dt", "rdate", "bowsr_date"]),
   };
   const range = dateRange(fields, false), from = range.from.toISOString().slice(0, 10), to = range.to.toISOString().slice(0, 10);
@@ -49,20 +52,30 @@ export async function buildReport(actor: PetrosoftActor, index: number, input: P
   ]);
   const records = original.map(entry => displayNames(entry, masters, closing));
   const name = (module: string, id: string) => (masters[module] || []).find(row => row.externalId === id.split("|")[0] || row.id === id)?.name || id;
-  const customerId = fieldValue(input, ["credit_org", "customer_id", "organiz", "org_id"]);
-  const employeeId = fieldValue(input, ["emp_id", "emp_name", "day_emp", "emp_idI"]);
-  const vendorId = fieldValue(input, ["Vendor", "vend_name", "vendor_id"]);
+  const chosen = (names: string[]) => fieldValue(input, names).split("|")[0].trim();
+  const customerId = chosen(["credit_org", "customer_id", "organiz", "org_id"]);
+  const employeeId = chosen(["emp_id", "emp_name", "day_emp", "emp_idI"]);
+  const vendorId = chosen(["Vendor", "vend_name", "vendor_id"]);
   const category = fieldValue(input, "credit_category");
-  const allowedCustomers = (masters.customers || []).filter(customer => (!customerId || customerId === "all" || customerId === "All" || customer.externalId === customerId) && (!category || /all/i.test(category) || fieldValue(customer.fields as PetrosoftFields, ["cust_category", "category"]) === category));
+  const specificCustomer = Boolean(customerId && !/^(all|0)$/i.test(customerId));
+  const allowedCustomers = (masters.customers || []).filter(customer => specificCustomer ? customer.externalId === customerId || customer.id === customerId : (!category || /^(all|0)$/i.test(category) || fieldValue(customer.fields as PetrosoftFields, ["cust_category", "category"]) === category));
   const customerIds = new Set(allowedCustomers.map(customer => customer.externalId));
-  const selectedProducts = ["product[]", "prod_name[]", "prodc[]", "liquid_prod[]", "lub_prod[]", "lub_name[]", "lub_name1[]", "swipe_bank[]", "exp_type[]"].flatMap(key => Array.isArray(input[key]) ? (input[key] as unknown[]).map(String) : []);
-  const productId = fieldValue(input, ["product", "prod_name", "prodc", "selct_prod", "lub_name"]);
+  const selectedValues = (keys: string[]) => [...new Set(keys.flatMap(key => {
+    const value = input[key] ?? input[`${key}[]`];
+    return value === undefined ? [] : (Array.isArray(value) ? value : [value]).map(item => String(item).split("|")[0].trim()).filter(item => item && !/^(all|0)$/i.test(item));
+  }))];
+  const fuelProducts = selectedValues(["product", "prod_name", "prodc", "selct_prod", "liquid_prod"]);
+  const lubricantProducts = selectedValues(["lub_prod", "lub_name1", "lpg_nm", ...(/liquid/i.test(fieldValue(input, ["proType", "saleType", "saleType_month"])) ? [] : ["lub_name"])]);
+  const selectedProducts = selectedValues(index === 57 ? ["swipe_bank"] : ["product", "prod_name", "prodc", "liquid_prod", "lub_prod", "lub_name", "lub_name1"]);
+  const productId = fuelProducts.length === 1 ? fuelProducts[0] : "";
+  const tanks = selectedValues(["tank"]);
   const vehicle = fieldValue(input, ["vehi_no", "vehicle_no", "credit_vehicles"]);
   const select = (moduleIds: string[], all = records) => all.filter(record => moduleIds.includes(record.module)
-    && (!customerId || /all/i.test(customerId) || customerIds.has(fieldValue(source(record), CUSTOMER_KEYS)))
-    && (!employeeId || /all/i.test(employeeId) || fieldValue(source(record), EMPLOYEE_KEYS) === employeeId)
+    && (!(specificCustomer || category && !/^(all|0)$/i.test(category)) || customerIds.has(fieldValue(source(record), CUSTOMER_KEYS)))
+    && (!employeeId || /^(all|0)$/i.test(employeeId) || selectedValues(["emp_id", "emp_name", "day_emp", "emp_idI"]).includes(fieldValue(source(record), EMPLOYEE_KEYS)))
     && (!vendorId || /all/i.test(vendorId) || fieldValue(source(record), VENDOR_KEYS) === vendorId)
-    && (!productId || /all/i.test(productId) || fieldValue(source(record), PRODUCT_KEYS) === productId)
+    && (!(/lubricant/.test(record.module) ? lubricantProducts : fuelProducts).length || /purchases/.test(record.module) || (/lubricant/.test(record.module) ? lubricantProducts : fuelProducts).includes(fieldValue(source(record), PRODUCT_KEYS)))
+    && (!tanks.length || !/stock|meter-sales|sales-officer/.test(record.module) || tanks.includes(fieldValue(source(record), ["tank_no", "stock_tank"])))
     && (!vehicle || /all/i.test(vehicle) || fieldValue(source(record), ["vehi_no", "vehicle_no", "lubvehi_no"]) === vehicle));
   const sections: ReportSection[] = [];
   const section = (rows: ReportRow[], fallback: string[], title = spec.title, layout = 0) => {
@@ -78,12 +91,15 @@ export async function buildReport(actor: PetrosoftActor, index: number, input: P
     return list.map(item => ({ ...rowFor(record), ...item, invoice: fieldValue(f, ["invo_no", "invoiceno", "invoice"], String(record.number)), product_id: fieldValue(item, PRODUCT_KEYS), product: name(record.module === "lubricant-purchases" ? "lubricants" : "fuel-products", fieldValue(item, PRODUCT_KEYS)),
       quantity: fieldValue(item, ["quantity", "pro_qty", "pur_proqty"], record.quantity), price: fieldValue(item, ["rate", "purrate", "price"], record.rate), basicamount: fieldValue(item, ["basic_amount", "purcost", "pro_amt"], "0"), taxablevalue: fieldValue(item, ["taxable_amount", "pur_billamt", "tot_val", "purcost"], "0"), vatamount: fieldValue(item, ["purvat", "pur_vat"], "0"), cgst: fieldValue(item, ["pur_cgst", "cgst"], "0"), sgst: fieldValue(item, ["pur_sgst", "sgst"], "0"), igst: fieldValue(item, ["pur_igst", "igst"], "0"), tcs: fieldValue(item, ["purtcs", "pur_tcs"], "0"), cess: fieldValue(item, ["cess", "pur_cess"], "0"), lfr: fieldValue(item, ["lfr", "pur_lfr"], "0"), total: fieldValue(item, ["amount", "total_amount", "pur_itemtot"], record.amount), amount: fieldValue(item, ["amount", "total_amount", "pur_itemtot"], record.amount) }));
   });
-  const taxRows = (): ReportRow[] => sales().map(record => {
+  const taxRows = (entries = sales()): ReportRow[] => entries.map(record => {
     const f = source(record), base = rowFor(record), product = (masters[record.module === "lubricant-sales" ? "lubricants" : "fuel-products"] || []).find(row => row.externalId === String(base.product_id)), customer = (masters.customers || []).find(row => row.externalId === String(base.customer_id));
     const gst = fieldNumber(f, ["gstrate", "gst_rate", "gst"], fieldNumber(product?.fields as PetrosoftFields || {}, "gst")), amount = money(record.amount), taxable = gst ? money(amount.div(1 + gst / 100)) : amount;
     const tax = amount.sub(taxable), igst = fieldNumber(f, ["s_igst", "igst"]), gstin = fieldValue(f, ["gst_no", "s_gstno", "custgst_no"], fieldValue(customer?.fields as PetrosoftFields || {}, ["cust_gstno", "gst_no"]));
-    return { ...base, gst, taxrate: gst, gstin, hsn: fieldValue(product?.fields as PetrosoftFields || {}, "hsn_code"), taxablevalue: taxable.toString(), tax: tax.toString(), cgst: igst ? "0" : money(tax.div(2)).toString(), sgst: igst ? "0" : money(tax.div(2)).toString(), igst: igst ? tax.toString() : "0", cess: "0", uqc: record.module === "lubricant-sales" ? "NOS" : "LTR", placeofsupply: fieldValue(actor.workspace.settings as PetrosoftFields, "supply_location", "Karnataka"), receiver: base.customer };
+    return { ...base, gst, taxrate: gst, gstin, hsn: fieldValue(product?.fields as PetrosoftFields || {}, "hsn_code"), taxablevalue: taxable.toString(), tax: tax.toString(), cgst: igst ? "0" : money(tax.div(2)).toString(), sgst: igst ? "0" : money(tax.div(2)).toString(), igst: igst ? tax.toString() : "0", cess: "0", uqc: record.module === "lubricant-sales" ? "NOS" : "LTR", placeofsupply: fieldValue(actor.workspace.settings as PetrosoftFields, "supply_location"), receiver: base.customer, vouchertype: "Sales", salesledger: fieldValue(f, "salesledger", fieldValue(actor.workspace.settings as PetrosoftFields, "sales_ledger", "Sales Ledger")) };
   });
+
+  const extended = await extendedReport({ actor, index, input, from, to, range, masters, opening, closing, rates, records, select, name, rowFor, purchaseItems, taxRows });
+  if (extended) return { title: spec.title, from, to, sections: extended, format: spec.format };
 
   if ([1, 5, 19].includes(index)) {
     if (index === 1) {
@@ -135,15 +151,23 @@ export async function buildReport(actor: PetrosoftActor, index: number, input: P
     section(rates.filter(record => !selectedProducts.length || selectedProducts.includes(fieldValue(source(record), PRODUCT_KEYS))).map(record => ({ ...rowFor(displayNames(record, masters)), oldrate: fieldValue(source(record), "old_rate", "0"), salerate: record.rate, vamt: money(fieldValue(source(record), "old_rate", "0")).sub(record.rate).toString(), stock: fieldValue(source(record), "ms", "0"), stockamount: fieldValue(source(record), "amt", "0"), vprice: fieldValue(source(record), "v_amt", "0"), saleqty: record.quantity })), ["Date", "Product", "Old Rate", "Sale Rate", "Variation"]);
   } else if ([10, 11, 62, 63, 64].includes(index)) {
     const rows = purchaseItems(index === 63 ? select(["fuel-purchases"]) : [11, 62, 64].includes(index) ? select(["lubricant-purchases", "other-purchases"]) : purchases());
-    section(rows, ["Invoice", "Date", "Vendor", "Product", "Quantity", "Price", "Taxable Value", "CGST", "SGST", "IGST", "Total"]);
-  } else if ([12, 59, 65].includes(index)) section(taxRows(), ["InvNo", "Inv_Dt", "Pty_Name", "Vch_Type", "GSTIN", "Product_Name", "HSNCode", "Qty", "UOM", "TaxPer", "TaxableAmt", "IGSTAmt", "SGSTAmt", "CGSTAmt", "Net_Amt", "Narration"]);
-  else if (index === 13) section([...(masters["fuel-products"] || []), ...(masters.lubricants || [])].map(record => ({ ...rowFor(record), product: record.name, hsn: fieldValue(source(record), "hsn_code"), gst: fieldValue(source(record), "gst"), uqc: record.module === "lubricants" ? "NOS" : "LTR" })), ["Product Name", "HSN Code", "GST", "UQC"]);
-  else if (index === 14) section([...(masters.customers || []), ...(masters.vendors || []), ...(masters["business-parties"] || [])].map(record => ({ name: record.name, type: record.module, gstin: fieldValue(source(record), ["cust_gstno", "gst_no"]), openingbalance: fieldValue(source(record), "open_bal", "0"), mobile: fieldValue(source(record), ["phone_no", "ven_phno", "mobile"]), address: fieldValue(source(record), ["org_address", "vend_details", "address"]) })), ["Ledger Name", "Type", "GSTIN", "Mobile", "Address", "Opening Balance"]);
+    section(rows.map(row => {
+      const vendor = (masters.vendors || []).find(vendor => vendor.externalId === row.vendor_id), product = (masters[index === 63 ? "fuel-products" : "lubricants"] || []).find(product => product.externalId === row.product_id);
+      return { ...row, "Inv_Dt": displayDate(String(row.date)), "Supp Date": displayDate(String(row.date)), "Supplied In voice No": row.invoice, vouchertype: "Purchase", gstin: fieldValue(vendor?.fields || {}, ["gst_no", "ven_gstno"]), hsn: fieldValue(product?.fields || {}, "hsn_code"), uqc: index === 63 ? "Lts" : fieldValue(product?.fields || {}, "tally_unit", "Nos"), taxrate: fieldValue(product?.fields || {}, index === 63 ? "vat" : "gst", "0"), purchaseledger: fieldValue(actor.workspace.settings as PetrosoftFields, "purchase_ledger", "Purchase Ledger") };
+    }), ["Invoice", "Date", "Vendor", "Product", "Quantity", "Price", "Taxable Value", "CGST", "SGST", "IGST", "Total"]);
+  } else if ([12, 59, 65].includes(index)) {
+    const rows = index === 59 || index === 65 ? group(taxRows(select(["meter-sales", "lubricant-sales"])).map(row => ({ ...row, customer: row.customer || "Cash", refno: `DAY-${row.date}-${row.product_id}`, uqc: row.module === "meter-sales" ? "Lts" : "Nos" })), row => `${row.date}:${row.product_id}:${row.module}`, ["quantity", "amount", "total", "taxablevalue", "tax", "igst", "sgst", "cgst", "cess", "discount", "misccharges"]) : taxRows();
+    section(rows.map(row => ({ ...row, "Inv_Dt": displayDate(String(row.date)), "INVOICE DATE": displayDate(String(row.date)), "REFERANCE NO": row.refno, "PARTY A/C NAME": row.customer, "NAME OF ITEM": row.product })), ["InvNo", "Inv_Dt", "Pty_Name", "Vch_Type", "GSTIN", "Product_Name", "HSNCode", "Qty", "UOM", "TaxPer", "TaxableAmt", "IGSTAmt", "SGSTAmt", "CGSTAmt", "Net_Amt", "Narration"]);
+  } else if (index === 13) section([...(masters["fuel-products"] || []), ...(masters.lubricants || [])].map(record => ({ Name: record.name, Description: "", Under: "Primary", Category: "", Unit: fieldValue(source(record), "tally_unit", "LTR"), "GST Applicable": record.module === "lubricants" ? "Applicable" : "Not Applicable", "Type of Supply": "", "HSN/SAC": "", "Set/Alter GST Details": "", Taxability: "", "Integrated Tax": "", "Cess Tax": "", "Applicable Date": "", Quantity: "", Rate: "" })), ["Name", "Under", "Unit", "GST Applicable"]);
+  else if (index === 14) section([...(masters.customers || []), ...(masters.vendors || []), ...(masters["business-parties"] || [])].map(record => {
+    const f = source(record), gstin = fieldValue(f, ["cust_gstno", "gst_no", "ven_gstno"]);
+    return { Name: record.name, Under: record.module === "customers" ? "Sundry Debtors" : record.module === "vendors" ? "Sundry Creditors" : /bank/i.test(fieldValue(f, "p_type")) ? "Bank Accounts" : "Primary", "Mailing name": record.name, "Bill by bill": "YES", "Registration Type": gstin && gstin !== "0" ? "Regular" : "Unregistered", "Type of Ledger": "Not Applicable", "Inventory Affected": "", "Credit period": "", "GST Applicable": "", "Set/Alter GST Details": "", Taxability: "", "Integrated Tax": "", "Cess Tax": "", "Applicable Date": "", Address: fieldValue(f, ["org_address", "vend_details", "address"]), State: fieldValue(f, "state"), Pincode: fieldValue(f, "pincode"), "PAN/IT No": fieldValue(f, ["pan_no", "pan"]), "GSTIN/UIN": gstin };
+  }), ["Name", "Under", "GSTIN/UIN", "Address"]);
   else if ([15, 22, 23, 25].includes(index)) {
     const recoveries = index === 25 ? await allFor(["recoveries"]) : [];
     const rows = allowedCustomers.map(customer => {
       const current = closing.customer?.[customer.externalId], before = opening.customer?.[customer.externalId], last = recoveries.find(record => fieldValue(source(record), CUSTOMER_KEYS) === customer.externalId), f = customer.fields as PetrosoftFields;
-      return { customer: customer.name, organization: customer.name, mobile: fieldValue(f, "phone_no"), creditlimit: fieldValue(f, "credit_limit", "0"), limit: fieldValue(f, "credit_limit", "0"), openingbalance: before?.balance || "0", collectable: money(current?.debit || 0).sub(before?.debit || 0).toString(), recovery: money(current?.credit || 0).sub(before?.credit || 0).toString(), receivedamount: current?.credit || "0", balance: current?.balance || "0", closingbalance: current?.balance || "0", outstanding: current?.balance || "0", lastpaiddays: last ? Math.floor((range.to.getTime() - new Date(last.date).getTime()) / 86400000) : "", lastpaiddate: last?.date || "" };
+      return { customer: customer.name, organization: customer.name, mobile: fieldValue(f, "phone_no"), creditlimit: fieldValue(f, "credit_limit", "0"), limit: fieldValue(f, "credit_limit", "0"), openingbalance: before?.balance || "0", collectable: money(current?.debit || 0).sub(before?.debit || 0).toString(), recovery: money(current?.credit || 0).sub(before?.credit || 0).toString(), receivedamount: money(current?.credit || 0).sub(before?.credit || 0).toString(), balance: current?.balance || "0", closingbalance: current?.balance || "0", outstanding: current?.balance || "0", lastpaiddays: last ? Math.floor((range.to.getTime() - new Date(last.date).getTime()) / 86400000) : "", lastpaiddate: last?.date || "" };
     }).filter(row => index !== 23 || money(row.limit).gt(0) && money(row.balance).gt(row.limit));
     section(rows, ["Organization", "Mobile", "Credit Limit", "Collectable", "Recovery", "Balance"]);
   } else if (index === 18) section(select(["recoveries"]).filter(record => !fieldValue(input, "recover_type") || /all/i.test(fieldValue(input, "recover_type")) || fieldValue(source(record), "re_type") === fieldValue(input, "recover_type")).map(record => ({ ...rowFor(record), received: fieldValue(source(record), "re_type"), receivedamount: record.amount, customername: fieldValue(source(record), "cust_name") })), ["Date", "Organization", "Received Amount", "Discount", "Description"]);
@@ -159,17 +183,18 @@ export async function buildReport(actor: PetrosoftActor, index: number, input: P
       const grouped = new Map<string, ReportRow>();
       for (const record of records.filter(record => !employeeId || fieldValue(source(record), EMPLOYEE_KEYS) === employeeId)) {
         const id = fieldValue(source(record), EMPLOYEE_KEYS); if (!id) continue;
-        const key = record.date + ":" + id, row = grouped.get(key) || { date: record.date, employee: name("employees", id) }, module = baseModule(record.module);
+        const key = record.date + ":" + id, row = grouped.get(key) || { date: record.date, employee: name("employees", id) }, moduleSchema = baseModule(record.module);
         const column: Record<string, string> = { "meter-sales": "sale", "lubricant-sales": "lubsale", recoveries: "crdrecovery", swipes: "swipe", "credit-sales": "credit", expenses: "expenses", "employee-recoveries": "cashcollection" };
-        if (column[module]) add(row, column[module], record.amount);
-        if (module === "credit-sales") add(row, "salediscount", fieldValue(source(record), "discount", "0"));
-        if (module === "employee-recoveries") add(row, "shortage", fieldValue(source(record), "shortage", "0"));
+        if (column[moduleSchema]) add(row, column[moduleSchema], record.amount);
+        if (moduleSchema === "credit-sales") add(row, "salediscount", fieldValue(source(record), "discount", "0"));
+        if (moduleSchema === "employee-recoveries") add(row, "shortage", fieldValue(source(record), "shortage", "0"));
         grouped.set(key, row);
       }
       section([...grouped.values()], ["Date", "Employee", "Sale", "Swipe", "Credit", "Recovery", "Expenses", "Collected", "Shortage"]);
     }
   } else if ([28, 87].includes(index)) {
-    const audits = await petrosoftDb.petrosoftAudit.findMany({ where: { workspaceId: actor.workspaceId, createdAt: { gte: range.from, lt: new Date(range.to.getTime() + 86400000) }, ...(fieldValue(input, "mode") && !/all/i.test(fieldValue(input, "mode")) ? { module: fieldValue(input, "mode") } : {}) }, orderBy: { createdAt: "desc" } });
+    const mode = fieldValue(input, "mode"), action = /^(insert|create)$/i.test(mode) ? ["INSERT", "CREATE"] : /^(update|edit)$/i.test(mode) ? ["UPDATE"] : /^(delete|void)$/i.test(mode) ? ["DELETE", "VOID"] : [];
+    const audits = await petrosoftDb.petrosoftAudit.findMany({ where: { workspaceId: actor.workspaceId, createdAt: { gte: range.from, lt: new Date(range.to.getTime() + 86400000) }, ...(action.length ? { action: { in: action, mode: "insensitive" } } : {}) }, orderBy: { createdAt: "desc" } });
     section(audits.map(audit => ({ transactionid: audit.entryId || "", date: audit.createdAt.toISOString().slice(0, 10), createddate: audit.createdAt.toISOString().slice(0, 10), event: audit.action, eventtime: audit.createdAt.toISOString().slice(11, 19), module: audit.module, user: audit.username, ipaddress: "" })), ["Transaction ID", "Module", "Created Date", "Event", "Event Time", "User"]);
   } else if ([29, 30, 31, 32, 77, 82].includes(index)) {
     const summaries = dailySummary(records);
@@ -183,18 +208,27 @@ export async function buildReport(actor: PetrosoftActor, index: number, input: P
     } else if (index === 31) section(select(["settlements"]).map(record => ({ ...rowFor(record), cashinflow: fieldValue(source(record), "totinflw", "0"), cashoutflow: fieldValue(source(record), "total_outflow", "0"), openingcash: fieldValue(source(record), "opencash", "0"), closingcash: fieldValue(source(record), "closecash", record.amount) })), ["Date", "Opening Cash", "Cash Inflow", "Cash Outflow", "Closing Cash"]);
     else { sections.push({ title: spec.title, columns: ["Date", "Meter Sale", "Lubs Sale", "Recovery", "Cash In", "Total Cash", "Swipe", "Credit Sale", "Sale Discount", "Expenses", "Bank Recovery", "Shortage", "Hand Cash", "Opening Cash", "Closing Cash"], rows: summaries }); }
   } else if ([33, 34, 35].includes(index)) {
-    const allPurchases = await allFor(["fuel-purchases", "lubricant-purchases"]), allItems = purchaseItems(allPurchases);
+    const [allPurchases, historicalSales] = await Promise.all([allFor(["fuel-purchases", "lubricant-purchases"]), allFor(["meter-sales", "lubricant-sales"])]), allItems = purchaseItems(allPurchases);
     for (const product of masters[fieldValue(input, "gross_type", "Liquids").toLowerCase().includes("lub") ? "lubricants" : "fuel-products"] || []) {
       if (productId && product.externalId !== productId) continue;
       const lots = allItems.filter(row => row.product_id === product.externalId).sort((a, b) => String(a.date).localeCompare(String(b.date))).map(row => ({ date: String(row.date), remaining: quantity(row.quantity || 0), price: quantity(row.quantity || 0).gt(0) ? money(row.total || 0).div(quantity(row.quantity || 1)) : money(0) }));
-      const selectedSales = select([product.module === "lubricants" ? "lubricant-sales" : "meter-sales"]).filter(record => fieldValue(source(record), PRODUCT_KEYS) === product.externalId).sort((a, b) => a.date.localeCompare(b.date));
+      const saleModule = product.module === "lubricants" ? "lubricant-sales" : "meter-sales";
+      const visibleSales = new Set(select([saleModule]).filter(record => fieldValue(source(record), PRODUCT_KEYS) === product.externalId).map(record => record.id));
+      const selectedSales = historicalSales.filter(record => record.module === saleModule && fieldValue(source(record), PRODUCT_KEYS) === product.externalId).sort((a, b) => a.date.localeCompare(b.date) || a.number - b.number);
       const rows: ReportRow[] = [];
       for (const record of selectedSales) {
         const available = lots.filter(lot => lot.date <= record.date && lot.remaining.gt(0));
+        const availableQty = available.reduce((sum, lot) => sum.add(lot.remaining), quantity(0));
+        const receipt = allItems.filter(item => item.product_id === product.externalId && item.date === record.date).reduce((total, item) => total.add(quantity(item.quantity || 0)), quantity(0));
         let need = quantity(record.quantity), cost = money(0);
-        if (index === 33) { const totalQty = available.reduce((sum, lot) => sum.add(lot.remaining), quantity(0)), totalCost = available.reduce((sum, lot) => sum.add(lot.remaining.mul(lot.price)), money(0)); cost = totalQty.gt(0) ? money(need.mul(totalCost.div(totalQty))) : money(need.mul(lots[0]?.price || 0)); }
+        if (index === 33) {
+          const totalCost = available.reduce((sum, lot) => sum.add(lot.remaining.mul(lot.price)), money(0));
+          cost = availableQty.gt(0) ? money(need.mul(totalCost.div(availableQty))) : money(need.mul(lots[0]?.price || 0));
+          const used = PrismaMin(need, availableQty);
+          for (const lot of available) lot.remaining = availableQty.gt(0) ? quantity(lot.remaining.mul(availableQty.sub(used)).div(availableQty)) : quantity(0);
+        }
         else { for (const lot of available) { if (need.lte(0)) break; const used = PrismaMin(need, lot.remaining); cost = cost.add(used.mul(lot.price)); lot.remaining = lot.remaining.sub(used); need = need.sub(used); } if (need.gt(0)) cost = cost.add(need.mul(available[0]?.price || lots[0]?.price || 0)); }
-        rows.push({ ...rowFor(record), product: product.name, saleqty: record.quantity, salerate: record.rate, purchaserate: quantity(record.quantity).gt(0) ? money(cost.div(record.quantity)).toString() : "0", variationrate: quantity(record.quantity).gt(0) ? money(money(record.amount).sub(cost).div(record.quantity)).toString() : "0", gain: money(money(record.amount).sub(cost)).toString(), totalgain: money(money(record.amount).sub(cost)).toString() });
+        if (visibleSales.has(record.id)) rows.push({ ...rowFor(record), product: product.name, openstock: availableQty.sub(receipt).toString(), receipt: receipt.toString(), saleqty: record.quantity, salerate: record.rate, purchaserate: quantity(record.quantity).gt(0) ? money(cost.div(record.quantity)).toString() : "0", variationrate: quantity(record.quantity).gt(0) ? money(money(record.amount).sub(cost).div(record.quantity)).toString() : "0", gain: money(money(record.amount).sub(cost)).toString(), totalgain: money(money(record.amount).sub(cost)).toString() });
       }
       sections.push({ title: product.name, columns: ["Date", "Product", "Sale Rate", "Purchase Rate", "Variation Rate", "Sale Qty", "Gain"], rows });
     }
@@ -222,7 +256,7 @@ export async function buildReport(actor: PetrosoftActor, index: number, input: P
     if (index === 39) section(purchaseItems().filter(row => row.tank_no).map(row => ({ ...row, tank: name("tanks", String(row.tank_no)), received: row.quantity, purchaseqty: row.quantity })), ["Date", "Tank", "Product", "Invoice", "Purchase Qty", "Received", "Variation"]);
     else section(select(["opening-stock"]).map(record => ({ ...rowFor(record), ...source(record), tank: fieldValue(source(record), "tank_name"), variation: fieldValue(source(record), "stk_variation", "0"), variationamount: fieldValue(source(record), "vari_amnt", "0"), previousstock: fieldValue(source(record), "open_stock", "0"), receipts: fieldValue(source(record), "receipt", "0"), currentstock: fieldValue(source(record), "dip_stock", "0"), metersales: fieldValue(source(record), "meter_sale", "0"), actualsales: fieldValue(source(record), "meter_sale", "0"), dipsales: money(fieldValue(source(record), "total_stk", "0")).sub(fieldValue(source(record), "dip_stock", "0")).toString() })), ["Date", "Tank", "Product", "Variation", "Variation Amount"]);
   } else if ([42, 60, 61, 80, 81].includes(index)) {
-    const vendor = index === 42, type = vendor ? "vendor" : fieldValue(input, ["partytype", "partytyp"], "Bank"), selected = vendor ? (masters.vendors || []).filter(row => !vendorId || row.externalId === vendorId) : (masters["business-parties"] || []).filter(row => (!fieldValue(input, "crd_name") || row.externalId === fieldValue(input, "crd_name")) && (!type || /all/i.test(type) || fieldValue(source(row), ["p_type", "partyType"]) === type));
+    const vendor = index === 42, type = vendor ? "vendor" : fieldValue(input, ["partytype", "partytyp"], "Bank").split("|")[0].trim(), selected = vendor ? (masters.vendors || []).filter(row => !vendorId || row.externalId === vendorId) : (masters["business-parties"] || []).filter(row => (!fieldValue(input, "crd_name") || row.externalId === fieldValue(input, "crd_name").split("|")[0]) && (!type || /all/i.test(type) || fieldValue(source(row), ["p_type", "partyType"]) === type));
     if ([80, 81].includes(index)) section(selected.map(party => { const kind = /bank/i.test(fieldValue(source(party), ["p_type", "partyType"])) ? "bank" : "party", before = opening[kind]?.[party.externalId], after = closing[kind]?.[party.externalId]; return { creditorname: party.name, mobile: fieldValue(source(party), "mobile"), openingbalance: before?.balance || "0", credit: money(after?.credit || 0).sub(before?.credit || 0).toString(), debit: money(after?.debit || 0).sub(before?.debit || 0).toString(), closingbalance: after?.balance || "0" }; }), ["Creditor Name", "Opening Balance", "Credit", "Debit", "Closing Balance"]);
     else for (const party of selected) {
       const kind = vendor ? "vendor" : /bank/i.test(fieldValue(source(party), ["p_type", "partyType"])) ? "bank" : "party";
@@ -261,25 +295,30 @@ export async function buildReport(actor: PetrosoftActor, index: number, input: P
       const combined: ReportRow[] = swipes.map(record => ({ date: record.date, machine: fieldValue(source(record), "swipe_bank"), swipesaleamount: record.amount, settlementamount: "0", settlementcharges: "0", swipedescription: fieldValue(source(record), "swipe_des") }));
       for (const record of select(["swipe-settlements"])) combined.push({ date: record.date, machine: fieldValue(source(record), "swipe_bank"), swipesaleamount: "0", settlementamount: record.amount, settlementcharges: fieldValue(source(record), "charges", "0") });
       const running: Record<string, ReturnType<typeof money>> = {};
-      const rows = group(combined, row => `${row.date}:${row.machine}`, ["swipesaleamount", "settlementamount", "settlementcharges"]).filter(row => !machineId || String(row.machine) === machineId).sort((a, b) => String(a.date).localeCompare(String(b.date))).map(row => { const id = String(row.machine); running[id] ||= money(opening.swipe?.[id]?.balance || 0); running[id] = running[id].add(String(row.swipesaleamount || 0)).sub(String(row.settlementamount || 0)).sub(String(row.settlementcharges || 0)); return { ...row, attachedbankvendor: name("swipe-machines", id), closingamount: running[id].toString() }; });
+      const matchingMachines = (masters["swipe-machines"] || []).filter(machine => !machineId || machine.externalId === machineId.split("|")[0] || machine.name === machineId).map(machine => machine.externalId);
+      const rows = group(combined, row => `${row.date}:${row.machine}`, ["swipesaleamount", "settlementamount", "settlementcharges"]).filter(row => !machineId || matchingMachines.includes(String(row.machine))).sort((a, b) => String(a.date).localeCompare(String(b.date))).map(row => { const id = String(row.machine); running[id] ||= money(opening.swipe?.[id]?.balance || 0); running[id] = running[id].add(String(row.swipesaleamount || 0)).sub(String(row.settlementamount || 0)).sub(String(row.settlementcharges || 0)); return { ...row, attachedbankvendor: name("swipe-machines", id), closingamount: running[id].toString() }; });
       section(rows, ["Date", "Swipe", "Swipe Sale Amount", "Settlement Amount", "Settlement Charges", "Closing Amount"]);
     }
   } else if ([75, 76, 78, 79].includes(index)) {
     if (index === 75) section(select(["handling-loss", "lubricant-loss"]).map(rowFor), ["Date", "Product", "Quantity", "Price", "Amount", "Description"]);
     else if (index === 76) { const rows = group(select(["meter-sales"]).map(rowFor), row => `${row.date}:${row.product_id}`, ["quantity", "amount"]); for (const row of rows) { const credit = credits().filter(record => record.date === row.date && fieldValue(source(record), PRODUCT_KEYS) === row.product_id); row.saleqty = row.quantity; row.creditsaleqty = sum(credit, "quantity").toString(); row.creditsaleamount = sum(credit).toString(); } section(rows, ["Date", "Product", "Sale Qty", "Credit Sale Qty", "Credit Sale Amount", "Amount"]); }
-    else { const module = index === 79 ? "lubricant-sales" : /lub/i.test(fieldValue(input, ["saleType_month", "saleType"])) ? "lubricant-sales" : "meter-sales"; section(group(select([module]).map(record => ({ ...rowFor(record), month: record.date.slice(0, 7), litres: record.quantity, taxable: record.amount })), row => `${row.product_id}:${row.month}`, ["quantity", "litres", "amount", "taxable"]), ["Product", "Month", "Quantity", "Amount"]); }
+    else { const moduleSchema = index === 79 ? "lubricant-sales" : /lub/i.test(fieldValue(input, ["saleType_month", "saleType"])) ? "lubricant-sales" : "meter-sales"; section(group(select([moduleSchema]).map(record => ({ ...rowFor(record), month: record.date.slice(0, 7), litres: record.quantity, taxable: record.amount })), row => `${row.product_id}:${row.month}`, ["quantity", "litres", "amount", "taxable"]), ["Product", "Month", "Quantity", "Amount"]); }
   } else if ([83, 84].includes(index)) section(select(transactionModules.filter(module => module.startsWith("bowser-"))).map(record => ({ ...rowFor(record), bowsername: name("bowsers", fieldValue(source(record), ["bowser", "bowser_id", "Bowser_Crd", "Bowser_Exp", "Bowser_lub", "Bowser_Swipe", "Recovery_Crd"])) })), ["Date", "Bowser Name", "Employee", "Product", "Quantity", "Rate", "Amount"]);
   else if (index === 85) section(Array.from({ length: 5 }, (_, offset) => ({ rating: offset + 1, counts: select(["feedback"]).filter(record => fieldNumber(source(record), "rating") === offset + 1).length })), ["Rating", "Counts"]);
   else if (index === 86) section(select(["interest"]).map(rowFor), ["Date", "Party", "Loan Amount", "Principal Paid", "Interest Paid", "Balance", "Description"]);
   else if (index === 88) section(select(["meter-sales"]).map(record => ({ ...rowFor(record), benchmarks: "", salequantity: record.quantity, saleamount: record.amount, incentiveamount: fieldValue(source(record), "incentives", "0") })).filter(row => money(row.incentiveamount || 0).gt(0)), ["Date", "Benchmarks", "Shift", "Product", "Sale Quantity", "Sale Amount", "Incentive Amount"]);
   else if (index === 90) section(select(["godown-transfers"]).map(rowFor), ["Date", "From Location", "To Location", "Product", "Quantity", "Description"]);
   else if (index === 91) {
-    if (fieldValue(input, "data_source", "database").toLowerCase() === "api") throw new PetrosoftError("Configure the BPCL fleet API for live fleet transactions.", 503);
-    section(select(["swipes", "recoveries"]).filter(record => /vendor/i.test(fieldValue(source(record), ["re_type", "attach_type"])) || fieldValue(source(record), "vendor_id") !== "0").map(rowFor), ["Date", "Vehicle No", "Product", "Amount", "Reference No"]);
+    if (fieldValue(input, "data_source", "database").toLowerCase() === "api") {
+      const response = await requestIntegration(actor, "bpcl", "transactions", { ...input, from, to });
+      if (!Array.isArray(response.rows)) throw new PetrosoftError("The BPCL service must return transaction rows.", 502);
+      section(response.rows.slice(0, 5000).map(jsonFields), ["Date", "Vehicle No", "Product", "Amount", "Reference No"]);
+    } else section(select(["swipes", "recoveries"]).filter(record => /vendor/i.test(fieldValue(source(record), ["re_type", "attach_type"])) || Boolean(fieldValue(source(record), "vendor_id") && fieldValue(source(record), "vendor_id") !== "0")).map(rowFor), ["Date", "Vehicle No", "Product", "Amount", "Reference No"]);
   } else section(records.map(rowFor), ["Date", "Type", "Product", "Customer", "Quantity", "Amount", "Description"]);
   if (!sections.length) sections.push({ title: spec.title, columns: spec.tables[0]?.headers || ["Date", "Description", "Amount"], rows: [] });
   return { title: spec.title, from, to, sections, format: spec.format };
 }
 
 function PrismaMin(a: ReturnType<typeof money>, b: ReturnType<typeof money>) { return a.lt(b) ? a : b; }
+function displayDate(date: string) { return /^\d{4}-\d{2}-\d{2}$/.test(date) ? date.split("-").reverse().join("-") : date; }
 export { reportSpecs, rowFor };

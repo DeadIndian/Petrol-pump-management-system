@@ -58,11 +58,11 @@ export async function synchronizeFinancialLinks(_database: Database, entry: Petr
     const debit = money(post.debit || 0), credit = money(post.credit || 0), amount = debit.add(credit);
     if (amount.isZero()) continue;
     const entityId = post.entityId === "__SELF__" ? id : post.entityId;
-    const isVendor = type === "vendor", module = isVendor ? "vendor-transactions" : "business-transactions";
+    const isVendor = type === "vendor", moduleSchema = isVendor ? "vendor-transactions" : "business-transactions";
     const fields: PetrosoftFields = { derived: true, parent_id: entry.id, parent_module: entry.module, parent_external_id: id, trans_dt: entry.date.toISOString().slice(0, 10), trans_type: debit.gt(0) ? "Debit" : "Credit", trans_amnt: amount.toString(),
       account_type: type, account_id: entityId, trans_desc: fieldValue(f, ["trans_desc", "descript", "description", "rec_desc", "hand_des"], entry.name), source_module: baseModule(entry.module), invoice_no: fieldValue(f, ["invo_no", "invoiceno", "invoice", "bill_no", "credit_billno"]),
       ...(isVendor ? { vendor: entityId, vendor_id: entityId, Vendor: entityId, invoice_of: entry.module } : { crd_id: entityId, partyname_field: entityId, partytype: debit.gt(0) ? entityId : "", Topartytype: credit.gt(0) ? entityId : "" }) };
-    await save(module, { name: entry.name, date: entry.date, fields, amount, quantity: quantity(0), rate: quantity(0), status: "active" }, []);
+    await save(moduleSchema, { name: entry.name, date: entry.date, fields, amount, quantity: quantity(0), rate: quantity(0), status: "active" }, []);
   }
 }
 
@@ -75,7 +75,7 @@ export async function attachNativeLinks(database: Database, workspaceId: string)
     if (!fields._native || fields.parent_id) continue;
     let parent: PetrosoftEntry | undefined;
     if (entry.module === "vendor-transactions") {
-      for (const module of vendorSources[fieldValue(fields, "invoice_of")] || []) parent ||= byModule.get(`${module}:${fieldValue(fields, "purchase_id")}`);
+      for (const moduleSchema of vendorSources[fieldValue(fields, "invoice_of")] || []) parent ||= byModule.get(`${moduleSchema}:${fieldValue(fields, "purchase_id")}`);
     } else if (fieldValue(fields, "trans_frmModule") === "VENDOR") parent = byModule.get(`vendor-transactions:${fieldValue(fields, "trans_frmModule_Id")}`);
     if (!parent) continue;
     await database.petrosoftEntry.update({ where: { id: entry.id }, data: { fields: safeFields({ ...fields, parent_id: parent.id, parent_module: parent.module, derived: true }) } });

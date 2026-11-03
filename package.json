@@ -20,6 +20,7 @@
     "verify": "tsx scripts/verify.ts",
     "dev:local": "tsx scripts/local-dev.ts",
     "dev:petrosoft": "tsx scripts/petrosoft/dev.ts",
+    "start:petrosoft": "node --env-file=.env.petrosoft.local node_modules/next/dist/bin/next start --hostname 0.0.0.0",
     "petrosoft:setup": "tsx scripts/petrosoft/setup.ts",
     "test:petrosoft": "tsx --test --test-concurrency=1 tests/petrosoft/*.test.ts"
   },

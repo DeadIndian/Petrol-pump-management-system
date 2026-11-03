@@ -8,7 +8,7 @@ import { PetrosoftError } from "./actions";
 export const uploadDirectory = () => join(process.env.PETROSOFT_STORAGE || join(process.cwd(), ".petrosoft"), "uploads");
 const types: Record<string, string> = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp", pdf: "application/pdf", csv: "text/csv", xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", xls: "application/vnd.ms-excel", txt: "text/plain", json: "application/json" };
 export async function uploadAttachment(actor: PetrosoftActor, file: File, module: string) {
-  if (!hasPermission(actor, module, "edit")) throw new PetrosoftError("Your role cannot upload files to this module.", 403);
+  if (!hasPermission(actor, module, "edit") && !hasPermission(actor, module, "create")) throw new PetrosoftError("Your role cannot upload files to this module.", 403);
   if (!file.size || file.size > 20 * 1024 * 1024) throw new PetrosoftError("Choose a file between 1 byte and 20 MB.", 413);
   const filename = file.name.replace(/[\x00-\x1f/\\]/g, "_").slice(0, 150), extension = filename.split(".").pop()?.toLowerCase() || "";
   const contentType = types[extension];

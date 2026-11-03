@@ -49,19 +49,19 @@ export function nativeEntries(backup: NativeBackup): NativeEntry[] {
   function add(moduleId: string, table: string, record: PetrosoftFields, idKey: string, aliases: Record<string, string>, options: {
     date?: string[]; name?: string; amount?: string; total?: unknown; count?: string; rate?: string; fields?: PetrosoftFields; posts?: LedgerPosting[]; noPosts?: boolean;
   } = {}) {
-    const module = moduleById.get(moduleId);
-    if (!module) throw new Error("Unknown import module " + moduleId);
+    const moduleSchema = moduleById.get(moduleId);
+    if (!moduleSchema) throw new Error("Unknown import module " + moduleId);
     const fields: PetrosoftFields = { ...map(record, aliases), ...options.fields, _native_table: table, _native_id: raw(record, idKey) };
     const date = safeDate(record, options.date || ["date", "createdDate", "created_date"]);
     fields._date = date.toISOString().slice(0, 10);
     const row: NormalizedRow = {
-      name: options.name ? raw(fields, options.name) : raw(fields, "name", module.title), date,
+      name: options.name ? raw(fields, options.name) : raw(fields, "name", moduleSchema.title), date,
       amount: money(options.total ?? decimalField(record, options.amount)), quantity: options.count ? decimalField(record, options.count) : quantity(fieldValue(fields, "quantity", "0")), rate: decimalField(record, options.rate),
-      status: inactive(record) ? module.kind === "master" ? "inactive" : "void" : "active", fields,
+      status: inactive(record) ? moduleSchema.kind === "master" ? "inactive" : "void" : "active", fields,
     };
     let posts: LedgerPosting[] = [];
     if (!options.noPosts) {
-      try { posts = options.posts || ledgerFor(module, row); } catch { /* A zero/incomplete historical entry is retained, not invented. */ }
+      try { posts = options.posts || ledgerFor(moduleSchema, row); } catch { /* A zero/incomplete historical entry is retained, not invented. */ }
     }
     // The exported vendor ledger is authoritative. Historical parent records can
     // disagree with their vendor contra entries, so retain those original postings.

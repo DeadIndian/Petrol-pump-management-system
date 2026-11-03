@@ -51,7 +51,7 @@ export async function latestRates(workspaceId: string, asOf: Date) {
 
 export async function mastersFor(workspaceId: string) {
   const records = await petrosoftDb.petrosoftEntry.findMany({ where: { workspaceId,
-    module: { in: [...masterIds, "nozzles", "vehicles", "customer-discounts", "employee-benefits", "employee-loans", "expiry-categories", "expiry-renewals", "bowsers", "bowser-nozzles", "calibration"] }, status: { not: "void" } }, orderBy: [{ name: "asc" }, { number: "asc" }] });
+    module: { in: [...masterIds, "nozzles", "vehicles", "customer-discounts", "employee-benefits", "employee-loans", "expiry-categories", "expiry-renewals", "bowsers", "bowser-nozzles", "calibration", "godowns"] }, status: { not: "void" } }, orderBy: [{ name: "asc" }, { number: "asc" }] });
   const masters: Record<string, PublicEntry[]> = {};
   for (const entry of records) (masters[entry.module] ||= []).push(serializeEntry(entry));
   return masters;
@@ -148,23 +148,23 @@ export function dailySummary(records: PublicEntry[]) {
   const groups: Record<string, Record<string, string>> = {};
   const add = (row: Record<string, string>, key: string, value: unknown) => { row[key] = money(row[key] || 0).add(money(value || 0)).toString(); };
   for (const entry of records) {
-    const f = entry.fields as PetrosoftFields, module = baseModule(entry.module), row = groups[entry.date] ||= { date: entry.date };
-    if (module === "meter-sales") { add(row, "meter_sale", entry.amount); add(row, "meter_quantity", entry.quantity); add(row, "testing", fieldValue(f, "test_qty", "0")); }
-    if (module === "lubricant-sales" && !/credit/i.test(fieldValue(f, ["sale_type1", "sale_type"]))) add(row, "lubricant_sale", entry.amount);
-    if (module === "recoveries") {
+    const f = entry.fields as PetrosoftFields, moduleSchema = baseModule(entry.module), row = groups[entry.date] ||= { date: entry.date };
+    if (moduleSchema === "meter-sales") { add(row, "meter_sale", entry.amount); add(row, "meter_quantity", entry.quantity); add(row, "testing", fieldValue(f, "test_qty", "0")); }
+    if (moduleSchema === "lubricant-sales" && !/credit/i.test(fieldValue(f, ["sale_type1", "sale_type"]))) add(row, "lubricant_sale", entry.amount);
+    if (moduleSchema === "recoveries") {
       if (/cash/i.test(fieldValue(f, "re_type", "Cash"))) add(row, "recovery", entry.amount); else add(row, "bank_recovery", entry.amount);
     }
-    if (module === "expenses") {
+    if (moduleSchema === "expenses") {
       const cash = /cash/i.test(fieldValue(f, "exp_paytype", "Cash"));
       if (/inflow/i.test(fieldValue(f, "flow"))) add(row, cash ? "cash_in" : "bank_in", entry.amount);
       else add(row, cash ? "expenses" : "bank_expenses", entry.amount);
     }
-    if (module === "credit-sales") { add(row, "credit", entry.amount); add(row, "discount", fieldValue(f, ["discount", "credit_discnt"], "0")); }
-    if (module === 'fuel-purchases') add(row,'fuel_purchase',entry.amount);
-    if (module === 'lubricant-purchases') add(row,'lubricant_purchase',entry.amount);
-    if (module === "swipes") add(row, "swipe", entry.amount);
-    if (module === "employee-recoveries") { add(row, "collected", entry.amount); add(row, "shortage", fieldValue(f, "shortage", "0")); }
-    if (module === "settlements") { row.settlement = entry.id; row.closing_cash = fieldValue(f, "closecash", entry.amount); row.opening_cash = fieldValue(f, "opencash", "0"); row.pictures = fieldValue(f, "attachment_id"); }
+    if (moduleSchema === "credit-sales") { add(row, "credit", entry.amount); add(row, "discount", fieldValue(f, ["discount", "credit_discnt"], "0")); }
+    if (moduleSchema === 'fuel-purchases') add(row,'fuel_purchase',entry.amount);
+    if (moduleSchema === 'lubricant-purchases') add(row,'lubricant_purchase',entry.amount);
+    if (moduleSchema === "swipes") add(row, "swipe", entry.amount);
+    if (moduleSchema === "employee-recoveries") { add(row, "collected", entry.amount); add(row, "shortage", fieldValue(f, "shortage", "0")); }
+    if (moduleSchema === "settlements") { row.settlement = entry.id; row.closing_cash = fieldValue(f, "closecash", entry.amount); row.opening_cash = fieldValue(f, "opencash", "0"); row.pictures = fieldValue(f, "attachment_id"); }
   }
   return Object.values(groups).map((row): Record<string, string> & { date: string; total_cash: string; hand_cash: string } => {
     const total = money(row.meter_sale || 0).add(row.lubricant_sale || 0).add(row.recovery || 0).add(row.cash_in || 0);
@@ -213,8 +213,8 @@ async function virtualRecords(workspaceId: string, module: string, filters: Petr
 }
 
 export async function readState(actor: PetrosoftActor, moduleId: string, filters: QueryFilters = {}) {
-  const module = moduleById.get(moduleId);
-  if (!module || !hasPermission(actor, moduleId)) throw new PetrosoftError("Your role cannot open this module.", 403);
+  const moduleSchema = moduleById.get(moduleId);
+  if (!moduleSchema || !hasPermission(actor, moduleId)) throw new PetrosoftError("Your role cannot open this module.", 403);
   const selectedDate = dateValue(fieldValue(filters, ["date", "insert_date", "to", "to_dt"], today().toISOString().slice(0, 10)));
   const [masters, balances, rates] = await Promise.all([mastersFor(actor.workspaceId), balanceMap(actor.workspaceId, selectedDate), latestRates(actor.workspaceId, selectedDate)]);
   let records: PublicEntry[] = [];
@@ -225,7 +225,7 @@ export async function readState(actor: PetrosoftActor, moduleId: string, filters
     total = await petrosoftDb.petrosoftAudit.count({ where });
     const audits = await petrosoftDb.petrosoftAudit.findMany({ where, orderBy: { createdAt: "desc" }, take: Math.min(Number(filters.limit) || 1000, 5000), skip: (Math.max(1, Number(filters.page) || 1) - 1) * (Number(filters.limit) || 1000) });
     records = audits.map((audit, index) => ({ id: audit.id, module: "audit", number: index + 1, externalId: audit.id, name: audit.module, date: audit.createdAt.toISOString().slice(0, 10), amount: "0", quantity: "0", rate: "0", status: "active", fields: { module: audit.module, event: audit.action, entry_id: audit.entryId, username: audit.username, event_time: audit.createdAt.toISOString().slice(11, 19), created_date: audit.createdAt.toISOString(), before: audit.before, after: audit.after }, createdBy: audit.username, createdAt: audit.createdAt.toISOString(), updatedAt: audit.createdAt.toISOString() }));
-  } else if (module.kind === "master") records = (masters[moduleId] || []).filter(entry => matchesFilters(entry, filters));
+  } else if (moduleSchema.kind === "master") records = (masters[moduleId] || []).filter(entry => matchesFilters(entry, filters));
   else {
     const virtual = await virtualRecords(actor.workspaceId, moduleId, filters, masters, balances);
     records = virtual || await transactionRecords(actor.workspaceId, [sources[moduleId] || moduleId], filters);
@@ -237,8 +237,8 @@ export async function readState(actor: PetrosoftActor, moduleId: string, filters
   }
   const [stock, nozzles] = await Promise.all([tankStock(actor.workspaceId, selectedDate, masters), nozzleReadings(actor.workspaceId, selectedDate, masters, rates)]);
   const recent = ["dashboard", "settlements", "employee-recoveries", "shift-sheet"].includes(moduleId) ? await transactionRecords(actor.workspaceId, ["meter-sales", "credit-sales", "lubricant-sales", "recoveries", "swipes", "expenses", "employee-recoveries", "settlements",'fuel-purchases','lubricant-purchases'], { from: selectedDate.toISOString().slice(0, 10), to: selectedDate.toISOString().slice(0, 10) }) : [];
-  const monthStart = new Date(Date.UTC(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth(), 1)).toISOString().slice(0, 10);
-  const trends = moduleId === "dashboard" ? await transactionRecords(actor.workspaceId, ["meter-sales", "credit-sales", "recoveries", "swipes", "expenses", "lubricant-sales", "fuel-purchases", "lubricant-purchases"], { from: monthStart, to: selectedDate.toISOString().slice(0, 10) }) : [];
+  const dashboard: Partial<Awaited<ReturnType<typeof dashboardData>>> = moduleId === "dashboard" ? await dashboardData(actor.workspaceId, selectedDate, masters, filters) : {};
+  if (moduleId === "eway-bills") records = await transactionRecords(actor.workspaceId, ["generated-invoices", "eway-bills"], filters);
   const tables: Record<string, PublicEntry[]> = {};
   if (moduleId === "expiry-items") { tables.example = masters["expiry-categories"] || []; tables.example0 = records; }
   if (moduleId === "expiry-list") { tables.toBeExpired = records.filter(record => Boolean((record.fields as PetrosoftFields).alert)); tables.example = records; }
@@ -248,7 +248,49 @@ export async function readState(actor: PetrosoftActor, moduleId: string, filters
   return { records: records.map(entry => displayNames(entry, masters, balances)), total: total || records.length, tables,
     masters: Object.fromEntries(Object.entries(masters).map(([key, entries]) => [key, entries.map(entry => displayNames(entry, masters, balances))])),
     balances, rates, stock, nozzles, date: selectedDate.toISOString().slice(0, 10), filters,
-    summary: dailySummary(recent)[0] || {}, trends: dailySummary(trends), settings: safeFields(jsonFields(actor.workspace.settings)), cashOpening: cashOpening.toString(), cashClosing: balances.cash.cash.balance, recent: recent.map(entry=>displayNames(entry,masters,balances)) };
+    summary: dailySummary(recent)[0] || {}, ...dashboard, settings: safeFields(jsonFields(actor.workspace.settings)), cashOpening: cashOpening.toString(), cashClosing: balances.cash.cash.balance, recent: recent.map(entry=>displayNames(entry,masters,balances)) };
+}
+
+async function dashboardData(workspaceId: string, asOf: Date, masters: Record<string, PublicEntry[]>, filters: QueryFilters) {
+  const to = asOf.toISOString().slice(0, 10), stockMonth = fieldValue(filters, "stock_month", to.slice(0, 7));
+  if (!/^\d{4}-(?:0[1-9]|1[0-2])$/.test(stockMonth)) throw new PetrosoftError("Choose a valid stock month.");
+  const monthEnd = new Date(Date.UTC(Number(stockMonth.slice(0, 4)), Number(stockMonth.slice(5, 7)), 0));
+  const stockTo = monthEnd > asOf ? asOf : monthEnd;
+  const [history, banks, stockHistory, dashboardStock] = await Promise.all([
+    transactionRecords(workspaceId, ["meter-sales", "credit-sales", "recoveries", "swipes", "expenses", "lubricant-sales", "fuel-purchases", "lubricant-purchases"], { from: "1900-01-01", to }, false),
+    petrosoftDb.petrosoftLedger.groupBy({ by: ["entityId"], where: { entityType: "bank", date: asOf, entry: { workspaceId, status: { not: "void" } } }, _sum: { debit: true, credit: true } }),
+    stockTo.toISOString().slice(0, 7) === stockMonth ? transactionRecords(workspaceId, ["opening-stock"], { from: `${stockMonth}-01`, to: stockTo.toISOString().slice(0, 10) }, false) : Promise.resolve([]),
+    tankStock(workspaceId, stockTo, masters),
+  ]);
+  const product = fieldValue(filters, "dashboard_product", (masters["fuel-products"] || []).find(entry => entry.status === "active")?.externalId || "");
+  const lubricant = product.startsWith("l_"), productId = lubricant ? product.slice(2) : product;
+  const monthly = new Map<string, PetrosoftFields>();
+  for (const entry of history) {
+    const isSale = entry.module === (lubricant ? "lubricant-sales" : "meter-sales"), isPurchase = entry.module === (lubricant ? "lubricant-purchases" : "fuel-purchases");
+    if (!isSale && !isPurchase) continue;
+    const f = entry.fields, items = isPurchase && Array.isArray(f.items) ? f.items.map(jsonFields) : [{ ...f, quantity: entry.quantity }];
+    const amount = items.filter(item => !productId || fieldValue(item, PRODUCT_KEYS) === productId).reduce((total, item) => total.add(fieldValue(item, ["quantity", "pro_qty", "pur_proqty"], entry.quantity)), quantity(0));
+    if (!amount.gt(0)) continue;
+    const date = `${entry.date.slice(0, 7)}-01`, row = monthly.get(date) || { date, sale: "0", purchase: "0" }, key = isSale ? "sale" : "purchase";
+    row[key] = quantity(row[key]).add(amount).toString(); monthly.set(date, row);
+  }
+  const aggregateMonths = (rows: PublicEntry[]) => {
+    const groups = new Map<string, PetrosoftFields>();
+    for (const daily of dailySummary(rows)) {
+      const date = `${daily.date.slice(0, 7)}-01`, row = groups.get(date) || { date };
+      for (const [key, offered] of Object.entries(daily)) if (key !== "date") row[key] = money(row[key] || 0).add(offered || 0).toString();
+      groups.set(date, row);
+    }
+    return [...groups.values()].sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  };
+  const customer = fieldValue(filters, "credit_customer");
+  const recoveryHistory = history.filter(entry => ["credit-sales", "recoveries"].includes(entry.module) || entry.module === "lubricant-sales" && /credit/i.test(fieldValue(entry.fields, ["sale_type1", "sale_type"]))).filter(entry => !customer || customer === "0" || fieldValue(entry.fields, CUSTOMER_KEYS) === customer);
+  return {
+    dashboardProduct: product, stockMonth, dashboardStock,
+    trends: aggregateMonths(history), monthlyTrends: [...monthly.values()].sort((a, b) => String(a.date).localeCompare(String(b.date))), recoveryTrends: aggregateMonths(recoveryHistory),
+    stockTrends: stockHistory.sort((a, b) => a.date.localeCompare(b.date)),
+    bankFlow: banks.map(bank => ({ id: bank.entityId, name: (masters["business-parties"] || []).find(party => party.externalId === bank.entityId)?.name || bank.entityId, debit: money(bank._sum.debit || 0).toString(), credit: money(bank._sum.credit || 0).toString() })),
+  };
 }
 
 export async function entryForActor(actor: PetrosoftActor, id: string) {

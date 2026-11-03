@@ -1,5 +1,11 @@
 # Petrol Pump Management System
 
+The Petrosoft replica is available at `/petrosoft`, with the original navigation, forms, tables, and local business workflows across 85 captured screens and 91 report definitions. The earlier fuel delivery application remains at `/dashboard`.
+
+To run Petrosoft, install dependencies with `npm ci`, initialize the local station with `npm run petrosoft:setup`, and start `npm run dev:petrosoft`. Setup asks for your local administrator password. Open http://localhost:3000/petrosoft. See [Petrosoft setup and verification](docs/PETROSOFT.md) for private data imports, production startup, backups, provider connections, and the precise verification limits.
+
+The sections below describe the earlier fuel delivery application.
+
 A web application for admins, customers, and employees to manage petrol and diesel orders, deliveries, customer balances, payments, and indent numbers. The browser interface supports desktop and phone layouts. Flutter and Android are outside the current verification scope.
 
 ## Current status

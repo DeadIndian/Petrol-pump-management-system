@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const actor = await authenticated(request), index = Number(request.nextUrl.searchParams.get("index"));
-    const fields = Object.fromEntries(request.nextUrl.searchParams);
+    const fields = Object.fromEntries([...new Set(request.nextUrl.searchParams.keys())].map(key => [key, key.endsWith("[]") || request.nextUrl.searchParams.getAll(key).length > 1 ? request.nextUrl.searchParams.getAll(key) : request.nextUrl.searchParams.get(key)]));
     const report = await buildReport(actor, index, fields);
     return new Response(reportHtml(report, actor), { headers: viewHeaders });
   } catch (error) { return apiError(error); }

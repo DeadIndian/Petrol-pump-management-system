@@ -10,7 +10,9 @@ export function escapeHtml(value: unknown) {
 
 export async function renderPetrosoft(template: string, context: Record<string, unknown>, stationName: string, referenceCode = "") {
   if (!/^[a-z0-9-]+$/.test(template)) throw new Error("Unknown Petrosoft view.");
-  const source = await readFile(join(process.cwd(), "lib", "petrosoft", "templates", `${template}.html`), "utf8");
+  const source = (await readFile(join(process.cwd(), "lib", "petrosoft", "templates", `${template}.html`), "utf8"))
+    .replace(/\/petrosoft-assets\/[^"'\s<>]*default_avatar\.png/g, "/petrosoft-assets/default-avatar.svg")
+    .replace(/(<img\b[^>]*\bsrc=)(["'])(?!\/|data:|https?:)[^"']*\2/gi, "$1$2/petrosoft-assets/default-avatar.svg$2");
   const encoded = JSON.stringify(context).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
   return source.split("__PS_CONTEXT__").join(encoded).split("__PS_STATION__").join(escapeHtml(stationName))
     .split("__PS_REFERENCE__").join(escapeHtml(referenceCode));
