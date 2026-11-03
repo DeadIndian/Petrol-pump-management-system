@@ -1,0 +1,271 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-03T11:16:03.118Z",
+  "title": "Design System: Petrosoft replica",
+  "extensions": {
+    "colorMeta": {
+      "source-navy": {
+        "role": "primary",
+        "displayName": "Source navy"
+      },
+      "source-indigo": {
+        "role": "primary",
+        "displayName": "Source indigo"
+      },
+      "action-dark": {
+        "role": "primary",
+        "displayName": "Action gradient dark"
+      },
+      "action-light": {
+        "role": "primary",
+        "displayName": "Action gradient light"
+      },
+      "entry-blue": {
+        "role": "primary",
+        "displayName": "Day Entry blue"
+      },
+      "entry-light": {
+        "role": "primary",
+        "displayName": "Day Entry light"
+      },
+      "entry-hover-blue": {
+        "role": "primary",
+        "displayName": "Day Entry hover blue"
+      },
+      "entry-hover-light": {
+        "role": "primary",
+        "displayName": "Day Entry hover light"
+      },
+      "submit-green": {
+        "role": "secondary",
+        "displayName": "Source submit green"
+      },
+      "submit-hover-green": {
+        "role": "secondary",
+        "displayName": "Source submit hover green"
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "White fields and surfaces"
+      },
+      "field-ink": {
+        "role": "neutral",
+        "displayName": "Source field text"
+      },
+      "field-line": {
+        "role": "neutral",
+        "displayName": "Source field border"
+      },
+      "primary": {
+        "role": "primary",
+        "displayName": "Local control indigo"
+      },
+      "background": {
+        "role": "neutral",
+        "displayName": "Local result background"
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Local body text"
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Local detail labels"
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Local divider"
+      },
+      "success": {
+        "role": "secondary",
+        "displayName": "Local success feedback"
+      },
+      "status-green": {
+        "role": "secondary",
+        "displayName": "Source active badge"
+      },
+      "danger": {
+        "role": "secondary",
+        "displayName": "Local error feedback"
+      },
+      "focus": {
+        "role": "primary",
+        "displayName": "Runtime keyboard cue"
+      },
+      "overlay": {
+        "role": "neutral",
+        "displayName": "Local overlay"
+      }
+    },
+    "typographyMeta": {
+      "body": {
+        "displayName": "Body",
+        "purpose": "Compact forms, navigation, table controls, and buttons."
+      },
+      "title": {
+        "displayName": "Form title",
+        "purpose": "Recurring source section titles; heading weight remains template-specific."
+      },
+      "label": {
+        "displayName": "Field label",
+        "purpose": "Ordinary source labels; contextual emphasis stays in templates."
+      },
+      "small-field": {
+        "displayName": "Small field",
+        "purpose": "The source compact input variant."
+      },
+      "dialog-title": {
+        "displayName": "Dialog title",
+        "purpose": "Local modal heading."
+      }
+    },
+    "shadows": [
+      {
+        "name": "dialog",
+        "value": "0 12px 40px var(--ps-overlay)",
+        "purpose": "Local overlay separation."
+      },
+      {
+        "name": "notice",
+        "value": "0 6px 22px var(--ps-overlay)",
+        "purpose": "Local transient feedback."
+      },
+      {
+        "name": "day-entry",
+        "value": "0 0 0 1px rgba(255, 255, 255, 0.35), 0 4px 14px rgba(0, 0, 0, 0.25)",
+        "purpose": "Original emphasized navigation item."
+      },
+      {
+        "name": "dashboard-card",
+        "value": "0 4px 14px rgba(26, 35, 126, 0.06)",
+        "purpose": "Original Petrosoft dashboard cards."
+      }
+    ],
+    "motion": [
+      {
+        "name": "source-action",
+        "value": "all 0.5s",
+        "purpose": "Original gradient action-button transition."
+      },
+      {
+        "name": "reduced-motion",
+        "value": ".01ms",
+        "purpose": "Runtime reduced-motion transition and animation duration."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "runtime-phone-max",
+        "value": "768px"
+      },
+      {
+        "name": "source-grid-small-min",
+        "value": "769px"
+      },
+      {
+        "name": "source-grid-medium-min",
+        "value": "1025px"
+      },
+      {
+        "name": "source-grid-large-min",
+        "value": "1200px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Source gradient action",
+      "kind": "button",
+      "refersTo": "button-gradient",
+      "description": "Uppercase source action button, with the original reversed hover gradient.",
+      "html": "<button type=\"button\" class=\"ds-action\">ADD</button>",
+      "css": ".ds-action{font:400 13px/1.5384616 Roboto,Arial,sans-serif;padding:7px 12px;border:0;border-radius:3px;background:linear-gradient(45deg,#222e6c,#5870ff);color:#fff;text-transform:uppercase;cursor:pointer;transition:all .5s}.ds-action:hover{background:linear-gradient(45deg,#5870ff,#222e6c);filter:drop-shadow(2px 4px 6px #222e6c)}.ds-action:focus-visible{outline:2px solid var(--ps-focus,#5273ed);outline-offset:2px;}@media(prefers-reduced-motion:reduce){.ds-action{transition-duration:.01ms}}"
+    },
+    {
+      "name": "Source submit",
+      "kind": "button",
+      "refersTo": "button-submit",
+      "description": "Ordinary green source submission button.",
+      "html": "<button type=\"button\" class=\"ds-submit\">Submit</button>",
+      "css": ".ds-submit{font:400 13px/1.5384616 Roboto,Arial,sans-serif;padding:7px 12px;border:1px solid #61ab61;border-radius:3px;background:#61ab61;color:#fff;cursor:pointer}.ds-submit:hover{background:#3b8b3be3}.ds-submit:focus-visible{outline:2px solid var(--ps-focus,#5273ed);outline-offset:2px;}.ds-submit:disabled{opacity:.7;pointer-events:none}"
+    },
+    {
+      "name": "Source field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "White source field with the runtime keyboard cue, without inherited focus suppression.",
+      "html": "<label class=\"ds-field-label\" for=\"ds-product\">Product name</label><input id=\"ds-product\" class=\"ds-field\" placeholder=\"Product name\">",
+      "css": ".ds-field-label{display:block;font:400 13px/1.5384616 Roboto,Arial,sans-serif;margin-bottom:7px;color:var(--ps-ink,#212a39)}.ds-field{display:block;box-sizing:border-box;width:100%;height:36px;padding:7px 12px;border:1px solid #ddd;border-radius:3px;background:#fff;color:#333;font:400 13px/1.5384616 Roboto,Arial,sans-serif;caret-color:var(--ps-primary,#292f8d)}.ds-field:focus-visible{outline:2px solid var(--ps-focus,#5273ed);outline-offset:2px;}"
+    },
+    {
+      "name": "Day Entry navigation",
+      "kind": "nav",
+      "refersTo": "day-entry",
+      "description": "Prominent source navigation item; the brighter gradient is shared by hover and active states.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Entry\"><a class=\"ds-day-entry\" href=\"#\">Day Entry</a></nav>",
+      "css": ".ds-nav{background:#263172;padding:1px 0}.ds-day-entry{display:block;margin:10px 8px 14px;padding:12px 20px;border-radius:8px;background:linear-gradient(90deg,#2d52b3 0%,#4a76e0 50%,#2d52b3 100%);color:#fff;font:700 13px/1.5384616 Roboto,Arial,sans-serif;letter-spacing:.02em;text-decoration:none;box-shadow:0 0 0 1px rgba(255,255,255,.35),0 4px 14px rgba(0,0,0,.25)}.ds-day-entry:hover,.ds-day-entry[aria-current=page]{background:linear-gradient(90deg,#3b66d1 0%,#6a92ec 50%,#3b66d1 100%)}.ds-day-entry:focus-visible{outline:2px solid var(--ps-focus,#5273ed);outline-offset:2px;}"
+    },
+    {
+      "name": "Active badge",
+      "kind": "chip",
+      "refersTo": "status",
+      "description": "Source green status label, distinct from the original image-based status switches.",
+      "html": "<div class=\"ds-status-surface\"><span class=\"ds-status\">Active</span></div>",
+      "css": ".ds-status-surface{font:400 13px/1.5384616 Roboto,Arial,sans-serif}.ds-status{display:inline-block;padding:.2em .6em .3em;background:#10b981;border:1px solid #10b981;color:#fff;border-radius:.25em;font:700 75%/1 Roboto,Arial,sans-serif;text-align:center;white-space:nowrap;box-shadow:0 8px 25px -8px #10b981}"
+    },
+    {
+      "name": "Operational form panel",
+      "kind": "card",
+      "refersTo": "form-panel",
+      "description": "Recurring source diagonal gradient behind compact white fields.",
+      "html": "<section class=\"ds-form-panel\"><label class=\"ds-panel-label\" for=\"ds-panel-product\">Product</label><input class=\"ds-panel-input\" id=\"ds-panel-product\" readonly value=\"Product\"></section>",
+      "css": ".ds-form-panel{padding:2em 1em;border-radius:5px;background:linear-gradient(45deg,#263172,#3f51b5);font:400 13px/1.5384616 Roboto,Arial,sans-serif}.ds-panel-label{display:block;margin:0 0 5px;color:#fff}.ds-panel-input{display:block;box-sizing:border-box;width:100%;height:34px;padding:6px 11px;border:1px solid #ddd;border-radius:2px;background:#fff;color:#333;font:400 12px/1.6666667 Roboto,Arial,sans-serif}.ds-panel-input:focus-visible{outline:2px solid var(--ps-focus,#5273ed);outline-offset:2px;}"
+    },
+    {
+      "name": "Local report table",
+      "kind": "custom",
+      "refersTo": "report-table",
+      "description": "Bordered local report rows, retaining source headers and tabular numerals.",
+      "html": "<div class=\"ds-table-scroll\"><table class=\"ds-report-table\"><thead><tr><th>Product</th><th>Status</th></tr></thead><tbody><tr><td>MS</td><td>Active</td></tr></tbody></table></div>",
+      "css": ".ds-table-scroll{overflow-x:auto;color:var(--ps-ink,#212a39);font:400 13px/1.5384616 Roboto,Arial,sans-serif}.ds-report-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}.ds-report-table th,.ds-report-table td{padding:8px;border:1px solid var(--ps-line,#ccd5f0);text-align:left}.ds-report-table th{font-weight:500}"
+    },
+    {
+      "name": "Local dialog surface",
+      "kind": "custom",
+      "refersTo": "dialog",
+      "description": "Local dialog appearance; shipped widgets.js owns focus entry, Tab wrapping, Escape, and restoration.",
+      "html": "<section class=\"ds-dialog\" role=\"dialog\" aria-labelledby=\"ds-dialog-title\"><div class=\"ds-dialog-heading\"><h2 class=\"ds-dialog-title\" id=\"ds-dialog-title\">Product</h2><button class=\"ds-dialog-close\" type=\"button\" aria-label=\"Close\">×</button></div><div class=\"ds-dialog-content\"><label class=\"ds-dialog-label\" for=\"ds-dialog-product\">Product name</label><input class=\"ds-dialog-input\" id=\"ds-dialog-product\" placeholder=\"Product name\"></div></section>",
+      "css": ".ds-dialog{max-width:1150px;margin:0 auto;background:var(--ps-paper,#fff);color:var(--ps-ink,#212a39);border-radius:5px;box-shadow:0 12px 40px var(--ps-overlay,rgb(21 30 64 / 48%));font:400 13px/1.5384616 Roboto,Arial,sans-serif}.ds-dialog-heading{padding:15px 20px;display:flex;justify-content:space-between;gap:20px;align-items:center;border-bottom:1px solid var(--ps-line,#ccd5f0)}.ds-dialog-title{margin:0;font:400 18px/1.5384616 Roboto,Arial,sans-serif}.ds-dialog-close{border:0;background:transparent;color:inherit;font:700 21px/1 Roboto,Arial,sans-serif;opacity:.5;cursor:pointer}.ds-dialog-close:hover{opacity:1}.ds-dialog-content{padding:20px}.ds-dialog-label{display:block;margin-bottom:7px}.ds-dialog-input{font:400 13px/1.5384616 Roboto,Arial,sans-serif;padding:7px 12px;border:1px solid #ddd;border-radius:3px;background:#fff;color:#333}.ds-dialog-close:focus-visible,.ds-dialog-input:focus-visible{outline:2px solid var(--ps-focus,#5273ed);outline-offset:2px;}@media(max-width:768px){.ds-dialog-heading,.ds-dialog-content{padding:12px}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The original Petrosoft interface",
+    "overview": "This is a scan of the shipped source reproduction. The user's one-to-one brief establishes the visual authority: the accessible Petrosoft application, its captured templates, and its original assets. The dense forms, bordered tables, blue gradients, cards, labels, and icon vocabulary are inherited choices.\n\nThis document applies to `/petrosoft`, its local API views, and their assets. The older `/dashboard` application keeps its own design. Interface fidelity does not establish complete financial or provider parity; those limits remain in [PETROSOFT.md](../../docs/PETROSOFT.md).",
+    "keyCharacteristics": [
+      "Compact operational forms and tables.",
+      "Dark blue framing, brighter blue gradients, and white fields.",
+      "Original labels, fonts, navigation, and assets.",
+      "Local feedback and usable mobile forms without changing the source identity."
+    ],
+    "rules": [
+      {
+        "name": "The Source Authority Rule",
+        "body": "Preserve the source's contextual colors and gradients. Their provenance justifies exceptions to generic advice about reducing gradients, cards, or legacy icon styles.",
+        "section": "colors"
+      }
+    ],
+    "dos": [
+      "Do follow the source templates, asset vocabulary, labels, and contextual gradients.",
+      "Do keep table controls usable within local scrolling wrappers.",
+      "Do preserve readable mobile product summaries, readonly labels, and separate vehicle action rows.",
+      "Do retain dialog focus entry, keyboard containment, dismissal, and focus restoration.",
+      "Do keep this design scoped to Petrosoft and consult PETROSOFT.md for delivery limits."
+    ],
+    "donts": [
+      "Don't replace the source identity with a new palette, typography pairing, or layout concept.",
+      "Don't canonize overlapping fields, hidden overflow, legacy focus suppression, or broken images.",
+      "Don't introduce private records, credentials, screenshots, or invented financial examples into design artifacts.",
+      "Don't treat styling specimens as evidence of complete software or financial parity."
+    ]
+  }
+}
