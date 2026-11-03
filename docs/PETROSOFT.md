@@ -47,6 +47,43 @@ Docker's `petrosoft-data` volume retains local database progress. Keep the volum
 docker compose -f compose.petrosoft.yaml stop
 ```
 
+## Read-only source collection
+
+The collector downloads the original station's full SQL export, parses it as data, and saves table contents from the accessible screens, history filters, and report exports. It also requests individual customer and employee statements. Named credential fields and ephemeral session tables are excluded from parsed data. Source page scripts are never executed. The original station's business forms, messaging controls, and document issuance actions are not submitted.
+
+Install the optional Python tools in private local storage, then capture a fresh snapshot:
+
+```bash
+python3 -m venv .petrosoft/source-tools
+source .petrosoft/source-tools/bin/activate
+python -m pip install -r scripts/petrosoft/requirements.txt
+npm run petrosoft:fetch-source -- --login --out .petrosoft/source/snapshot-1
+npm run petrosoft:store-source -- --snapshot .petrosoft/source/snapshot-1
+```
+
+The login prompt uses the original website's password. The station code defaults to the local setup; supply `--code` and `--user` for a different authorized installation. Passwords are not accepted as command-line arguments. Sessions are retained privately and bound to the selected station. Choose a new output folder for each fresh export; repeating a collection with the same folder resumes it. `--backup-only` collects the full database export without the additional views. `--reports-only` resumes report collection, and `--refresh-reports` requests updated report variants.
+
+For a snapshot with timed-out reports, use `--retry-timeouts --out .petrosoft/source/snapshot-1` with its original `--from` and `--to` dates. This requests only those date-range reports in monthly sections, preserves the original failure entries, and records the successful sections under `recoveredBy`. Customer statements include source credit, payment, and opening dates; the month-wise credit report starts at its earliest source credit date. Both the requested and retried ranges are recorded. Already saved sections, including source warning responses, are not requested again. Sections with source errors remain partial and are not marked as recovered.
+
+Snapshots, source exports, authenticated sessions, and logs stay inside ignored `.petrosoft` storage. The database stores sanitized native tables, extracted view/report tables, binary report exports, and their manifests under `petrosoft_native_records` with `table_name = 'source-archive'`. Copies are identified by their content hashes, so repeating storage skips existing copies and retains changed versions. The destination station must match the source manifest. The local application's JSON backups include these source copies.
+
+This storage step preserves source material for inspection and migration; operational entries and ledger postings keep their existing values. The current installation already contains the normalized business import. New source copies do not automatically rebook transactions or overwrite local edits. Source reports can fail, time out, or emit PHP warnings; manifests record those outcomes, and saved report data can be partial. A scraper cannot reconstruct history absent from the original export and accessible views.
+
+To inspect a retained native table for your station:
+
+```sql
+SELECT fields->'data'->'rows'
+FROM petrosoft_native_records
+WHERE workspace_id = (
+  SELECT id FROM petrosoft_workspaces WHERE reference_code = 'MY-STATION'
+)
+AND table_name = 'source-archive'
+AND fields->>'kind' = 'native-table'
+AND fields->>'key' = 'k_cust';
+```
+
+Collector checks are available with `npm run test:petrosoft:source-requests`; the Petrosoft test suite also checks archive replay, credential removal, preservation of live balances, and station boundaries.
+
 ## Production startup
 
 ```bash

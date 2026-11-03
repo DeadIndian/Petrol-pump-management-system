@@ -23,6 +23,9 @@
     "start:petrosoft": "tsx scripts/petrosoft/start.ts",
     "petrosoft:setup": "tsx scripts/petrosoft/setup.ts",
     "petrosoft:check-privacy": "python3 scripts/petrosoft/check-privacy.py",
+    "petrosoft:fetch-source": "python3 scripts/petrosoft/fetch-source.py",
+    "petrosoft:store-source": "tsx scripts/petrosoft/store-source.ts",
+    "test:petrosoft:source-requests": "python3 -m unittest discover -s tests/petrosoft -p test_source_requests.py",
     "test:petrosoft": "tsx --test --test-concurrency=1 tests/petrosoft/*.test.ts"
   },
   "prisma": {

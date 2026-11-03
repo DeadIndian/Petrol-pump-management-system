@@ -52,6 +52,10 @@ out
 # Optional npm cache
 .npm
 
+# Python scraper caches
+__pycache__/
+*.py[cod]
+
 # Private Petrosoft reference captures, imported records and uploaded files
 .petrosoft/
 .env.petrosoft.local
