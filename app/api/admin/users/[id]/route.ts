@@ -4,8 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { authenticate } from "@/lib/auth";
 import { z } from "zod";
 
-const supabaseAdmin = createSupabaseServerClient();
-
 const UpdateUserSchema = z.object({
 	fullName: z.string().min(2).optional(),
 	phone: z.string().optional().nullable(),
@@ -101,7 +99,7 @@ export async function PATCH(
         throw new Error("CUSTOMER_HAS_HISTORY");
       }
       if (data.password) {
-        const { error } = await supabaseAdmin.auth.admin.updateUserById(routeParams.id, { password: data.password });
+        const { error } = await createSupabaseServerClient().auth.admin.updateUserById(routeParams.id, { password: data.password });
         if (error) throw new Error("Could not update the password. Please try again.");
       }
       if (leavingCustomer && current.customerProfile) await tx.customerProfile.delete({ where: { userId: routeParams.id } });
@@ -176,7 +174,7 @@ export async function DELETE(
         throw new Error("ACCOUNT_HAS_HISTORY");
       }
       // If the Auth provider rejects deletion, the database transaction keeps the account.
-      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(routeParams.id);
+      const { error: authError } = await createSupabaseServerClient().auth.admin.deleteUser(routeParams.id);
       if (authError && authError.status !== 404) throw authError;
       await tx.user.delete({ where: { id: routeParams.id } });
     }, { maxWait: 15000, timeout: 30000 });
