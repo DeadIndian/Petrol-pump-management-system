@@ -28,7 +28,7 @@ export default function DashboardClient({ user, initialTab }: { user: WebUser; i
     finally { setSigningOut(false); }
   }
   return <main className="min-h-dvh bg-slate-50 px-4 py-5 sm:p-8" style={{ paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))" }}>
-    <div className="mx-auto min-w-0 max-w-7xl"><header className="mb-6 flex flex-wrap items-start justify-between gap-4"><div className="min-w-0"><h1 className="text-2xl font-semibold sm:text-3xl">{isAdmin ? "Admin Dashboard" : user.role === "EMPLOYEE" ? "Delivery Dashboard" : "Customer Dashboard"}</h1><p className="mt-2 break-words text-slate-600">{user.fullName} · Petrol Pump Management</p></div><Button variant="outline" disabled={signingOut} onClick={() => void logout()}>{signingOut ? "Signing out…" : "Sign out"}</Button></header>
+    <div className="mx-auto min-w-0 max-w-7xl"><header className="mb-6 flex flex-wrap items-start justify-between gap-4"><div className="min-w-0"><h1 className="text-2xl font-semibold sm:text-3xl">{isAdmin ? "Admin Dashboard" : user.role === "EMPLOYEE" ? "Delivery Dashboard" : "Customer Dashboard"}</h1><p className="mt-2 break-words text-slate-600">{user.fullName} · BunkBook</p></div><Button variant="outline" disabled={signingOut} onClick={() => void logout()}>{signingOut ? "Signing out…" : "Sign out"}</Button></header>
       {error && <p role="alert" className="mb-5 rounded-lg bg-red-50 p-3 text-red-800">{error}</p>}
       <Tabs value={activeTab} onValueChange={value => {
         setActiveTab(value);

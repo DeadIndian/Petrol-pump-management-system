@@ -1,8 +1,8 @@
 # Current web architecture
 
-## Petrosoft station management
+## BunkBook station management
 
-`/petrosoft` serves the captured source layouts with local JavaScript controllers. Its HTTP endpoints under `/api/petrosoft` authenticate a station-scoped session and enforce role permissions independently of the screen. The application uses its own PostgreSQL connection and password/session records; it does not require Supabase Auth.
+`/bunkbook` serves the captured source layouts with local JavaScript controllers. Its HTTP endpoints under `/api/bunkbook` authenticate a station-scoped session and enforce role permissions independently of the screen. The application uses its own PostgreSQL connection and password/session records; it does not require Supabase Auth.
 
 Prisma stores stations, users, sessions, sequences, business entries, ledger postings, attachments, audit events, and retained source archives. Entries and ledger amounts use PostgreSQL Decimal columns. Business dates use Asia/Kolkata. Source snapshots and operational records are separate, so collecting a fresh source archive does not overwrite local transactions.
 
@@ -10,7 +10,7 @@ The action service validates products, customers, employees, vendors, tanks, and
 
 Generated invoices retain the source sales and protect them from further edits. Generating an invoice does not charge the customer again. Local statements, reports, and HTML/CSV/XLSX/PDF exports read these records. Messaging, biometric hardware, BPCL, and government document issuance need separately configured provider bridges.
 
-`npm run test:petrosoft` exercises database transactions in isolated test stations. With a local server running, `npm run test:petrosoft:browser` signs into an isolated station and uses the actual screens to save rates, receipts, sales, recoveries, expenses, employee collections, settlement, and billing. It verifies persisted closing balances, rate and receipt edits, legacy receipt allocations, invoice freezing, and PDF output. See [Petrosoft setup and verification](docs/PETROSOFT.md) for details and fidelity limits.
+`npm run test:bunkbook` exercises database transactions against a dedicated `bunkbook_test` database. `npm run test:bunkbook:browser` starts its own server on that database, signs in and uses the actual screens to save rates, receipts, sales, recoveries, expenses, employee collections, settlement, and billing. It verifies persisted closing balances, rate and receipt edits, legacy receipt allocations, invoice freezing, and PDF output. See [BunkBook setup and verification](docs/BUNKBOOK.md) for details and fidelity limits.
 
 ## Earlier delivery application
 

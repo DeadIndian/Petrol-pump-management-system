@@ -1,0 +1,19 @@
+name: bunkbook-local
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: bunkbook
+      POSTGRES_PASSWORD: bunkbook-local-development
+      POSTGRES_DB: bunkbook
+    ports:
+      - "127.0.0.1:54330:5432"
+    volumes:
+      - bunkbook-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bunkbook -d bunkbook"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+volumes:
+  bunkbook-data:

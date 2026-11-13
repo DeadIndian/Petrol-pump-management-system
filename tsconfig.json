@@ -40,7 +40,11 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    ".bunkbook/builds/operational-verified-20261103/types/**/*.ts",
+    ".bunkbook/builds/operational-verified-20261103/dev/types/**/*.ts",
+    ".bunkbook/builds/browser-test/types/**/*.ts",
+    ".bunkbook/builds/browser-test/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

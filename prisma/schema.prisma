@@ -179,27 +179,20 @@ model AuditLog {
   @@map("audit_logs")
 }
 
-// Petrosoft is isolated from the existing delivery application's data and auth.
-model PetrosoftWorkspace {
-  id            String   @id @default(cuid())
-  referenceCode String   @unique @map("reference_code")
-  name          String
-  settings      Json     @default("{}")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-  users         PetrosoftUser[]
-  entries       PetrosoftEntry[]
-  sequences     PetrosoftSequence[]
-  attachments   PetrosoftAttachment[]
-  audits        PetrosoftAudit[]
-  nativeRecords PetrosoftNativeRecord[]
+// BunkBook is isolated from the existing delivery application's data and auth.
+// One installation serves one station. For several stations, run several instances.
+model BunkBookStation {
+  id        String   @id @default("station")
+  name      String
+  settings  Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@map("petrosoft_workspaces")
+  @@map("bunkbook_station")
 }
 
-model PetrosoftUser {
+model BunkBookUser {
   id           String   @id @default(cuid())
-  workspaceId  String   @map("workspace_id")
   username     String
   fullName     String   @map("full_name")
   passwordHash String   @map("password_hash")
@@ -209,39 +202,35 @@ model PetrosoftUser {
   lastLoginAt  DateTime? @map("last_login_at")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
-  workspace    PetrosoftWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  sessions     PetrosoftSession[]
+  sessions     BunkBookSession[]
 
-  @@unique([workspaceId, username])
-  @@map("petrosoft_users")
+  @@unique([username])
+  @@map("bunkbook_users")
 }
 
-model PetrosoftSession {
+model BunkBookSession {
   id        String   @id @default(cuid())
   tokenHash String   @unique @map("token_hash")
   userId    String   @map("user_id")
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
-  user      PetrosoftUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      BunkBookUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([expiresAt])
-  @@map("petrosoft_sessions")
+  @@map("bunkbook_sessions")
 }
 
-model PetrosoftSequence {
+model BunkBookSequence {
   id          String @id @default(cuid())
-  workspaceId String @map("workspace_id")
   module      String
   value       Int    @default(0)
-  workspace   PetrosoftWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@unique([workspaceId, module])
-  @@map("petrosoft_sequences")
+  @@unique([module])
+  @@map("bunkbook_sequences")
 }
 
-model PetrosoftEntry {
+model BunkBookEntry {
   id          String   @id @default(cuid())
-  workspaceId String   @map("workspace_id")
   module      String
   number      Int
   externalId  String?  @map("external_id")
@@ -255,16 +244,15 @@ model PetrosoftEntry {
   createdBy   String   @map("created_by")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
-  workspace   PetrosoftWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  ledger      PetrosoftLedger[]
+  ledger      BunkBookLedger[]
 
-  @@unique([workspaceId, module, number])
-  @@unique([workspaceId, module, externalId])
-  @@index([workspaceId, module, date])
-  @@map("petrosoft_entries")
+  @@unique([module, number])
+  @@unique([module, externalId])
+  @@index([module, date])
+  @@map("bunkbook_entries")
 }
 
-model PetrosoftLedger {
+model BunkBookLedger {
   id          String   @id @default(cuid())
   entryId     String   @map("entry_id")
   entityType  String   @map("entity_type")
@@ -274,29 +262,26 @@ model PetrosoftLedger {
   credit      Decimal  @default(0) @db.Decimal(18, 4)
   quantity    Decimal  @default(0) @db.Decimal(18, 4)
   description String   @default("")
-  entry       PetrosoftEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  entry       BunkBookEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
 
   @@index([entityType, entityId, date])
-  @@map("petrosoft_ledger")
+  @@map("bunkbook_ledger")
 }
 
-model PetrosoftAttachment {
+model BunkBookAttachment {
   id          String   @id @default(cuid())
-  workspaceId String   @map("workspace_id")
   module      String   @default("organization")
   filename    String
   contentType String   @map("content_type")
   storageName String   @unique @map("storage_name")
   size        Int
   createdAt   DateTime @default(now()) @map("created_at")
-  workspace   PetrosoftWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@map("petrosoft_attachments")
+  @@map("bunkbook_attachments")
 }
 
-model PetrosoftAudit {
+model BunkBookAudit {
   id          String   @id @default(cuid())
-  workspaceId String   @map("workspace_id")
   userId      String   @map("user_id")
   username    String
   action      String
@@ -305,23 +290,20 @@ model PetrosoftAudit {
   before      Json?
   after       Json?
   createdAt   DateTime @default(now()) @map("created_at")
-  workspace   PetrosoftWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@index([workspaceId, createdAt])
-  @@map("petrosoft_audits")
+  @@index([createdAt])
+  @@map("bunkbook_audits")
 }
 
 // Supplementary native records retain calibration charts, vehicles and historical
 // stock snapshots without mixing imported SQL or private provider credentials into code.
-model PetrosoftNativeRecord {
+model BunkBookNativeRecord {
   id          String   @id @default(cuid())
-  workspaceId String   @map("workspace_id")
   tableName   String   @map("table_name")
   nativeId    String   @map("native_id")
   fields      Json
-  workspace   PetrosoftWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  @@unique([workspaceId, tableName, nativeId])
-  @@index([workspaceId, tableName])
-  @@map("petrosoft_native_records")
+  @@unique([tableName, nativeId])
+  @@index([tableName])
+  @@map("bunkbook_native_records")
 }

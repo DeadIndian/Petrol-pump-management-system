@@ -1,10 +1,12 @@
-# Petrol Pump Management System
+# BunkBook
 
-The Petrosoft application is available at `/petrosoft`, backed by PostgreSQL, with the original navigation and forms across 85 captured screens and 91 report definitions. Fuel receipts, meter and credit sales, customer recoveries, expenses, employee collections, bank handovers, and invoice generation save local business records and update stock and account balances. The earlier fuel delivery application remains at `/dashboard`.
+Petrol pump management software for Indian fuel stations — sales, meter readings, credit customers, purchases, stock, payroll, expenses, banking, invoices and 90+ reports, backed by PostgreSQL. A web app for admins, customers and employees also handles fuel delivery orders at `/dashboard`.
 
-To run Petrosoft, install dependencies with `npm ci`, initialize the local station with `npm run petrosoft:setup`, and start `npm run dev:petrosoft`. Setup asks for your local administrator password. Open http://localhost:3000/petrosoft. See [Petrosoft setup and verification](docs/PETROSOFT.md) for private data imports, production startup, backups, provider connections, and the precise verification limits.
+The main app is at `/bunkbook`. To run it: `npm ci`, `npm run bunkbook:setup`, then `npm run dev:bunkbook` and open http://localhost:3000/bunkbook. See [setup and verification](docs/BUNKBOOK.md).
 
-With the Petrosoft server running, `npm run test:petrosoft:browser` exercises a complete business day through the real screens and verifies the resulting PostgreSQL balances. `npm run test:petrosoft` checks transaction rules, exports, access controls, and reversals. Both use isolated test stations.
+`npm run test:bunkbook` checks transaction rules, exports, access controls and reversals against a dedicated `bunkbook_test` database. `npm run test:bunkbook:browser` starts its own server on that database and exercises a full business day through the real screens.
+
+Built by [DeadIndian](https://github.com/DeadIndian).
 
 The sections below describe the earlier fuel delivery application.
 

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
 import DashboardClient from "./dashboard-client";
 
-export const metadata = { title: "Dashboard | Petrol Pump Management" };
+export const metadata = { title: "Dashboard | BunkBook" };
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const user = await getSessionUser();

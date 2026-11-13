@@ -1,0 +1,129 @@
+import { Prisma, type BunkBookEntry } from "@prisma/client";
+import { fieldValue, jsonFields, type BunkBookFields } from "./catalog";
+import { baseModule, BOWSER_KEYS, CUSTOMER_KEYS, EMPLOYEE_KEYS, paymentAccount, PRODUCT_KEYS, referenceValue, VENDOR_KEYS, positive } from "./rules";
+
+type Database = Prisma.TransactionClient;
+export async function referencedMaster(database: Database, module: string, offered: unknown, active = false) {
+  const id = String(offered || "").split("|")[0];
+  if (!id || ["0", "all", "unassigned"].includes(id.toLowerCase())) return null;
+  return database.bunkBookEntry.findFirst({ where: { module, status: active ? "active" : { not: "void" }, OR: [{ id }, { externalId: id }, { name: { equals: id, mode: "insensitive" } }] } });
+}
+export async function validateMasterReferences(database: Database, module: string, fields: BunkBookFields, previous?: BunkBookFields) {
+  const base = baseModule(module), guest = ["guest-sales", "gift-sales", "loyalty-transactions"].includes(base);
+  const relations: [string, string[], boolean][] = [];
+  if (module.startsWith("bowser-") && module !== "bowser-nozzles") relations.push(["bowsers", BOWSER_KEYS, true]);
+  if (module === "bowser-nozzles") relations.push(["bowsers", BOWSER_KEYS, true]);
+  if (module === "bowsers") {
+    relations.push(["fuel-products", PRODUCT_KEYS, true]);
+    fields.capacity = positive(fieldValue(fields, ["capacity", "b_capacity"], "0"), "Bowser capacity").toString();
+    fields.opening_stock = positive(fieldValue(fields, "opening_stock", "0"), "Opening bowser stock", true).toString();
+    if (previous && fieldValue(previous, "product") !== fieldValue(fields, "product")) {
+      const original = await referencedMaster(database, "bowsers", fieldValue(previous, ["b_name", "name"]));
+      const used = original && await database.bunkBookEntry.count({ where: { module: "bowser-sales", status: { not: "void" }, fields: { path: ["bowser"], equals: original.externalId || String(original.number) } } });
+      if (used) throw new Error("Keep the fuel product of a bowser with recorded sales.");
+    }
+  }
+  if (module === "bowser-nozzles") {
+    fields.open_read = positive(fieldValue(fields, ["open_read", "opening_reading"], "0"), "Opening meter reading", true).toString();
+    const original = previous && await referencedMaster(database, module, fieldValue(previous, ["nozzle_name", "name"]));
+    if (original && (fieldValue(previous, BOWSER_KEYS) !== fieldValue(fields, BOWSER_KEYS) || fieldValue(previous, "open_read", "0") !== fields.open_read) && await hasMasterReferences(database, original)) throw new Error("Keep the bowser and opening reading of a nozzle with recorded sales.");
+  }
+  if (module === "bowser-lubricant-sales" && /credit/i.test(fieldValue(fields, ["sale_type1", "sale_type"])) && !fieldValue(fields, "lubvehi_no").replace(/^0$/, "").trim()) throw new Error("Enter the vehicle number for a bowser lubricant credit sale.");
+  if (["daily-rates", "shift-sheet", "meter-sales", "credit-sales", "guest-sales", "handling-loss", "fuel-purchases", "lubricant-purchases", "lubricant-sales", "lubricant-loss", "gift-purchases", "gift-sales", "other-purchases", "loyalty-points", "tanks"].includes(base)) {
+    const type = /lubricant/.test(base) || base === "other-purchases" ? "lubricants" : /gift/.test(base) ? "gifts" : "fuel-products";
+    relations.push([type, PRODUCT_KEYS, true]);
+  }
+  if (["credit-sales", "recoveries"].includes(base) || base === "lubricant-sales" && /credit/i.test(fieldValue(fields, ["sale_type1", "sale_type"]))) relations.push(["customers", CUSTOMER_KEYS, true]);
+  if (guest) relations.push(["guests", base === "gift-sales" ? ["guest_cust", "guest_id", "customer_id"] : ["guest_id", "customer_id"], true]);
+  if (["fuel-purchases", "lubricant-purchases", "other-purchases", "lfr-invoices", "gift-purchases", "vendor-transactions"].includes(base)) relations.push(["vendors", VENDOR_KEYS, true]);
+  if (["credit-sales", "meter-sales", "swipes", "expenses", "recoveries", "employee-recoveries", "lubricant-sales", "guest-sales", "day-assignments", "users"].includes(base)) relations.push(["employees", EMPLOYEE_KEYS, base === "employee-recoveries"]);
+  if (base === "swipes") relations.push(["swipe-machines", ["swipe_name", "swipe_bank", "swp_name"], true]);
+  if (base === "pump-settings") relations.push(["nozzles", ["noz", "nozzle_id"], true]);
+  if (base === "loyalty-points") relations.push(["loyalty-tiers", ["tier_name"], true]);
+  if (base === "users") relations.push(["roles", ["role", "user_role"], true]);
+  for (const [type, keys, required] of relations) {
+    const value = referenceValue(fields, keys);
+    if (!value && !required) continue;
+    if (type === "loyalty-tiers" && value === "Regular") continue;
+    const unchanged = previous && referenceValue(previous, keys) === value;
+    const master = await referencedMaster(database, type, value, !unchanged);
+    if (!master) throw new Error(`Choose an active ${type.replace(/-/g, " ")} entry from this station.`);
+    if (type === "bowsers") fields.bowser = master.externalId || String(master.number);
+  }
+  const tank = referenceValue(fields, ["tank_no", "stock_tank"]);
+  if (tank && ["meter-sales", "pump-settings", "nozzles", "sales-officer", "tanker-sales", "fuel-purchases"].includes(base)) {
+    const unchanged = previous && referenceValue(previous, ["tank_no", "stock_tank"]) === tank;
+    const master = await database.bunkBookEntry.findFirst({ where: { module: "tanks", status: unchanged ? { not: "void" } : "active", OR: [{ id: tank }, { externalId: tank }, { fields: { path: ["tank_no"], equals: tank } }] } });
+    if (!master) throw new Error("Choose an active tank from this station.");
+    const expected = fieldValue(jsonFields(master.fields), ["product", "pro_name"]), product = referenceValue(fields, PRODUCT_KEYS);
+    if (product && expected && product !== expected) throw new Error("The selected product does not belong to this tank.");
+    fields.tank_no = fieldValue(jsonFields(master.fields), "tank_no", master.externalId || String(master.number));
+    if (["pump-settings", "nozzles"].includes(base)) fields.product = expected;
+  }
+  if (["meter-sales", "pump-settings"].includes(module)) {
+    const nozzleId = referenceValue(fields, ["nozzle_id", "nozzle", "noz", "nozzel_id"]);
+    const nozzle = await referencedMaster(database, "nozzles", nozzleId, !previous);
+    if (!nozzle) throw new Error("Choose an active nozzle from this station.");
+    const n = jsonFields(nozzle.fields), tankNo = fieldValue(n, "tank_no"), product = fieldValue(n, "product");
+    if (tankNo !== fieldValue(fields, "tank_no")) throw new Error("The selected nozzle does not belong to this tank.");
+    if (product && referenceValue(fields, PRODUCT_KEYS) && product !== referenceValue(fields, PRODUCT_KEYS)) throw new Error("The selected product does not belong to this nozzle.");
+    if (module === "meter-sales") {
+      const pump = await referencedMaster(database, "pump-settings", fieldValue(fields, "pump_id"), !previous);
+      if (!pump || fieldValue(jsonFields(pump.fields), ["noz", "nozzel_id"]) !== (nozzle.externalId || String(nozzle.number))) throw new Error("Choose the pump assigned to this nozzle.");
+      fields.nozzle_id = nozzle.externalId || String(nozzle.number); fields.nozzle = fields.nozzle_id;
+    } else fields.noz = nozzle.externalId || String(nozzle.number);
+  }
+  if (["recoveries", "expenses", "vendor-transactions"].includes(base)) {
+    const account = paymentAccount(fields);
+    if (account.type !== "cash") {
+      const type = account.type === "bank" || account.type === "party" ? "business-parties" : account.type === "vendor" ? "vendors" : "swipe-machines";
+      const master = await referencedMaster(database, type, account.id, !previous);
+      if (!master || account.type === "bank" && !/bank/i.test(fieldValue(jsonFields(master.fields), "p_type"))) throw new Error(`Choose a valid ${account.type} account from this station.`);
+    }
+  }
+  if (base === "business-transactions") {
+    for (const key of ["partytype", "Topartytype"]) {
+      const offered = fieldValue(fields, key), id = offered.split("|")[0];
+      if (/^cash$/i.test(id)) { fields[key] = "cash|Cash"; continue; }
+      const party = await referencedMaster(database, "business-parties", id, !previous);
+      if (!party) throw new Error("Choose both transfer accounts from this station.");
+      fields[key] = `${party.externalId || party.number}|${fieldValue(jsonFields(party.fields), "p_type", "Creditor")}`;
+    }
+  }
+  if (fieldValue(fields, "payment_amnt") && fieldValue(fields, "payment_bank")) {
+    const bank = await referencedMaster(database, "business-parties", fieldValue(fields, "payment_bank"), !previous);
+    if (!bank || !/bank/i.test(fieldValue(jsonFields(bank.fields), "p_type"))) throw new Error("Choose a bank account from this station for the purchase payment.");
+    fields.payment_bank = bank.externalId || String(bank.number);
+  }
+}
+
+const references: Record<string, string[]> = {
+  customers: [...CUSTOMER_KEYS, "customer_id"], vendors: VENDOR_KEYS, employees: [...EMPLOYEE_KEYS, "pay_emply", "user_empid"],
+  "fuel-products": PRODUCT_KEYS, lubricants: PRODUCT_KEYS, gifts: ["gifts", "gift_id", "product"],
+  tanks: ["tank_no", "stock_tank", "tank_id"], nozzles: ["noz", "nozzle", "nozzle_id", "nozzel_id"],
+  bowsers: BOWSER_KEYS, "bowser-nozzles": ["bow_nozzle", "nozzle_id"],
+  "swipe-machines": ["swipe_bank", "swipe_name", "attach_swipe"], "business-parties": ["bank_id", "crd_id", "partytype", "Topartytype", "payment_bank", "bank", "attach_bank"],
+  roles: ["role", "user_role"], "duty-shifts": ["emp_shift", "shift"], "business-shifts": ["shift"],
+  "expiry-categories": ["cat_id"], "expiry-items": ["item_id"], "loyalty-tiers": ["tier_name", "tier_id"],
+};
+export async function hasMasterReferences(database: Database, entry: Pick<BunkBookEntry, "id" | "module" | "externalId" | "number" | "name" | "fields">) {
+  const keys = references[entry.module];
+  if (!keys) return false;
+  const identity = entry.externalId || String(entry.number), f = jsonFields(entry.fields);
+  const values = [...new Set([identity, entry.id, ...(entry.module === "tanks" ? [fieldValue(f, "tank_no")] : []), ...(["roles", "duty-shifts", "business-shifts"].includes(entry.module) ? [entry.name] : [])])].filter(Boolean);
+  if (["nozzles", "bowser-nozzles"].includes(entry.module)) {
+    const used = await database.bunkBookEntry.findFirst({ where: { module: "bowser-sales", status: { not: "void" }, fields: { path: [entry.module === "nozzles" ? "receipts" : "nozzle_sales"], array_contains: [{ nozzle_id: identity }] } } });
+    if (used) return true;
+  }
+  // Relationships are scoped by module to avoid confusing the numeric ID of a
+  // lubricant with the same ID in the fuel catalogue.
+  const scope: Record<string, string[]> = {
+    "fuel-products": ["tanks", "nozzles", "pump-settings", "daily-rates", "meter-sales", "credit-sales", "guest-sales", "handling-loss", "opening-stock", "loyalty-points", "customer-discounts", "fuel-purchases", "bowsers", "bowser-sales", "bowser-credit-sales"],
+    lubricants: ["lubricant-sales", "lubricant-purchases", "lubricant-loss", "day-assignments", "other-purchases", "bowser-lubricant-sales"],
+    gifts: ["gift-purchases", "gift-sales"], "duty-shifts": ["attendance-details"], "business-shifts": ["meter-sales", "credit-sales", "expenses", "swipes", "recoveries", "settlements"],
+    roles: ["users"],
+  };
+  const reference = await database.bunkBookEntry.findFirst({ where: { id: { not: entry.id }, status: { not: "void" }, ...(scope[entry.module] ? { module: { in: scope[entry.module] } } : {}),
+    OR: keys.flatMap(key => values.map(value => ({ fields: { path: [key], equals: value } }))) }, select: { id: true } });
+  return Boolean(reference);
+}

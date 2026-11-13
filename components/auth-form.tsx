@@ -31,7 +31,7 @@ export default function AuthForm({ register = false }: { register?: boolean }) {
   return <main className="flex min-h-dvh items-center justify-center bg-slate-50 p-4 sm:p-8">
     <section className="w-full max-w-md rounded-xl bg-white p-6 shadow-md sm:p-8" aria-labelledby="auth-title">
       <h1 id="auth-title" className="text-2xl font-semibold text-slate-900">{register ? "Create a customer account" : "Sign in"}</h1>
-      <p className="mt-2 text-slate-600">Petrol Pump Management System</p>
+      <p className="mt-2 text-slate-600">BunkBook</p>
       <form method="post" onSubmit={submit} className="mt-8 space-y-5">
         {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-red-800">{error}</p>}
         {success && <p role="status" className="rounded-lg bg-green-50 p-3 text-green-800">{success}</p>}

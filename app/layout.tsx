@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-	title: "Petrol Pump Management System",
+	title: "BunkBook",
 	description:
 		"A digitized fuel delivery management system for petrol pumps in India",
 };

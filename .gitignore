@@ -57,10 +57,10 @@ next-env.d.ts
 __pycache__/
 *.py[cod]
 
-# Private Petrosoft reference captures, imported records and uploaded files
-.petrosoft/
-.env.petrosoft.local
-tests/petrosoft/.state/
+# Private BunkBook reference captures, imported records and uploaded files
+.bunkbook/
+.env.bunkbook.local
+tests/bunkbook/.state/
 .impeccable/review/
 
 # Yarn
